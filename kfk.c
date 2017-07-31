@@ -17,6 +17,11 @@ typedef unsigned int UI;
 #define KR -128
 #define KNL (K) 0
 #define KFK_OK RD_KAFKA_RESP_ERR_NO_ERROR
+#ifdef __GNUC__
+#  define UNUSED(x) x __attribute__((__unused__))
+#else
+#  define UNUSED(x) x
+#endif
 // create dictionary q dictionary from list of items (s1;v1;s2;v2;...)
 K xd0(I n, ...) __attribute__((sentinel));
 K xd0(I n, ...) {
@@ -35,12 +40,12 @@ static I spair[2];
 static K S0;
 // check type
 // letter as usual, + for table, ! for dict
-static I checkType(S tc, ...) {
+static I checkType(const C* tc, ...) {
   va_list args;
   K x;
   static C lt[256]= " tvunzdmpscfejihg xb*BX GHIJEFCSPMDZNUVT";
   static C b[256];
-  S tc0= tc;
+  const C* tc0= tc;
   I match=0;
   lt[20 + 98]= '+';
   lt[20 + 99]= '!';
@@ -92,10 +97,10 @@ static I printr0(K x) {
   r0(x);
   return 0;
 }
-static I statscb(rd_kafka_t *rk, S json, size_t json_len, V *opaque) {
+static I statscb(rd_kafka_t*UNUSED(rk), S json, size_t json_len, V*UNUSED(opaque)) {
   return printr0(k(0, (S) ".kfk.statcb", kpn(json, json_len), KNL));
 } // should return 0 to indicate mem free to kafka
-static V logcb(const rd_kafka_t *rk, int level, const char *fac,
+static V logcb(const rd_kafka_t *UNUSED(rk), int level, const char *fac,
                const char *buf) {
   printr0(k(0, (S) ".kfk.logcb", ki(level), kp((S) fac), kp((S) buf), KNL));
 }
@@ -293,15 +298,25 @@ K kfkPub(K tid, K partid, K data, K key) {
 K kfkSub(K cid, K topic, K partitions) {
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;
-  J i;
-  if(!checkType("isI", cid, topic, partitions))
+  J i,*o=NULL;
+  I*p;
+  if(!checkType("is[I!]", cid, topic, partitions))
     return KNL;
   if(!(rk= clientIndex(cid)))
     return KNL;
   rd_kafka_topic_partition_list_t *t_partition=
       rd_kafka_topic_partition_list_new(partitions->n);
-  for(i= 0; i < partitions->n; ++i)
-    rd_kafka_topic_partition_list_add(t_partition, topic->s, kI(partitions)[i]);
+  for(i= 0; i < partitions->n; ++i){
+    if(partitions->t==XD){
+      p=kI(kK(partitions)[0]);
+      o=kJ(kK(partitions)[1]);
+    }else{
+      p=kI(partitions);
+    }
+    rd_kafka_topic_partition_list_add(t_partition, topic->s, p[i]);
+    if(o)
+      rd_kafka_topic_partition_list_set_offset(t_partition, topic->s, p[i],o[i]);
+  }
   if(KFK_OK != (err= rd_kafka_subscribe(rk, t_partition)))
     return krr((S) rd_kafka_err2str(err));
   return knk(0);
@@ -391,11 +406,10 @@ K kfkOutQLen(K cid) {
     return KNL;
   return ki(rd_kafka_outq_len(rk));
 }
-K kfkVersion(K _) { return ki(rd_kafka_version()); }
-K kfkExportErr(K _) {
+K kfkVersion(K UNUSED(x)) { return ki(rd_kafka_version()); }
+K kfkExportErr(K UNUSED(dummy)) {
   const struct rd_kafka_err_desc *errdescs;
-  size_t n;
-  J i;
+  size_t i,n;
   K x= ktn(0, 0), y= ktn(0, 0), z= ktn(0, 0);
   rd_kafka_get_err_descs(&errdescs, &n);
   for(i= 0; i < n; ++i)

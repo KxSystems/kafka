@@ -33,7 +33,7 @@ TGT=libkfk.dll
 else
 KAFKA_ROOT=${HOME}
 KFK_INCLUDE=${KAFKA_ROOT}/include
-OPTS=-DKXVER=3 -Wall -Wno-strict-aliasing -Wno-parentheses -shared -fPIC 
+OPTS=-DKXVER=3 -Wall -Wno-strict-aliasing -Wno-parentheses -shared -fPIC   -Wextra -Werror -Wsign-compare -Wwrite-strings
 LDOPTS_STATIC=${KAFKA_ROOT}/lib/librdkafka.a -lz -lpthread -lssl -g -O2
 LDOPTS=-L${KAFKA_ROOT}/lib/ -lrdkafka -lz -lpthread -lssl -g -O2
 OSXOPTS=-undefined dynamic_lookup  -mmacosx-version-min=10.12

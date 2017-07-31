@@ -48,7 +48,7 @@ For list of options see: https://github.com/edenhill/librdkafka/blob/master/CONF
 # Building and installation
 
 ## Step 1
-Build and install latest version of librdkafka.
+Build and install latest version of librdkafka. Minimum required version is v0.11.0.
 ### Requirements
 As noted on librdkafka page https://github.com/edenhill/librdkafka#requirements
   The GNU toolchain
@@ -64,8 +64,18 @@ To build 32-bit versions on 64-bit OS you need to have 32-bit version of librari
 sudo yum install glibc-devel.i686 libgcc.i686 libstdc++.i686 zlib-devel.i686
 # Ubuntu
 sudo apt-get install gcc-multilib
-
 ```
+### Librdkafka
+#### Package installation
+```
+#macOS
+brew install librdkafka
+#Ubuntu/Debian(unstable)
+sudo apt-get install librdkafka-dev
+#RHEL/CentOS
+sudo yum install librdkafka-devel
+```
+#### Building from source 
 ### macOS and Linux
 ```bash
 git clone https://github.com/edenhill/librdkafka.git
@@ -86,7 +96,7 @@ make install
 
 ```
 ### Windows (to be added)
-Using Nuget.
+Using Nuget redistributable(https://www.nuget.org/packages/librdkafka.redist)
 ```
 nuget install librdkafka.redist
 ```
