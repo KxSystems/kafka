@@ -34,8 +34,9 @@ else
 KAFKA_ROOT=${HOME}
 KFK_INCLUDE=${KAFKA_ROOT}/include
 OPTS=-DKXVER=3 -Wall -Wno-strict-aliasing -Wno-parentheses -shared -fPIC 
-LDOPTS_STATIC=${KAFKA_ROOT}/lib/librdkafka.a -lz -lpthread -g -O2
-LDOPTS=-L${KAFKA_ROOT}/lib/ -lrdkafka -lz -lpthread -g -O2
+LDOPTS_STATIC=${KAFKA_ROOT}/lib/librdkafka.a -lz -lpthread -lssl -g -O2
+LDOPTS=-L${KAFKA_ROOT}/lib/ -lrdkafka -lz -lpthread -lssl -g -O2
+OSXOPTS=-undefined dynamic_lookup  -mmacosx-version-min=10.12
 TGT=libkfk.so
 endif
 
@@ -52,10 +53,10 @@ fmt:
 print-%  : ; @echo $* = $($*)
 
 m64:
-	$(CC) kfk.c -m64 $(OPTS) $(LDOPTS) -I$(KFK_INCLUDE) -o $(TGT) -undefined dynamic_lookup  -mmacosx-version-min=10.12
+	$(CC) kfk.c -m64 $(OPTS) $(LDOPTS) -I$(KFK_INCLUDE) -o $(TGT) $(OSXOPTS)
 
 m64st:
-	$(CC) kfk.c -m64 $(OPTS) $(LDOPTS_STATIC) -I$(KFK_INCLUDE) -o $(TGT) -undefined dynamic_lookup -lssl  -mmacosx-version-min=10.12
+	$(CC) kfk.c -m64 $(OPTS) $(LDOPTS_STATIC) -I$(KFK_INCLUDE) -o $(TGT) $(OSXOPTS)
 
 w32:
 	$(CC) kfk.c -m32 $(OPTS) $(LDOPTS) -I$(KFK_INCLUDE)
@@ -64,12 +65,15 @@ w64:
 	$(CC) kfk.c -m64 $(OPTS) $(LDOPTS) $(INCLUDES) q.lib -lws2_32
 
 l32:
-	$(CC) kfk.c -m32 $(OPTS) $(LDOPTS) -I$(KFK_INCLUDE) -o $(TGT)
+	$(CC) kfk.c -m32 $(OPTS) $(LDOPTS) -I$(KFK_INCLUDE) -lrt -o $(TGT)
+
+l32st:
+	$(CC) kfk.c -m32 $(OPTS) $(LDOPTS_STATIC) -I$(KFK_INCLUDE) -lrt -o $(TGT)
  
 l64:
-	$(CC) kfk.c -m64 $(OPTS) $(LDOPTS) -I$(KFK_INCLUDE) -o $(TGT)
+	$(CC) kfk.c -m64 $(OPTS) $(LDOPTS) -I$(KFK_INCLUDE) -lrt -o $(TGT)
 
 l64st:
-	$(CC) kfk.c -m64 $(OPTS) $(LDOPTS_STATIC) -I$(KFK_INCLUDE) -o $(TGT)
+	$(CC) kfk.c -m64 $(OPTS) $(LDOPTS_STATIC) -I$(KFK_INCLUDE) -lrt -o $(TGT)
 
 
