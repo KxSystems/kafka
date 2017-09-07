@@ -32,7 +32,6 @@ K xd0(I n, ...) {
 #define xd(...) xd0(0, __VA_ARGS__, (S) 0)
 static K clients, topics;
 static I spair[2];
-static void *lthread; // pthread_t
 static K S0;
 // check type
 // letter as usual, + for table, ! for dict
@@ -89,7 +88,7 @@ static I printr0(K x) {
   if(!x)
     return 0;
   if(KR == xt)
-    printf("%s", x->s);
+    fprintf(stderr, "%s\n", x->s);
   r0(x);
   return 0;
 }
@@ -144,8 +143,13 @@ K kfkClient(K x, K y) {
   if(!(rk= rd_kafka_new(type, conf, b, sizeof(b))))
     return krr(b);
   /* Redirect rd_kafka_poll() to consumer_poll() */
-  if(type == RD_KAFKA_CONSUMER)
+  if(type == RD_KAFKA_CONSUMER){
     rd_kafka_poll_set_consumer(rk);
+    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_consumer(rk),spair[1],"X",1);
+  }else{
+    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_main(rk),spair[1],"X",1);
+  }
+
   js(&clients, (S) rk);
   return ki(clients->n - 1);
 }
@@ -341,18 +345,14 @@ K kfkSubscription(K cid) {
   rd_kafka_topic_partition_list_destroy(t);
   return r;
 }
-
+static J pu(J u){return 1000000LL*(u-10957LL*86400000LL);}
 // `mtype`topic`partition`data`key`offset`opaque
 K decodeMsg(rd_kafka_message_t *msg) {
-  K x, y, z;
-  J ts;
-  rd_kafka_timestamp_type_t ttime;
-  ts= rd_kafka_message_timestamp(msg, &ttime);
-  x= ktn(KG, msg->len);
+  K x= ktn(KG, msg->len), y=ktn(KG, msg->key_len), z;
+  J ts= rd_kafka_message_timestamp(msg, NULL);
   memmove(kG(x), msg->payload, msg->len);
-  y= ktn(KG, msg->key_len);
   memmove(kG(y), msg->key, msg->key_len);
-  z= ktj(-KP, ts > 0 ? 1000 * ts : nj);
+  z= ktj(-KP, ts > 0 ? pu(ts) : nj);
   return xd0(0, "mtype",
              msg->err ? ks((S) rd_kafka_err2name(msg->err)) : r1(S0), "topic",
              msg->rkt ? ks((S) rd_kafka_topic_name(msg->rkt)) : r1(S0),
@@ -420,45 +420,15 @@ K kfkCallback(I d) {
   return KNL;
 }
 
-V *poller(V *p) {
-  // int fd = *(int*)p;
-  J pending= 0;I i;
-  while(spair[1]) {
-    for(i= 0; i < clients->n; i++) {
-      rd_kafka_t *rk= (rd_kafka_t *) kS(clients)[i];
-      if(!rk)
-        continue;
-      pending+= rd_kafka_outq_len(rk);
-      rd_kafka_queue_t *q= rd_kafka_queue_get_consumer(rk);
-      if(q)
-        pending+= rd_kafka_queue_length(q);
-    }
-    if(pending > 0) {
-      // check all consumer queues if any messages pending
-      send(spair[1], "M", 1, 0);
-      pending= 0;
-    }
-    usleep(1000);
-  }
-  return (K) 0;
-}
 __attribute__((constructor)) V __attach(V) {
-  int err;
+  if(dumb_socketpair(spair, 1) == -1){
+    fprintf(stderr, "Init failed. socketpair: %s\n", strerror(errno));
+    return;
+  }
   clients= ktn(KS, 0);
   topics= ktn(KS, 0);
   S0= ks("");
-  err= dumb_socketpair(spair, 1);
-  if(err == -1)
-    perror("socketpair");
   printr0(sd1(-spair[0], &kfkCallback));
-#ifndef WIN32
-  pthread_t t;
-  if(pthread_create(&t, NULL, poller, NULL))
-    perror("poller_thread");
-  lthread= &t;
-#else
-  _beginthread(poller, 0, NULL);
-#endif
 }
 
 __attribute__((destructor)) V __detach(V) {
@@ -481,8 +451,4 @@ __attribute__((destructor)) V __detach(V) {
   sp= spair[1];
   spair[1]= 0;
   close(sp);
-#ifndef WIN32
-  if(lthread)
-    pthread_cancel(*(pthread_t *) lthread);
-#endif
 }

@@ -48,30 +48,55 @@ For list of options see: https://github.com/edenhill/librdkafka/blob/master/CONF
 # Building and installation
 
 ## Step 1
-Build and install latest version of librdkafka.
+Build and install latest version of librdkafka. Minimum required version is v0.11.0.
+### Requirements
+As noted on librdkafka page https://github.com/edenhill/librdkafka#requirements
+  The GNU toolchain
+  GNU make
+    pthreads
+  zlib (optional, for gzip compression support)
+  libssl-dev (optional, for SSL and SASL SCRAM support)
+  libsasl2-dev (optional, for SASL GSSAPI support)
+
+To build 32-bit versions on 64-bit OS you need to have 32-bit version of libraries and a toolchain
+```
+#CentOS/RHEL
+sudo yum install glibc-devel.i686 libgcc.i686 libstdc++.i686 zlib-devel.i686
+# Ubuntu
+sudo apt-get install gcc-multilib
+```
+### Librdkafka
+#### Package installation
+```
+#macOS
+brew install librdkafka
+#Ubuntu/Debian(unstable)
+sudo apt-get install librdkafka-dev
+#RHEL/CentOS
+sudo yum install librdkafka-devel
+```
+#### Building from source 
 ### macOS and Linux
 ```bash
 git clone https://github.com/edenhill/librdkafka.git
 cd librdkafka
-# Note: run `make clean` if updating/installed both 64 bit version before
-./configure --prefix=$HOME --disable-sasl --disable-lz4 --mbits=32 
+make clean  # to make sure nothing left from previous build or if upgrading/rebuilding
+# If using OpenSSL, remove --disable-ssl from configure command below
+# On macOS with OpenSSL you might need to set `export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2k` before proceeding
 
-# When using macOS with OpenSSL you might need to set `export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2k` before make
-# If not using OpenSSL, add --disable-ssl to configure above
-make
-make install
 
+// 32 bit
+./configure --prefix=$HOME --disable-sasl --disable-lz4 --disable-ssl --mbits=32 
 // 64 bits
-# Note: run `make clean` if updating/installed both 32 bit version before
-./configure --prefix=$HOME --disable-sasl --disable-lz4 --mbits=64
-# When using macOS with OpenSSL you might need to set `export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2k` before make
-# If not using OpenSSL, add --disable-ssl to configure above
+./configure --prefix=$HOME --disable-sasl --disable-lz4 --disable-ssl --mbits=64
+
+
 make
 make install
 
 ```
 ### Windows (to be added)
-Using Nuget.
+Using Nuget redistributable(https://www.nuget.org/packages/librdkafka.redist)
 ```
 nuget install librdkafka.redist
 ```
@@ -83,7 +108,10 @@ Compile and install shared object(it will be installed to $QHOME/<arch>). Make s
 make
 make install
 ```
-
+Note: If compiling dynamically linked `libkfk.so` make sure you have `librdkafka.so.1` in your `LD_LIBRARY_PATH`.
+```
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/lib
+```
 
 # Testing
 
