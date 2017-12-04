@@ -3,15 +3,15 @@
 
 # API
 
-Library tries to follow `librdkafka` API closely where possible.
+The library tries to follow `librdkafka` API closely where possible.
 Following https://github.com/edenhill/librdkafka/blob/master/INTRODUCTION.md:
- - Base container(`rd_kafka_t`) is a client create by `.kfk.Client`. `.kfk.Producer` and `.kfk.Consumer` provided for simplicity. Provides global configuration and shared state
- - One or more topics(`rd_kafka_topic_t`) which are either producers or consumers and create by `.kfk.Topic` function
+ - The base container `rd_kafka_t` is a client created by `.kfk.Client`. `.kfk.Producer`, and `.kfk.Consumer`, provided for simplicity. Provides global configuration and shared state
+ - One or more topics (`rd_kafka_topic_t`), which are either producers or consumers and created by the `.kfk.Topic` function
 
-Both clients and topics accept optional configuration dictionary.
- `.kfk.Client` and `.kfk.Topic` returns an `int` which acts as a client or topic id(index into an internal array). Client IDs are used to create topics and Topic IDs are used to publish or subscribe to data on that topic. Additionally, they can be used to query metadata - state of subscription, pending queues, etc.
+Both clients and topics accept an optional configuration dictionary.
+ `.kfk.Client` and `.kfk.Topic` returns an `int` which acts as a client or topic ID (index into an internal array). Client IDs are used to create topics, and Topic IDs are used to publish or subscribe to data on that topic. Additionally, they can be used to query metadata - the state of subscription, pending queues, etc.
 
-Minimal producer example(can also be found in test_producer.q)
+A minimal producer example (can also be found in `test_producer.q`)
 ```q
 \l kfk.q
 // specify kafka brokers to connect to and statistics settings.
@@ -24,7 +24,7 @@ test_topic:.kfk.Topic[producer;`test;()!()]
 .kfk.Pub[test_topic;.kfk.PARTITION_UA;string .z.t;"time"];
 show "Published 1 message";
 ```
-Minimal consumer example(slightly elaborate version in test_consumer.q)
+A minimal consumer example (a slightly elaborate version is in `test_consumer.q`)
 ```q
 \l kfk.q
 // create consumer process within group 0
@@ -41,23 +41,25 @@ data:();
 
 # Configuration
 
-Library supports and uses all configuration options exposed by `librdkafka` except callback functions. Which are identical to Kafka options by design of `librdkafka`
-For list of options see: https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
+The library supports and uses all configuration options exposed by `librdkafka` except callback functions, which are identical to Kafka options by the design of `librdkafka`.
+See the [list of Kafka options](https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md)
 
 
 # Building and installation
 
 ## Step 1
-Build and install latest version of librdkafka. Minimum required version is v0.11.0.
-### Requirements
-As noted on librdkafka page https://github.com/edenhill/librdkafka#requirements
-  The GNU toolchain
-  GNU make
-    pthreads
-  zlib (optional, for gzip compression support)
-  libssl-dev (optional, for SSL and SASL SCRAM support)
-  libsasl2-dev (optional, for SASL GSSAPI support)
+Build and install the latest version of librdkafka. The minimum required version is v0.11.0.
 
+### Requirements
+As noted on the [librdkafka page](https://github.com/edenhill/librdkafka#requirements)
+```
+The GNU toolchain
+GNU make
+pthreads
+zlib (optional, for gzip compression support)
+libssl-dev (optional, for SSL and SASL SCRAM support)
+libsasl2-dev (optional, for SASL GSSAPI support)
+```
 To build 32-bit versions on 64-bit OS you need to have 32-bit version of libraries and a toolchain
 ```
 #CentOS/RHEL
@@ -90,19 +92,18 @@ make clean  # to make sure nothing left from previous build or if upgrading/rebu
 // 64 bits
 ./configure --prefix=$HOME --disable-sasl --disable-lz4 --disable-ssl --mbits=64
 
-
 make
 make install
-
 ```
+
 ### Windows (to be added)
-Using Nuget redistributable(https://www.nuget.org/packages/librdkafka.redist)
+Using the Nuget redistributable (https://www.nuget.org/packages/librdkafka.redist)
 ```
 nuget install librdkafka.redist
 ```
 
 ## Step 2
-Compile and install shared object(it will be installed to $QHOME/<arch>). Make sure you have QHOME environment set.
+Compile and install a shared object (it will be installed to $QHOME/<arch>). Make sure you have QHOME environment set.
 ```bash
 // in kfk source folder
 make
@@ -115,13 +116,13 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/lib
 
 # Testing
 
-Use can use either existing kafka broker or start test kafka broker as described below.
+Use either an existing Kafka broker or start a test Kafka broker as described below.
 
-## Setting up test kafka instance
+## Setting up a test Kafka instance
 
-As per tutorial on Kafka website - http://kafka.apache.org/documentation.html#quickstart
+As per [tutorial on Kafka website](http://kafka.apache.org/documentation.html#quickstart)
 
-Download and unzip kafka
+Download and unzip Kafka
 ```bash
 cd $HOME
 wget http://www-us.apache.org/dist/kafka/0.10.2.0/kafka_2.11-0.10.2.0.tgz
@@ -134,27 +135,27 @@ Start zookeeper
 bin/zookeeper-server-start.sh config/zookeeper.properties
 ```
 
-Start kafka broker
+Start the Kafka broker
 ```bash
 bin/kafka-server-start.sh config/server.properties
 ```
 
 ## Running examples
 
-start producer
+Start the producer
 ```q
 \l test_producer.q
 \t 1000
 ```
 
-start consumer
+Start the consumer
 ```q
 \l test_consumer.q
 ```
-The messages will now flow from producer to consumer and the publishing rate can be adjusted via `\t x` in producer process.
+The messages will now flow from producer to consumer and the publishing rate can be adjusted via `\t x` in the producer process.
 
-# Performance and Tuning
+# Performance and tuning
 
-See https://github.com/edenhill/librdkafka/wiki/How-to-decrease-message-latency for configuration options to reduce kafka latency.
-There are numerous configuration options and it is best to find settings that suit your needs and setup. See Configuration section above
+See [How to decrease message latency](https://github.com/edenhill/librdkafka/wiki/How-to-decrease-message-latency) for configuration options to reduce Kafka latency.
+There are numerous configuration options and it is best to find settings that suit your needs and setup. See the Configuration section above.
 
