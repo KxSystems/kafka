@@ -15,7 +15,17 @@ See [code.kx.com/q/interfaces/kafka](http://code.kx.com/q/interfaces/kafka/) for
 
 Build and install the latest version of `librdkafka`. The minimum required version is v0.11.0.
 
-#### Requirements
+## Step 1
+Build and install latest version of librdkafka. Minimum required version is v0.11.0.
+### Requirements
+As noted on librdkafka page https://github.com/edenhill/librdkafka#requirements
+  The GNU toolchain
+  GNU make
+    pthreads
+  zlib (optional, for gzip compression support)
+  libssl-dev (optional, for SSL and SASL SCRAM support)
+  libsasl2-dev (optional, for SASL GSSAPI support)
+
 
 As noted on the [librdkafka page](https://github.com/edenhill/librdkafka#requirements)
 ```
@@ -33,11 +43,10 @@ sudo yum install glibc-devel.i686 libgcc.i686 libstdc++.i686 zlib-devel.i686
 # Ubuntu
 sudo apt-get install gcc-multilib
 ```
-
-#### Librdkafka
-
-##### Package installation
+### Librdkafka
+#### Package installation
 ```
+
 #macOS
 brew install librdkafka
 #Ubuntu/Debian(unstable)
@@ -45,10 +54,9 @@ sudo apt-get install librdkafka-dev
 #RHEL/CentOS
 sudo yum install librdkafka-devel
 ```
+#### Building from source 
+### macOS and Linux
 
-##### Building from source 
-
-#### macOS and Linux
 ```bash
 git clone https://github.com/edenhill/librdkafka.git
 cd librdkafka
@@ -65,9 +73,9 @@ make clean  # to make sure nothing left from previous build or if upgrading/rebu
 make
 make install
 ```
+### Windows (to be added)
+Using Nuget redistributable(https://www.nuget.org/packages/librdkafka.redist)
 
-#### Windows (to be added)
-Using the Nuget redistributable (https://www.nuget.org/packages/librdkafka.redist)
 ```
 nuget install librdkafka.redist
 ```
