@@ -8,7 +8,7 @@ before_install:
   - wget -qO - http://packages.confluent.io/deb/3.2/archive.key | sudo apt-key add - # Use the confluent repository
   - sudo add-apt-repository "deb http://packages.confluent.io/deb/3.3 stable main"
   - sudo apt-get update -qq # Update quietly.
-  - sudo apt-get install -y gcc-multilib librdkafka-dev librdkafka1 librdkafka-dev:i386
+  - sudo apt-get install -y gcc-multilib librdkafka-dev librdkafka1
 
 script:
 - make all
