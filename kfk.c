@@ -27,7 +27,8 @@ K xd0(I n, ...) __attribute__((sentinel));
 K xd0(I n, ...) {
   va_list a;
   S s;
-  K x, y= ktn(KS, 0), z= ktn(0, 0);
+  K x, y= ktn(KS, n), z= ktn(0, n);
+  y->n=0;z->n=0;
   va_start(a, n);
   for(; s= va_arg(a, S), s && (x= va_arg(a, K));)
     js(&y, ss(s)), jk(&z, x);
@@ -368,14 +369,14 @@ K decodeMsg(rd_kafka_message_t *msg) {
   memmove(kG(x), msg->payload, msg->len);
   memmove(kG(y), msg->key, msg->key_len);
   z= ktj(-KP, ts > 0 ? pu(ts) : nj);
-  return xd0(0, "mtype",
+  return xd0(7, "mtype",
              msg->err ? ks((S) rd_kafka_err2name(msg->err)) : r1(S0), "topic",
              msg->rkt ? ks((S) rd_kafka_topic_name(msg->rkt)) : r1(S0),
              "partition", ki(msg->partition), "offset", kj(msg->offset),
              "msgtime", z, "data", x, "key", y, (S) 0);
 }
 
-J pollClient(rd_kafka_t *rk, J timeout, J maxcnt) {
+J pollClient(rd_kafka_t *rk, J timeout, J UNUSED(maxcnt)) {
   K r;
   J n= 0;
   rd_kafka_message_t *msg;
@@ -385,8 +386,9 @@ J pollClient(rd_kafka_t *rk, J timeout, J maxcnt) {
     n= rd_kafka_poll(rk, timeout);
     return n;
   }
-  int maxmsgs= maxcnt && maxcnt ? maxcnt : wi;
-  while((n < maxmsgs) && (msg= rd_kafka_consumer_poll(rk, timeout))) {
+  //int maxmsgs= maxcnt && maxcnt ? maxcnt : wi;
+  // while((n < maxmsgs) && (msg= rd_kafka_consumer_poll(rk, timeout))) { 
+  while((msg= rd_kafka_consumer_poll(rk, timeout))) {
     r= decodeMsg(msg);
     printr0(k(0, ".kfk.consumecb", r, KNL));
     rd_kafka_message_destroy(msg);
