@@ -375,28 +375,35 @@ K decodeMsg(rd_kafka_message_t *msg) {
              "msgtime", z, "data", x, "key", y, (S) 0);
 }
 
-K kfkPoll(K cid, K timeout, K maxcnt) {
+J pollClient(rd_kafka_t *rk, J timeout, J maxcnt) {
   K r;
   J n= 0;
   rd_kafka_message_t *msg;
-  rd_kafka_t *rk;
   rd_kafka_type_t rk_type;
-  if(!checkType("ijj", cid, timeout, maxcnt))
-    return KNL;
-  if(!(rk= clientIndex(cid)))
-    return KNL;
   rk_type= rd_kafka_type(rk);
   if(rk_type == RD_KAFKA_PRODUCER) {
-    n= rd_kafka_poll(rk, timeout->j);
-    return kj(n);
+    n= rd_kafka_poll(rk, timeout);
+    return n;
   }
-  int maxmsgs= maxcnt && maxcnt->j ? maxcnt->j : wi;
-  while((n < maxmsgs) && (msg= rd_kafka_consumer_poll(rk, timeout->j))) {
+  int maxmsgs= maxcnt && maxcnt ? maxcnt : wi;
+  while((n < maxmsgs) && (msg= rd_kafka_consumer_poll(rk, timeout))) {
     r= decodeMsg(msg);
     printr0(k(0, ".kfk.consumecb", r, KNL));
     rd_kafka_message_destroy(msg);
     n++;
   }
+  return n;
+}
+
+// for manual poll of the feed.
+K kfkPoll(K cid, K timeout, K maxcnt) {
+  J n= 0;
+  rd_kafka_t *rk;
+  if(!checkType("ijj", cid, timeout, maxcnt))
+    return KNL;
+  if(!(rk= clientIndex(cid)))
+    return KNL;
+  n=pollClient(rk,timeout->j,maxcnt->j);
   return kj(n);
 }
 // other
@@ -422,14 +429,13 @@ K kfkExportErr(K UNUSED(dummy)) {
 }
 // shared lib loading
 K kfkCallback(I d) {
-  char buf[1024];int i,consumed=0;
+  char buf[1024];J i,n,consumed=0;
   /*MSG_DONTWAIT - set in sd1(-h,...) */
-  while(0 < recv(d, buf, sizeof(buf), 0))
-    ;
+  while(0 < (n=recv(d, buf, sizeof(buf), 0)))
+    consumed+=n;
+  // pass consumed to poll for possible batching
   for(i= 0; i < clients->n; i++) {
-    K c= kfkPoll(ki(i), kj(0), kj(10000));
-    consumed+= c->j;
-    r0(c);
+    pollClient((rd_kafka_t*)kS(clients)[i], 0, consumed);
   }
   return KNL;
 }
