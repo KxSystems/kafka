@@ -76,6 +76,9 @@ statcb:{[j]
 // logging callback
 logcb:{[level;fac;buf] show -3!(level;fac;buf);}
 
+// delivery callback
+drcb:{[msg]}
+
 // Main callback for consuming messages(including errors)
 consumecb:{[msg]}
 
