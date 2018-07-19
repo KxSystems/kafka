@@ -113,8 +113,8 @@ static V logcb(const rd_kafka_t *UNUSED(rk), int level, const char *fac,
   printr0(k(0, (S) ".kfk.logcb", ki(level), kp((S) fac), kp((S) buf), KNL));
 }
 K decodeMsg(const rd_kafka_message_t *msg);
-static V drcb(rd_kafka_t *rk,const rd_kafka_message_t *msg,V*UNUSED(opaque)) {
-  printr0(k(0,(S)".kfk.drcb",ki(indexClient(rk)),decodeMsg(msg),KNL));
+static V drcb(rd_kafka_t *UNUSED(rk),const rd_kafka_message_t *msg,V*UNUSED(opaque)) {
+  printr0(k(0,(S)".kfk.drcb",decodeMsg(msg),KNL));
 }
 // client api
 // x - config dict sym->sym
