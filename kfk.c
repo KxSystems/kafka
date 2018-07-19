@@ -84,7 +84,8 @@ rd_kafka_t *clientIndex(K x) {
                              (S) krr("unknown client"));
 }
 I indexClient(rd_kafka_t *rk){
-  for (int i = 0; i < clients->n; ++i){
+  int i;
+  for (i = 0; i < clients->n; ++i){
     if(rk==(rd_kafka_t *)kS(clients)[i]) return i;
   }
   return ni;
