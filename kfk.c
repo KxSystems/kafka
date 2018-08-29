@@ -295,6 +295,31 @@ K kfkMetadata(K cid) {
   return r;
 }
 
+K decodeTopPar(rd_kafka_topic_partition_t *tp) {
+  return xd("topic", ks((S) tp->topic), "partition", ki(tp->partition),
+            "offset", kj(tp->offset), "metadata",
+            kpn(tp->metadata, tp->metadata_size));
+}
+
+K decodeParList(rd_kafka_topic_partition_list_t *t){
+  K r= ktn(0, t->cnt);J i;
+  for(i= 0; i < r->n; ++i)
+    kK(r)[i]= decodeTopPar(&t->elems[i]);
+  R r;
+}
+
+rd_kafka_topic_partition_list_t* plistoffsetdict(S topic,K partitions){
+  I*p=kI(kK(partitions)[0]);
+  J*o=kJ(kK(partitions)[1]),i;
+  rd_kafka_topic_partition_list_t *t_partition=
+      rd_kafka_topic_partition_list_new(partitions->n);
+  for(i= 0; i < partitions->n; ++i){
+    rd_kafka_topic_partition_list_add(t_partition, topic, p[i]);
+    rd_kafka_topic_partition_list_set_offset(t_partition, topic, p[i],o[i]);
+  }
+  return t_partition;
+}
+
 // producer api
 K kfkPub(K tid, K partid, K data, K key) {
   rd_kafka_topic_t *rkt;
@@ -311,26 +336,24 @@ K kfkPub(K tid, K partid, K data, K key) {
 // consume api
 K kfkSub(K cid, K topic, K partitions) {
   rd_kafka_resp_err_t err;
-  rd_kafka_t *rk;
-  J i,*o=NULL;
+  rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
+  J i;
   I*p;
   if(!checkType("is[I!]", cid, topic, partitions))
     return KNL;
   if(!(rk= clientIndex(cid)))
     return KNL;
-  rd_kafka_topic_partition_list_t *t_partition=
+  if(partitions->t == XD){
+    t_partition = plistoffsetdict(topic->s,partitions);
+  }else{
+    t_partition=
       rd_kafka_topic_partition_list_new(partitions->n);
-  for(i= 0; i < partitions->n; ++i){
-    if(partitions->t==XD){
-      p=kI(kK(partitions)[0]);
-      o=kJ(kK(partitions)[1]);
-    }else{
+    for(i= 0; i < partitions->n; ++i){
       p=kI(partitions);
+      rd_kafka_topic_partition_list_add(t_partition, topic->s, p[i]);
     }
-    rd_kafka_topic_partition_list_add(t_partition, topic->s, p[i]);
-    if(o)
-      rd_kafka_topic_partition_list_set_offset(t_partition, topic->s, p[i],o[i]);
   }
+
   if(KFK_OK != (err= rd_kafka_subscribe(rk, t_partition)))
     return krr((S) rd_kafka_err2str(err));
   return knk(0);
@@ -349,15 +372,54 @@ K kfkUnsub(K cid) {
   return knk(0);
 }
 
-K decodeTopPar(rd_kafka_topic_partition_t *tp) {
-  return xd("topic", ks((S) tp->topic), "partition", ki(tp->partition),
-            "offset", kj(tp->offset), "metadata",
-            kpn(tp->metadata, tp->metadata_size));
+K kfkCommitOffsets(K cid,K topic,K offsets,K async){
+  rd_kafka_resp_err_t err;
+  rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
+  if(!checkType("is!b", cid, offsets, async))
+    return KNL;
+  if(!(rk= clientIndex(cid)))
+    return KNL;
+  t_partition = plistoffsetdict(topic->s,offsets);
+  if(KFK_OK != (err= rd_kafka_commit(rk, t_partition,async->g)))
+    return krr((S) rd_kafka_err2str(err));
+  rd_kafka_topic_partition_list_destroy(t_partition);
+  return knk(0);
+}
+
+K kfkCommittedOffsets(K cid,K topic,K offsets){
+  K r;
+  rd_kafka_resp_err_t err;
+  rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
+  if(!checkType("is!", cid, offsets))
+    return KNL;
+  if(!(rk= clientIndex(cid)))
+    return KNL;
+  t_partition = plistoffsetdict(topic->s,offsets);
+  if(KFK_OK != (err= rd_kafka_committed(rk, t_partition,5000)))
+    return krr((S) rd_kafka_err2str(err));
+  r=decodeParList(t_partition);
+  rd_kafka_topic_partition_list_destroy(t_partition);
+  return r;
+}
+
+K kfkPositionOffsets(K cid,K topic,K offsets){
+  K r;
+  rd_kafka_resp_err_t err;
+  rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
+  if(!checkType("is!", cid, topic, offsets))
+    return KNL;
+  if(!(rk= clientIndex(cid)))
+    return KNL;
+  t_partition = plistoffsetdict(topic->s,offsets);
+  if(KFK_OK != (err= rd_kafka_position(rk, t_partition)))
+    return krr((S) rd_kafka_err2str(err));
+  r=decodeParList(t_partition);
+  rd_kafka_topic_partition_list_destroy(t_partition);
+  return r;
 }
 
 K kfkSubscription(K cid) {
   K r;
-  J i;
   rd_kafka_topic_partition_list_t *t;
   rd_kafka_t *rk;
   rd_kafka_resp_err_t err;
@@ -368,9 +430,7 @@ K kfkSubscription(K cid) {
   err= rd_kafka_subscription(rk, &t);
   if(KFK_OK != err)
     return krr((S) rd_kafka_err2str(err));
-  r= ktn(0, t->cnt);
-  for(i= 0; i < r->n; ++i)
-    kK(r)[i]= decodeTopPar(&t->elems[i]);
+  r= decodeParList(t);
   rd_kafka_topic_partition_list_destroy(t);
   return r;
 }

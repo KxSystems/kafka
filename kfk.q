@@ -36,6 +36,12 @@ funcs:(
 	(`kfkVersion;1);
 		// .kfk.ExportErr[]
 	(`kfkExportErr;1)
+	(`kfkCommitOffsets;4)
+		// .kfk.CommitOffsets[client_id;topic;offsets;async]
+	(`kfkPositionOffsets;3)
+		// .kfk.PositionOffsets[client_id;topic;offsets]
+	(`kfkCommittedOffsets;3)
+		// .kfk.CommittedOffsets[client_id;topic;offsets]
 	);
 
 
