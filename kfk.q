@@ -40,8 +40,10 @@ funcs:(
 		// .kfk.CommitOffsets[client_id;topic;offsets;async]
 	(`kfkPositionOffsets;3);
 		// .kfk.PositionOffsets[client_id;topic;offsets]
-	(`kfkCommittedOffsets;3)
+	(`kfkCommittedOffsets;3);
 		// .kfk.CommittedOffsets[client_id;topic;offsets]
+	(`kfkAssignOffsets;3)
+		// .kfk.AssignOffsets[client_id;topic;offsets]
 	);
 
 

@@ -380,6 +380,23 @@ K kfkUnsub(K cid) {
   return knk(0);
 }
 
+// https://github.com/edenhill/librdkafka/wiki/Manually-setting-the-consumer-start-offset
+K kfkAssignOffsets(K cid,K topic,K offsets){
+  rd_kafka_t *rk;
+  rd_kafka_topic_partition_list_t *partitions;
+  rd_kafka_resp_err_t err;
+  if(!checkType("is!", cid,topic,offsets))
+    return KNL;
+  if(!(rk= clientIndex(cid)))
+    return KNL;
+  partitions = plistoffsetdict(topic->s,offsets);
+  err=rd_kafka_assign(rk, partitions);
+  if(KFK_OK != err)
+    return krr((S) rd_kafka_err2str(err));
+  rd_kafka_topic_partition_list_destroy(partitions); 
+  return knk(0);
+}
+
 K kfkCommitOffsets(K cid,K topic,K offsets,K async){
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
