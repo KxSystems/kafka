@@ -35,10 +35,10 @@ funcs:(
 		// .kfk.Version[]
 	(`kfkVersion;1);
 		// .kfk.ExportErr[]
-	(`kfkExportErr;1)
-	(`kfkCommitOffsets;4)
+	(`kfkExportErr;1);
+	(`kfkCommitOffsets;4);
 		// .kfk.CommitOffsets[client_id;topic;offsets;async]
-	(`kfkPositionOffsets;3)
+	(`kfkPositionOffsets;3);
 		// .kfk.PositionOffsets[client_id;topic;offsets]
 	(`kfkCommittedOffsets;3)
 		// .kfk.CommittedOffsets[client_id;topic;offsets]
@@ -75,7 +75,7 @@ stats:()
 
 // statistics provided by kafka about current state
 statcb:{[j]
-	s:.j.k j;if[all `ts`time in key s;s[`ts]:-10957D+`timestamp$s[`ts]*1e3;s[`time]:-10957D+`timestamp$1e9*s[`time]];
+	s:.j.k j;if[all `ts`time in key s;s[`ts]:-10957D+`timestamp$s[`ts]*1000;s[`time]:-10957D+`timestamp$1000000000*s[`time]];
 	.kfk.stats,::enlist s;
 	delete from `.kfk.stats where i<count[.kfk.stats]-100;}
 
@@ -83,7 +83,9 @@ statcb:{[j]
 logcb:{[level;fac;buf] show -3!(level;fac;buf);}
 
 // delivery callback
-drcb:{[msg]}
+drcb:{[cid;msg]}
+
+offsetcb:{[cid;err;offsets]}
 
 // Main callback for consuming messages(including errors)
 consumecb:{[msg]}

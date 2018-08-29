@@ -39,6 +39,7 @@ K xd0(I n, ...) {
 static K clients, topics;
 static I spair[2];
 static K S0;
+K decodeParList(rd_kafka_topic_partition_list_t *t);
 // check type
 // letter as usual, + for table, ! for dict
 static I checkType(const C* tc, ...) {
@@ -113,9 +114,14 @@ static V logcb(const rd_kafka_t *UNUSED(rk), int level, const char *fac,
                const char *buf) {
   printr0(k(0, (S) ".kfk.logcb", ki(level), kp((S) fac), kp((S) buf), KNL));
 }
+
+static V offsetcb(rd_kafka_t *rk, rd_kafka_resp_err_t err,rd_kafka_topic_partition_list_t*offsets, V*UNUSED(opaque)){
+  printr0(k(0, (S) ".kfk.offsetcb", ki(indexClient(rk)), kp((S)rd_kafka_err2str(err)), decodeParList(offsets),KNL));
+}
+
 K decodeMsg(const rd_kafka_message_t *msg);
-static V drcb(rd_kafka_t *UNUSED(rk),const rd_kafka_message_t *msg,V*UNUSED(opaque)) {
-  printr0(k(0,(S)".kfk.drcb",decodeMsg(msg),KNL));
+static V drcb(rd_kafka_t*rk,const rd_kafka_message_t *msg,V*UNUSED(opaque)) {
+  printr0(k(0,(S)".kfk.drcb",ki(indexClient(rk)), decodeMsg(msg),KNL));
 }
 // client api
 // x - config dict sym->sym
@@ -159,6 +165,7 @@ K kfkClient(K x, K y) {
   rd_kafka_conf_set_stats_cb(conf, statscb);
   rd_kafka_conf_set_log_cb(conf, logcb);
   rd_kafka_conf_set_dr_msg_cb(conf,drcb);
+  rd_kafka_conf_set_offset_commit_cb(conf,offsetcb);
   if(!(rk= rd_kafka_new(type, conf, b, sizeof(b))))
     return krr(b);
   /* Redirect rd_kafka_poll() to consumer_poll() */
@@ -311,6 +318,7 @@ K decodeParList(rd_kafka_topic_partition_list_t *t){
 rd_kafka_topic_partition_list_t* plistoffsetdict(S topic,K partitions){
   I*p=kI(kK(partitions)[0]);
   J*o=kJ(kK(partitions)[1]),i;
+  if(kK(partitions)[0]->n==0) return NULL; // empty dicts for offsetless commit
   rd_kafka_topic_partition_list_t *t_partition=
       rd_kafka_topic_partition_list_new(partitions->n);
   for(i= 0; i < partitions->n; ++i){

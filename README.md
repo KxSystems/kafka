@@ -100,3 +100,11 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/lib
 See [code.kx.com/q/interfaces/kafka](http://code.kx.com/q/interfaces/kafka/).
 
 
+https://docs.confluent.io/2.0.0/clients/consumer.html#synchronous-commits
+
+To have launchd start kafka now and restart at login:
+  brew services start kafka
+Or, if you don't want/need a background service you can just run:
+  zookeeper-server-start /usr/local/etc/kafka/zookeeper.properties & kafka-server-start /usr/local/etc/kafka/server.properties
+  
+
