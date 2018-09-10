@@ -309,16 +309,20 @@ K decodeTopPar(rd_kafka_topic_partition_t *tp) {
 }
 
 K decodeParList(rd_kafka_topic_partition_list_t *t){
-  K r= ktn(0, t->cnt);J i;
+  K r;J i;
+  if(!t)return knk(0);
+  r= ktn(0, t->cnt);
   for(i= 0; i < r->n; ++i)
     kK(r)[i]= decodeTopPar(&t->elems[i]);
   R r;
 }
 
 rd_kafka_topic_partition_list_t* plistoffsetdict(S topic,K partitions){
-  I*p=kI(kK(partitions)[0]);
-  J*o=kJ(kK(partitions)[1]),i;
-  if(kK(partitions)[0]->n==0) return NULL; // empty dicts for offsetless commit
+  K dk=kK(partitions)[0],dv=kK(partitions)[1];
+  I*p;J*o,i;
+  if(dk->n==0) return NULL; // empty dicts for offsetless commit
+  p=kI(dk);o=kJ(dv);
+  
   rd_kafka_topic_partition_list_t *t_partition=
       rd_kafka_topic_partition_list_new(partitions->n);
   for(i= 0; i < partitions->n; ++i){
@@ -361,7 +365,7 @@ K kfkSub(K cid, K topic, K partitions) {
       rd_kafka_topic_partition_list_add(t_partition, topic->s, p[i]);
     }
   }
-
+  O("got here\n");
   if(KFK_OK != (err= rd_kafka_subscribe(rk, t_partition)))
     return krr((S) rd_kafka_err2str(err));
   return knk(0);
@@ -400,7 +404,7 @@ K kfkAssignOffsets(K cid,K topic,K offsets){
 K kfkCommitOffsets(K cid,K topic,K offsets,K async){
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
-  if(!checkType("is!b", cid, offsets, async))
+  if(!checkType("is!b", cid, topic, offsets, async))
     return KNL;
   if(!(rk= clientIndex(cid)))
     return KNL;
@@ -415,7 +419,7 @@ K kfkCommittedOffsets(K cid,K topic,K offsets){
   K r;
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
-  if(!checkType("is!", cid, offsets))
+  if(!checkType("is!", cid, topic, offsets))
     return KNL;
   if(!(rk= clientIndex(cid)))
     return KNL;
