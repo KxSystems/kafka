@@ -1,49 +1,48 @@
 \d .kfk
 LIBPATH:`:libkfk 2:
 funcs:(
-		// .kfk.Client[client_type(.kfk.PRODUCER or .kfk.CONSUMER);`config1`config2!`val1`val2]
-		// return int32 client_id
+		// .kfk.Client[client_type:c;conf:S!S]:i
 	(`kfkClient;2);
-		// .kfk.ClientDel[client_id]
+		// .kfk.ClientDel[client_id:i]:_
 	(`kfkClientDel;1);
-		// .kfk.ClientName[client_id]
+		// .kfk.ClientName[client_id:i]:s
 	(`kfkClientName;1);
-		// .kfk.ClientMemberId[client_id]
+		// .kfk.ClientMemberId[client_id:i]:s
 	(`kfkClientMemberId;1);
-		// .kfk.Topic[client_id;`topicname;`topiccfg1`topiccfg2!`val1`val2] -> topic_id
+		// .kfk.Topic[client_id:i;topicname:s;conf:S!S]:i
 	(`kfkTopic;3);
-		// .kfk.TopicDel[topic_id]
+		// .kfk.TopicDel[topic_id:i]:_
 	(`kfkTopicDel;1);
-		// .kfk.TopicName[topic_id]
+		// .kfk.TopicName[topic_id:i]:s
 	(`kfkTopicName;1);
-		// .kfk.Metadata[client_id]
+		// .kfk.Metadata[client_id:i]:S!()
 	(`kfkMetadata;1);
 	// PRODUCER API
-		// .kfk.Pub[topic_id;partid;data;key]
+		// .kfk.Pub[topic_id:i;partid:i;data;key]:_
 	(`kfkPub;4);
-		// .kfk.OutQLen[client_id]
+		// .kfk.OutQLen[client_id:i]:i
 	(`kfkOutQLen;1);
 	// CONSUMER API
-		// .kfk.Sub[client_id;`topicname;partition_list]
+		// .kfk.Sub[client_id:i;topicname:s;partition_list|partition_offsets:I!J]:()
 	(`kfkSub;3);
-		// .kfk.Unsub[client_id]
+		// .kfk.Unsub[client_id:i]:()
 	(`kfkUnsub;1);
-		// .kfk.Subscription[client_id]
+		// .kfk.Subscription[client_id:i]
 	(`kfkSubscription;1);
-		// .kfk.Poll[client_id;timeout;max_messages]
+		// .kfk.Poll[client_id:i;timeout;max_messages]
 	(`kfkPoll;3);
-		// .kfk.Version[]
+		// .kfk.Version[]:i
 	(`kfkVersion;1);
-		// .kfk.ExportErr[]
+		// .kfk.ExportErr[]:T
 	(`kfkExportErr;1);
+	 // .kfk.CommitOffsets[client_id;topic:s;partition_offsets:I!J;async:b]:()
 	(`kfkCommitOffsets;4);
-		// .kfk.CommitOffsets[client_id;topic;offsets;async]
+	 // .kfk.PositionOffsets[client_id:i;topic:s;partition_offsets:I!J]:partition_offsets
 	(`kfkPositionOffsets;3);
-		// .kfk.PositionOffsets[client_id;topic;offsets]
+	 // .kfk.CommittedOffsets[client_id:i;topic:s;partition_offsets:I!J]:partition_offsets
 	(`kfkCommittedOffsets;3);
-		// .kfk.CommittedOffsets[client_id;topic;offsets]
+	 // .kfk.AssignOffsets[client_id:i;topic:s;partition_offsets:I!J]:()
 	(`kfkAssignOffsets;3)
-		// .kfk.AssignOffsets[client_id;topic;offsets]
 	);
 
 
@@ -80,19 +79,21 @@ Consumer:Client[CONSUMER;]
 stats:() 	
 
 // CALLBACKS -  should not be deleted or renamed and be present in .kfk namespace
+// https://docs.confluent.io/current/clients/librdkafka/rdkafka_8h.html
 
-// statistics provided by kafka about current state
+// statistics provided by kafka about current state (rd_kafka_conf_set_stats_cb)
 statcb:{[j]
 	s:.j.k j;if[all `ts`time in key s;s[`ts]:-10957D+`timestamp$s[`ts]*1000;s[`time]:-10957D+`timestamp$1000000000*s[`time]];
 	.kfk.stats,::enlist s;
 	delete from `.kfk.stats where i<count[.kfk.stats]-100;}
 
-// logging callback
+// logger callback(rd_kafka_conf_set_log_cb)
 logcb:{[level;fac;buf] show -3!(level;fac;buf);}
 
-// delivery callback
+// PRODUCER: delivery callback (rd_kafka_conf_set_dr_msg_cb )
 drcb:{[cid;msg]}
 
+// CONSUMER: offset commit callback(rd_kafka_conf_set_offset_commit_cb)
 offsetcb:{[cid;err;offsets]}
 
 // Main callback for consuming messages(including errors)

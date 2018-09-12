@@ -285,7 +285,6 @@ K decodeMeta(const rd_kafka_metadata_t *meta) {
             ks(meta->orig_broker_name), "brokers", x, "topics", y);
 }
 
-// f[int] // ;topic_id;timeout]
 K kfkMetadata(K cid) {
   const struct rd_kafka_metadata *meta;
   K r;
@@ -365,7 +364,6 @@ K kfkSub(K cid, K topic, K partitions) {
       rd_kafka_topic_partition_list_add(t_partition, topic->s, p[i]);
     }
   }
-  O("got here\n");
   if(KFK_OK != (err= rd_kafka_subscribe(rk, t_partition)))
     return krr((S) rd_kafka_err2str(err));
   return knk(0);
@@ -488,8 +486,6 @@ J pollClient(rd_kafka_t *rk, J timeout, J UNUSED(maxcnt)) {
     n= rd_kafka_poll(rk, timeout);
     return n;
   }
-  //int maxmsgs= maxcnt && maxcnt ? maxcnt : wi;
-  // while((n < maxmsgs) && (msg= rd_kafka_consumer_poll(rk, timeout))) { 
   while((msg= rd_kafka_consumer_poll(rk, timeout))) {
     r= decodeMsg(msg);
     printr0(k(0, ".kfk.consumecb", r, KNL));

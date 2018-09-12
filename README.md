@@ -45,13 +45,16 @@ sudo apt-get install gcc-multilib
 ```
 ### Librdkafka
 #### Package installation
+_macOS_
 ```
-
-#macOS
 brew install librdkafka
-#Ubuntu/Debian(unstable)
+```
+_Ubuntu/Debian(unstable)_
+```
 sudo apt-get install librdkafka-dev
-#RHEL/CentOS
+```
+_RHEL/CentOS_
+```
 sudo yum install librdkafka-devel
 ```
 #### Building from source 
@@ -65,21 +68,14 @@ make clean  # to make sure nothing left from previous build or if upgrading/rebu
 # On macOS with OpenSSL you might need to set `export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2k` before proceeding
 
 
-// 32 bit
+# 32 bit
 ./configure --prefix=$HOME --disable-sasl --disable-lz4 --disable-ssl --mbits=32 
-// 64 bits
+# 64 bits
 ./configure --prefix=$HOME --disable-sasl --disable-lz4 --disable-ssl --mbits=64
 
 make
 make install
 ```
-### Windows (to be added)
-Using Nuget redistributable(https://www.nuget.org/packages/librdkafka.redist)
-
-```
-nuget install librdkafka.redist
-```
-
 
 ### Step 2
 
