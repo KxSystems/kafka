@@ -18,24 +18,8 @@ Build and install the latest version of `librdkafka`. The minimum required versi
 ## Step 1
 Build and install latest version of librdkafka. Minimum required version is v0.11.0.
 ### Requirements
-As noted on librdkafka page https://github.com/edenhill/librdkafka#requirements
-  The GNU toolchain
-  GNU make
-    pthreads
-  zlib (optional, for gzip compression support)
-  libssl-dev (optional, for SSL and SASL SCRAM support)
-  libsasl2-dev (optional, for SASL GSSAPI support)
+Follow requirements for librdkafka compilation noted on librdkafka page https://github.com/edenhill/librdkafka#requirements
 
-
-As noted on the [librdkafka page](https://github.com/edenhill/librdkafka#requirements)
-```
-The GNU toolchain
-GNU make
-pthreads
-zlib (optional, for gzip compression support)
-libssl-dev (optional, for SSL and SASL SCRAM support)
-libsasl2-dev (optional, for SASL GSSAPI support)
-```
 To build 32-bit versions on 64-bit OS you need to have 32-bit versions of libraries and a toolchain.
 ```
 #CentOS/RHEL
