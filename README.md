@@ -29,13 +29,16 @@ sudo apt-get install gcc-multilib
 ```
 ### Librdkafka
 #### Package installation
+_macOS_
 ```
-
-#macOS
 brew install librdkafka
-#Ubuntu/Debian(unstable)
+```
+_Ubuntu/Debian(unstable)_
+```
 sudo apt-get install librdkafka-dev
-#RHEL/CentOS
+```
+_RHEL/CentOS_
+```
 sudo yum install librdkafka-devel
 ```
 #### Building from source 
@@ -49,21 +52,14 @@ make clean  # to make sure nothing left from previous build or if upgrading/rebu
 # On macOS with OpenSSL you might need to set `export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2k` before proceeding
 
 
-// 32 bit
+# 32 bit
 ./configure --prefix=$HOME --disable-sasl --disable-lz4 --disable-ssl --mbits=32 
-// 64 bits
+# 64 bits
 ./configure --prefix=$HOME --disable-sasl --disable-lz4 --disable-ssl --mbits=64
 
 make
 make install
 ```
-### Windows (to be added)
-Using Nuget redistributable(https://www.nuget.org/packages/librdkafka.redist)
-
-```
-nuget install librdkafka.redist
-```
-
 
 ### Step 2
 
@@ -83,4 +79,12 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/lib
 
 See [code.kx.com/q/interfaces/kafka](http://code.kx.com/q/interfaces/kafka/).
 
+
+https://docs.confluent.io/2.0.0/clients/consumer.html#synchronous-commits
+
+To have launchd start kafka now and restart at login:
+  brew services start kafka
+Or, if you don't want/need a background service you can just run:
+  zookeeper-server-start /usr/local/etc/kafka/zookeeper.properties & kafka-server-start /usr/local/etc/kafka/server.properties
+  
 
