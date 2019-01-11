@@ -84,7 +84,7 @@ rd_kafka_t *clientIndex(K x) {
                              kS(clients)[xi] :
                              (S) krr("unknown client"));
 }
-I indexClient(rd_kafka_t *rk){
+I indexClient(const rd_kafka_t *rk){
   int i;
   for (i = 0; i < clients->n; ++i){
     if(rk==(rd_kafka_t *)kS(clients)[i]) return i;
@@ -119,9 +119,9 @@ static V offsetcb(rd_kafka_t *rk, rd_kafka_resp_err_t err,rd_kafka_topic_partiti
   printr0(k(0, (S) ".kfk.offsetcb", ki(indexClient(rk)), kp((S)rd_kafka_err2str(err)), decodeParList(offsets),KNL));
 }
 
-K decodeMsg(const rd_kafka_message_t *msg);
+K decodeMsg(const rd_kafka_t*rk,const rd_kafka_message_t *msg);
 static V drcb(rd_kafka_t*rk,const rd_kafka_message_t *msg,V*UNUSED(opaque)) {
-  printr0(k(0,(S)".kfk.drcb",ki(indexClient(rk)), decodeMsg(msg),KNL));
+  printr0(k(0,(S)".kfk.drcb",ki(indexClient(rk)), decodeMsg(rk,msg),KNL));
 }
 // client api
 // x - config dict sym->sym
@@ -463,7 +463,7 @@ K kfkSubscription(K cid) {
 }
 static J pu(J u){return 1000000LL*(u-10957LL*86400000LL);}
 // `mtype`topic`partition`data`key`offset`opaque
-K decodeMsg(const rd_kafka_message_t *msg) {
+K decodeMsg(const rd_kafka_t* rk, const rd_kafka_message_t *msg) {
   K x= ktn(KG, msg->len), y=ktn(KG, msg->key_len), z;
   J ts= rd_kafka_message_timestamp(msg, NULL);
   memmove(kG(x), msg->payload, msg->len);
@@ -472,6 +472,7 @@ K decodeMsg(const rd_kafka_message_t *msg) {
   return xd0(7, "mtype",
              msg->err ? ks((S) rd_kafka_err2name(msg->err)) : r1(S0), "topic",
              msg->rkt ? ks((S) rd_kafka_topic_name(msg->rkt)) : r1(S0),
+             "client", ki(indexClient(rk)),
              "partition", ki(msg->partition), "offset", kj(msg->offset),
              "msgtime", z, "data", x, "key", y, (S) 0);
 }
@@ -487,7 +488,7 @@ J pollClient(rd_kafka_t *rk, J timeout, J UNUSED(maxcnt)) {
     return n;
   }
   while((msg= rd_kafka_consumer_poll(rk, timeout))) {
-    r= decodeMsg(msg);
+    r= decodeMsg(rk,msg);
     printr0(k(0, ".kfk.consumecb", r, KNL));
     rd_kafka_message_destroy(msg);
     n++;
