@@ -323,8 +323,8 @@ rd_kafka_topic_partition_list_t* plistoffsetdict(S topic,K partitions){
   p=kI(dk);o=kJ(dv);
   
   rd_kafka_topic_partition_list_t *t_partition=
-      rd_kafka_topic_partition_list_new(partitions->n);
-  for(i= 0; i < partitions->n; ++i){
+      rd_kafka_topic_partition_list_new(dk->n);
+  for(i= 0; i < dk->n; ++i){
     rd_kafka_topic_partition_list_add(t_partition, topic, p[i]);
     rd_kafka_topic_partition_list_set_offset(t_partition, topic, p[i],o[i]);
   }
