@@ -3,7 +3,7 @@
 
 
 
-`kfk` is a thin wrapper for kdb+ around [librdkafka](https://github.com/edenhill/librdkafka) C API for [Kafka](https://kafka.apache.org/). 
+`kfk` is a thin wrapper for kdb+ around [`librdkafka`](https://github.com/edenhill/librdkafka) C API for [Kafka](https://kafka.apache.org/). 
 It is part of the [_Fusion for kdb+_](http://code.kx.com/v2/interfaces/fusion/) interface collection.
 
 Please [report issues](https://github.com/KxSystems/kafka/issues) in this repository.
@@ -39,9 +39,9 @@ sudo yum install librdkafka-devel
 
 ### Build from source 
 
-Follow requirements for librdkafka compilation noted on librdkafka page https://github.com/edenhill/librdkafka#requirements
+Follow [requirements for `librdkafka` compilation](https://github.com/edenhill/librdkafka#requirements).
 
-To build 32-bit versions on 64-bit OS you need to have 32-bit versions of libraries and a toolchain.
+To build 32-bit versions on 64-bit OS you need 32-bit versions of libraries and a toolchain.
 
 ```bash
 #CentOS/RHEL
@@ -73,7 +73,7 @@ make install
 
 ## Step 2
 
-Compile and install a shared object (it will be installed to $QHOME/<arch>). Make sure you have QHOME environment set.
+Compile and install a shared object (it will be installed to `$QHOME/<arch>`). Make sure you have `QHOME` set in your environment.
 
 ```bash
 // in kfk source folder
@@ -95,7 +95,7 @@ See [code.kx.com/v2/interfaces/kafka](http://code.kx.com/v2/interfaces/kafka/).
 
 https://docs.confluent.io/2.0.0/clients/consumer.html#synchronous-commits
 
-To have launchd start kafka now and restart at login:
+To have `launchd` start kafka now, and restart at login:
 
 ```bash
 brew services start kafka
