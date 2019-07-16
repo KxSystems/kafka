@@ -161,7 +161,7 @@ static K loadTopConf(rd_kafka_topic_conf_t *conf, K x) {
 
 // x:client type p - producer, c - consumer
 // y:config dict sym->sym
-__declspec(dllexport) K2(kfkClient){
+EXP K2(kfkClient){
   rd_kafka_type_t type;
   rd_kafka_t *rk;
   rd_kafka_conf_t *conf;
