@@ -31,4 +31,4 @@ static:
 install:
 	install $(TGT) $(Q)
 clean:
-	rm -rf libkfk.so 
+	rm -f libkfk.so 
