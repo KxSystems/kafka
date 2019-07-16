@@ -1,10 +1,3 @@
-#ifndef WIN32
-#include <pthread.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
-#endif
-
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -12,6 +5,24 @@
 #include <librdkafka/rdkafka.h>
 #include "socketpair.c"
 #include "k.h"
+#define K3(f) K f(K x,K y,K z)
+#define K4(f) K f(K x,K y,K z,K r)
+
+#ifndef _WIN32
+#include <pthread.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
+#define EXP
+#define SOCK_ERROR -1
+#else
+#include <Winsock2.h>
+#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "librdkafka.lib")
+#define EXP __declspec(dllexport)
+#define __attribute__(x)
+#define SOCK_ERROR INVALID_SOCKET
+#endif
 
 typedef unsigned int UI;
 #define KR -128
@@ -150,7 +161,7 @@ static K loadTopConf(rd_kafka_topic_conf_t *conf, K x) {
 
 // x:client type p - producer, c - consumer
 // y:config dict sym->sym
-K kfkClient(K x, K y) {
+__declspec(dllexport) K2(kfkClient){
   rd_kafka_type_t type;
   rd_kafka_t *rk;
   rd_kafka_conf_t *conf;
@@ -185,64 +196,64 @@ K kfkClient(K x, K y) {
   return ki(clients->n - 1);
 }
 
-K kfkClientDel(K cid) {
+EXP K1(kfkClientDel) {
   rd_kafka_t *rk;
-  if(!checkType("i", cid))
+  if(!checkType("i", x))
     return KNL;
-  if(!(rk= clientIndex(cid)))
+  if(!(rk= clientIndex(x)))
     return KNL;
   rd_kafka_consumer_close(rk);
   rd_kafka_destroy(rk);
-  kS(clients)[cid->i]= (S) 0;
+  kS(clients)[x->i]= (S) 0;
   return KNL;
 }
-K kfkClientName(K cid) {
+EXP K1(kfkClientName){
   rd_kafka_t *rk;
-  if(!checkType("i", cid))
+  if(!checkType("i", x))
     return KNL;
-  if(!(rk= clientIndex(cid)))
+  if(!(rk= clientIndex(x)))
     return KNL;
   return ks((S) rd_kafka_name(rk));
 }
-K kfkClientMemberId(K cid) {
+EXP K1(kfkClientMemberId){
   rd_kafka_t *rk;
-  if(!checkType("i", cid))
+  if(!checkType("i", x))
     return KNL;
-  if(!(rk= clientIndex(cid)))
+  if(!(rk= clientIndex(x)))
     return KNL;
   return ks(rd_kafka_memberid(rk));
 }
 
 // topic api
-K kfkTopic(K cid, K topic, K tconf) {
+EXP K3(kfkTopic){
   rd_kafka_topic_t *rkt;
   rd_kafka_t *rk;
   rd_kafka_topic_conf_t *rd_topic_conf;
-  if(!checkType("is!", cid, topic, tconf))
+  if(!checkType("is!",x ,y ,z))
     return KNL;
-  if(!(rk= clientIndex(cid)))
+  if(!(rk= clientIndex(x)))
     return KNL;
   rd_topic_conf= rd_kafka_topic_conf_new();
-  loadTopConf(rd_topic_conf, tconf);
-  rkt= rd_kafka_topic_new(rk, topic->s, rd_topic_conf);
+  loadTopConf(rd_topic_conf, z);
+  rkt= rd_kafka_topic_new(rk, y->s, rd_topic_conf);
   js(&topics, (S) rkt);
   return ki(topics->n - 1);
 }
-K kfkTopicDel(K tid) {
+EXP K1(kfkTopicDel){
   rd_kafka_topic_t *rkt;
-  if(!checkType("i", tid))
+  if(!checkType("i", x))
     return KNL;
-  if(!(rkt= topicIndex(tid)))
+  if(!(rkt= topicIndex(x)))
     return KNL;
   rd_kafka_topic_destroy(rkt);
-  kS(topics)[tid->i]= (S) 0;
+  kS(topics)[x->i]= (S) 0;
   return KNL;
 }
-K kfkTopicName(K tid) {
+EXP K1(kfkTopicName){
   rd_kafka_topic_t *rkt;
-  if(!checkType("i", tid))
+  if(!checkType("i", x))
     return KNL;
-  if(!(rkt= topicIndex(tid)))
+  if(!(rkt= topicIndex(x)))
     return KNL;
   return ks((S) rd_kafka_topic_name(rkt));
 }
@@ -290,13 +301,13 @@ K decodeMeta(const rd_kafka_metadata_t *meta) {
             ks(meta->orig_broker_name), "brokers", x, "topics", y);
 }
 
-K kfkMetadata(K cid) {
+EXP K1(kfkMetadata){
   const struct rd_kafka_metadata *meta;
   K r;
   rd_kafka_t *rk;
-  if(!checkType("i", cid))
+  if(!checkType("i", x))
     return KNL;
-  if(!(rk= clientIndex(cid)))
+  if(!(rk= clientIndex(x)))
     return KNL;
   rd_kafka_resp_err_t err= rd_kafka_metadata(rk, 1, NULL, &meta, 5000);
   if(KFK_OK != err)
@@ -337,36 +348,36 @@ rd_kafka_topic_partition_list_t* plistoffsetdict(S topic,K partitions){
 }
 
 // producer api
-K kfkPub(K tid, K partid, K data, K key) {
+EXP K4(kfkPub){
   rd_kafka_topic_t *rkt;
-  if(!checkType("ii[CG][CG]", tid, partid, data, key))
+  if(!checkType("ii[CG][CG]", x, x, z, r))
     return KNL;
-  if(!(rkt= topicIndex(tid)))
+  if(!(rkt= topicIndex(x)))
     return KNL;
-  if(rd_kafka_produce(rkt, partid->i, RD_KAFKA_MSG_F_COPY, kG(data), data->n,
-                      kG(key), key->n, NULL))
+  if(rd_kafka_produce(rkt, y->i, RD_KAFKA_MSG_F_COPY, kG(z), z->n,
+                      kG(r), r->n, NULL))
     return krr((S) rd_kafka_err2str(rd_kafka_last_error()));
   return KNL;
 }
 
 // consume api
-K kfkSub(K cid, K topic, K partitions) {
+EXP K3(kfkSub){
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
   J i;
   I*p;
-  if(!checkType("is[I!]", cid, topic, partitions))
+  if(!checkType("is[I!]", x, y, z))
     return KNL;
-  if(!(rk= clientIndex(cid)))
+  if(!(rk= clientIndex(x)))
     return KNL;
-  if(partitions->t == XD){
-    t_partition = plistoffsetdict(topic->s,partitions);
+  if(z->t == XD){
+    t_partition = plistoffsetdict(y->s,z);
   }else{
     t_partition=
-      rd_kafka_topic_partition_list_new(partitions->n);
-    for(i= 0; i < partitions->n; ++i){
-      p=kI(partitions);
-      rd_kafka_topic_partition_list_add(t_partition, topic->s, p[i]);
+      rd_kafka_topic_partition_list_new(z->n);
+    for(i= 0; i < z->n; ++i){
+      p=kI(z);
+      rd_kafka_topic_partition_list_add(t_partition, y->s, p[i]);
     }
   }
   if(KFK_OK != (err= rd_kafka_subscribe(rk, t_partition)))
@@ -374,12 +385,12 @@ K kfkSub(K cid, K topic, K partitions) {
   return knk(0);
 }
 
-K kfkUnsub(K cid) {
+EXP K1(kfkUnsub) {
   rd_kafka_t *rk;
   rd_kafka_resp_err_t err;
-  if(!checkType("i", cid))
+  if(!checkType("i", x))
     return KNL;
-  if(!(rk= clientIndex(cid)))
+  if(!(rk= clientIndex(x)))
     return KNL;
   err= rd_kafka_unsubscribe(rk);
   if(KFK_OK != err)
@@ -388,15 +399,15 @@ K kfkUnsub(K cid) {
 }
 
 // https://github.com/edenhill/librdkafka/wiki/Manually-setting-the-consumer-start-offset
-K kfkAssignOffsets(K cid,K topic,K offsets){
+EXP K3(kfkAssignOffsets){
   rd_kafka_t *rk;
   rd_kafka_topic_partition_list_t *partitions;
   rd_kafka_resp_err_t err;
-  if(!checkType("is!", cid,topic,offsets))
+  if(!checkType("is!", x,y,z))
     return KNL;
-  if(!(rk= clientIndex(cid)))
+  if(!(rk= clientIndex(x)))
     return KNL;
-  partitions = plistoffsetdict(topic->s,offsets);
+  partitions = plistoffsetdict(y->s,z);
   err=rd_kafka_assign(rk, partitions);
   if(KFK_OK != err)
     return krr((S) rd_kafka_err2str(err));
@@ -404,29 +415,29 @@ K kfkAssignOffsets(K cid,K topic,K offsets){
   return knk(0);
 }
 
-K kfkCommitOffsets(K cid,K topic,K offsets,K async){
+EXP K4(kfkCommitOffsets){
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
-  if(!checkType("is!b", cid, topic, offsets, async))
+  if(!checkType("is!b", x, y, z, r))
     return KNL;
-  if(!(rk= clientIndex(cid)))
+  if(!(rk= clientIndex(x)))
     return KNL;
-  t_partition = plistoffsetdict(topic->s,offsets);
-  if(KFK_OK != (err= rd_kafka_commit(rk, t_partition,async->g)))
+  t_partition = plistoffsetdict(y->s,z);
+  if(KFK_OK != (err= rd_kafka_commit(rk, t_partition,r->g)))
     return krr((S) rd_kafka_err2str(err));
   rd_kafka_topic_partition_list_destroy(t_partition);
   return knk(0);
 }
 
-K kfkCommittedOffsets(K cid,K topic,K offsets){
+EXP K3(kfkCommittedOffsets){
   K r;
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
-  if(!checkType("is!", cid, topic, offsets))
+  if(!checkType("is!", x, y, z))
     return KNL;
-  if(!(rk= clientIndex(cid)))
+  if(!(rk= clientIndex(x)))
     return KNL;
-  t_partition = plistoffsetdict(topic->s,offsets);
+  t_partition = plistoffsetdict(y->s,z);
   if(KFK_OK != (err= rd_kafka_committed(rk, t_partition,5000)))
     return krr((S) rd_kafka_err2str(err));
   r=decodeParList(t_partition);
@@ -434,15 +445,15 @@ K kfkCommittedOffsets(K cid,K topic,K offsets){
   return r;
 }
 
-K kfkPositionOffsets(K cid,K topic,K offsets){
+EXP K3(kfkPositionOffsets){
   K r;
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
-  if(!checkType("is!", cid, topic, offsets))
+  if(!checkType("is!", x, y, z))
     return KNL;
-  if(!(rk= clientIndex(cid)))
+  if(!(rk= clientIndex(x)))
     return KNL;
-  t_partition = plistoffsetdict(topic->s,offsets);
+  t_partition = plistoffsetdict(y->s,z);
   if(KFK_OK != (err= rd_kafka_position(rk, t_partition)))
     return krr((S) rd_kafka_err2str(err));
   r=decodeParList(t_partition);
@@ -450,21 +461,21 @@ K kfkPositionOffsets(K cid,K topic,K offsets){
   return r;
 }
 
-K kfkSubscription(K cid) {
-  K r;
-  rd_kafka_topic_partition_list_t *t;
-  rd_kafka_t *rk;
-  rd_kafka_resp_err_t err;
-  if(!checkType("i", cid))
-    return KNL;
-  if(!(rk= clientIndex(cid)))
-    return KNL;
-  err= rd_kafka_subscription(rk, &t);
-  if(KFK_OK != err)
-    return krr((S) rd_kafka_err2str(err));
-  r= decodeParList(t);
-  rd_kafka_topic_partition_list_destroy(t);
-  return r;
+EXP K1(kfkSubscription){
+	K r;
+	rd_kafka_topic_partition_list_t *t;
+	rd_kafka_t *rk;
+	rd_kafka_resp_err_t err;
+	if (!checkType("i", x))
+		return KNL;
+	if (!(rk = clientIndex(x)))
+		return KNL;
+	err = rd_kafka_subscription(rk, &t);
+	if (KFK_OK != err)
+		return krr((S)rd_kafka_err2str(err));
+	r = decodeParList(t);
+	rd_kafka_topic_partition_list_destroy(t);
+	return r;
 }
 static J pu(J u){return 1000000LL*(u-10957LL*86400000LL);}
 // `mtype`topic`partition`data`key`offset`opaque
@@ -501,26 +512,27 @@ J pollClient(rd_kafka_t *rk, J timeout, J UNUSED(maxcnt)) {
   return n;
 }
 
+
 // for manual poll of the feed.
-K kfkPoll(K cid, K timeout, K maxcnt) {
+EXP K3(kfkPoll) {
   J n= 0;
   rd_kafka_t *rk;
-  if(!checkType("ijj", cid, timeout, maxcnt))
+  if(!checkType("ijj", x, y, z))
     return KNL;
-  if(!(rk= clientIndex(cid)))
+  if(!(rk= clientIndex(x)))
     return KNL;
-  n=pollClient(rk,timeout->j,maxcnt->j);
+  n=pollClient(rk,y->j,z->j);
   return kj(n);
 }
 // other
-K kfkOutQLen(K cid) {
+EXP K1(kfkOutQLen){
   rd_kafka_t *rk;
-  if(!(rk= clientIndex(cid)))
+  if(!(rk= clientIndex(x)))
     return KNL;
   return ki(rd_kafka_outq_len(rk));
 }
-K kfkVersion(K UNUSED(x)) { return ki(rd_kafka_version()); }
-K kfkExportErr(K UNUSED(dummy)) {
+EXP K kfkVersion(K UNUSED(x)) { return ki(rd_kafka_version()); }
+EXP K kfkExportErr(K UNUSED(dummy)) {
   const struct rd_kafka_err_desc *errdescs;
   size_t i,n;
   K x= ktn(0, 0), y= ktn(0, 0), z= ktn(0, 0);
@@ -534,7 +546,7 @@ K kfkExportErr(K UNUSED(dummy)) {
   return xT(xd("errid", x, "code", y, "desc", z));
 }
 // shared lib loading
-K kfkCallback(I d) {
+EXP K kfkCallback(I d) {
   char buf[1024];J i,n,consumed=0;
   /*MSG_DONTWAIT - set in sd1(-h,...) */
   while(0 < (n=recv(d, buf, sizeof(buf), 0)))
@@ -547,7 +559,7 @@ K kfkCallback(I d) {
 }
 
 __attribute__((constructor)) V __attach(V) {
-  if(dumb_socketpair(spair, 1) == -1){
+  if(dumb_socketpair(spair, 1) == SOCK_ERROR){
     fprintf(stderr, "Init failed. socketpair: %s\n", strerror(errno));
     return;
   }

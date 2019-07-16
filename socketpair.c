@@ -25,7 +25,7 @@
 
 #include <string.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 # include <winsock2.h>
 # include <ws2tcpip.h>
 # include <windows.h>
@@ -35,7 +35,7 @@
 # include <sys/socket.h>
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 
 /* dumb_socketpair:
  *   If make_overlapped is nonzero, both sockets created will be usable for
