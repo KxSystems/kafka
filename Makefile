@@ -21,13 +21,14 @@ else ifeq ($(shell uname),Darwin)
  OSXOPTS = -undefined dynamic_lookup  -mmacosx-version-min=10.12
 endif
 
-QLIBDIR  = $(OSFLAG)$(MS)
+QARCH = $(OSFLAG)$(MS)
+Q     = $(QHOME)/$(QARCH) 
 
 all:
 	$(CC) kfk.c -m$(MS) $(OPTS) $(LDOPTS_DYNAMIC) $(LD_COMMON) -I$(KFK_INCLUDE) $(LNK) -o $(TGT) $(OSXOPTS)
 static:
 	$(CC) kfk.c -m$(MS) $(OPTS) $(LDOPTS_STATIC)  $(LD_COMMON) -I$(KFK_INCLUDE) $(LNK) -o $(TGT) $(OSXOPTS) 
 install:
-	install $(TGT) $(QHOME)/$(QLIBDIR)
+	install $(TGT) $(Q)
 clean:
-	rm libkfk.so 
+	rm -rf libkfk.so 
