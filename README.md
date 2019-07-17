@@ -78,7 +78,10 @@ Compile and install a shared object (it will be installed to `$QHOME/<arch>`). M
 ```bash
 // in kfk source folder
 make
+// move installed `.so` to `$QHOME/<arch>`
 make install
+// remove `.so` from kfk source folder
+make clean
 ```
 
 Note: If compiling dynamically linked `libkfk.so` make sure you have `librdkafka.so.1` in your `LD_LIBRARY_PATH`.
