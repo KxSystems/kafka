@@ -18,7 +18,7 @@ set include_path="C:/Users/jkandola/librdkafka.redist.1.0.0/build/native/include
 ::keep original PATH, PATH may get too long otherwise
 set OP=%PATH%
 call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
-cl /LD /DKXVER=3 /I%include_path% /Felibkfk.dll /O2 kfk.c q.lib
+cl /LD /DKXVER=3 /I%include_path% /Felibkfk.dll /O2 ../kfk.c q.lib
 set PATH=%OP%
 
 exit /b 0
