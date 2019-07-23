@@ -13,7 +13,8 @@ IF /I "%AREYOUSURE%" NEQ "Y" GOTO END
 curl -fsSL -o k.h          https://github.com/KxSystems/kdb/raw/master/c/c/k.h                   || goto :error
 curl -fsSL -o q.lib        https://github.com/KxSystems/kdb/raw/master/w64/q.lib                 || goto :error
 
-set include_path="C:/Users/jkandola/librdkafka.redist.1.0.0/build/native/include/"
+set user_path="C:/Users/jkandola"
+set include_path="%user_path%/librdkafka.redist.1.0.0/build/native/include/"
 
 ::keep original PATH, PATH may get too long otherwise
 set OP=%PATH%
