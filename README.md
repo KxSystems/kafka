@@ -73,7 +73,13 @@ make install
 
 ## Step 2
 
-Compile and install a shared object (it will be installed to `$QHOME/<arch>`). Make sure you have `QHOME` set in your environment.
+Compile and install a shared object. This should then be moved to `QHOME/<arch>`. Compile instructions differ between windows and linux/mac builds as follows
+
+### Linux/MacOs
+
+1. Make sure you have `QHOME` set as an environment variable.
+
+2. Run the following set of commands to set up the system as outlined
 
 ```bash
 // in kfk source folder
@@ -90,6 +96,16 @@ Note: If compiling dynamically linked `libkfk.so` make sure you have `librdkafka
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/lib
 ```
 
+### Windows
+
+At present the windows compile of the shared object file for the kafka interface uses `Visual Studio 2017` to complete compile. The following steps must be followed to complete this
+
+1. Install nuget for Windows: https:/nuget.com/downloads
+
+2. Install the redistributed version of librdkafka which is suitable for use with windows
+
+	>nuget install librdkafka.redist
+1. Download and follow the instructions outlined for [librdkafka.redist.1.0.0]() which is the windows version of librdkafka
 
 ## Documentation
 
