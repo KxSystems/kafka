@@ -11,7 +11,7 @@ echo.
 :PROMPT
 SET /P AREYOUSURE=Are you happy this has all been completed (Y/[N])?
 IF /I "%AREYOUSURE%" NEQ "Y" GOTO END
-
+echo.
 :: Standalone build
 curl -fsSL -o k.h          https://github.com/KxSystems/kdb/raw/master/c/c/k.h                   || goto :error
 curl -fsSL -o q.lib        https://github.com/KxSystems/kdb/raw/master/w64/q.lib                 || goto :error
