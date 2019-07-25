@@ -1,8 +1,5 @@
 # `kfk` – Kafka for kdb+
 
-
-
-
 `kfk` is a thin wrapper for kdb+ around [`librdkafka`](https://github.com/edenhill/librdkafka) C API for [Kafka](https://kafka.apache.org/). 
 It is part of the [_Fusion for kdb+_](http://code.kx.com/v2/interfaces/fusion/) interface collection.
 
@@ -105,7 +102,24 @@ At present the windows compile of the shared object file for the kafka interface
 2. Install the redistributed version of librdkafka which is suitable for use with windows
 
 	>nuget install librdkafka.redist
-1. Download and follow the instructions outlined for [librdkafka.redist.1.0.0]() which is the windows version of librdkafka
+
+3. Ensure that you have Windows Visual Studio 2017 installed.
+
+3. Place the installed librdkafka into an appropriate location (suggestions `%HOME` or `%QHOME%)
+
+4. Update LIBPATH environment variable to include path to rdkafka.h for appropriate Windows architecture
+
+5. Clone the kafka interface from the KxSystems github
+
+	>git clone https://github.com/kxsystems/kafka
+
+6. Move to the `kafka/build/` folder within the github clone.
+7. Run
+
+	>call "build.bat"
+
+8. Follow the prompts outlined by the batch install
+9. Move the created `.dll` to `%QHOME%/<arch>` 
 
 ## Documentation
 
