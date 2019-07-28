@@ -1,8 +1,5 @@
 # `kfk` – Kafka for kdb+
 
-
-
-
 `kfk` is a thin wrapper for kdb+ around [`librdkafka`](https://github.com/edenhill/librdkafka) C API for [Kafka](https://kafka.apache.org/). 
 It is part of the [_Fusion for kdb+_](http://code.kx.com/v2/interfaces/fusion/) interface collection.
 
@@ -73,7 +70,13 @@ make install
 
 ## Step 2
 
-Compile and install a shared object (it will be installed to `$QHOME/<arch>`). Make sure you have `QHOME` set in your environment.
+Compile and install a shared object. This should then be moved to `QHOME/<arch>`. Compile instructions differ between windows and linux/mac builds as follows
+
+### Linux/MacOs
+
+1. Make sure you have `QHOME` set as an environment variable.
+
+2. Run the following set of commands to set up the system as outlined
 
 ```bash
 // in kfk source folder
@@ -90,6 +93,33 @@ Note: If compiling dynamically linked `libkfk.so` make sure you have `librdkafka
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/lib
 ```
 
+### Windows
+
+At present the windows compile of the shared object file for the kafka interface uses `Visual Studio 2017` to complete compile. The following steps must be followed to complete this
+
+1. Install nuget for Windows: https:/nuget.com/downloads
+
+2. Install the redistributed version of librdkafka which is suitable for use with windows
+
+	>nuget install librdkafka.redist
+
+3. Ensure that you have Windows Visual Studio 2017 installed.
+
+3. Place the installed librdkafka into an appropriate location (suggestions `%HOME` or `%QHOME%)
+
+4. Update LIBPATH environment variable to include path to rdkafka.h for appropriate Windows architecture
+
+5. Clone the kafka interface from the KxSystems github
+
+	>git clone https://github.com/kxsystems/kafka
+
+6. Move to the `kafka/build/` folder within the github clone.
+7. Run
+
+	>call "build.bat"
+
+8. Follow the prompts outlined by the batch install
+9. Move the created `.dll` to `%QHOME%/<arch>` 
 
 ## Documentation
 
