@@ -2,26 +2,21 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdlib.h>
 #include <librdkafka/rdkafka.h>
 #include "socketpair.c"
 #include "k.h"
 #define K3(f) K f(K x,K y,K z)
 #define K4(f) K f(K x,K y,K z,K r)
 
-#ifndef _WIN32
-#include <pthread.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
-#define EXP
-#define SOCK_ERROR -1
-#else
-#include <Winsock2.h>
-#pragma comment(lib, "Ws2_32.lib")
+#ifdef _WIN32
+#pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "librdkafka.lib")
 #define EXP __declspec(dllexport)
-#define __attribute__(x)
-#define SOCK_ERROR INVALID_SOCKET
+#else
+#include <unistd.h>
+#define EXP
+#define INVALID_SOCKET -1
 #endif
 
 typedef unsigned int UI;
@@ -34,7 +29,6 @@ typedef unsigned int UI;
 #  define UNUSED(x) x
 #endif
 // create dictionary q dictionary from list of items (s1;v1;s2;v2;...)
-K xd0(I n, ...) __attribute__((sentinel));
 K xd0(I n, ...) {
   va_list a;
   S s;
@@ -47,9 +41,10 @@ K xd0(I n, ...) {
   return xD(y, z);
 }
 #define xd(...) xd0(0, __VA_ARGS__, (S) 0)
-static K clients, topics;
-static I spair[2];
 static K S0;
+static K clients, topics;
+static I spair[2], validsock;
+static I init();
 K decodeParList(rd_kafka_topic_partition_list_t *t);
 // check type
 // letter as usual, + for table, ! for dict
@@ -162,6 +157,8 @@ static K loadTopConf(rd_kafka_topic_conf_t *conf, K x) {
 // x:client type p - producer, c - consumer
 // y:config dict sym->sym
 EXP K2(kfkClient){
+  if(-1==init())
+    return (K)0;
   rd_kafka_type_t type;
   rd_kafka_t *rk;
   rd_kafka_conf_t *conf;
@@ -329,7 +326,7 @@ K decodeParList(rd_kafka_topic_partition_list_t *t){
   r= ktn(0, t->cnt);
   for(i= 0; i < r->n; ++i)
     kK(r)[i]= decodeTopPar(&t->elems[i]);
-  R r;
+  return r;
 }
 
 rd_kafka_topic_partition_list_t* plistoffsetdict(S topic,K partitions){
@@ -354,8 +351,7 @@ EXP K4(kfkPub){
     return KNL;
   if(!(rkt= topicIndex(x)))
     return KNL;
-  if(rd_kafka_produce(rkt, y->i, RD_KAFKA_MSG_F_COPY, kG(z), z->n,
-                      kG(r), r->n, NULL))
+  if(rd_kafka_produce(rkt, y->i, RD_KAFKA_MSG_F_COPY, kG(z), z->n, kG(r), r->n, NULL))
     return krr((S) rd_kafka_err2str(rd_kafka_last_error()));
   return KNL;
 }
@@ -485,12 +481,11 @@ K decodeMsg(const rd_kafka_t* rk, const rd_kafka_message_t *msg) {
   memmove(kG(x), msg->payload, msg->len);
   memmove(kG(y), msg->key, msg->key_len);
   z= ktj(-KP, ts > 0 ? pu(ts) : nj);
-  return xd0(7, "mtype",
-             msg->err ? ks((S) rd_kafka_err2name(msg->err)) : r1(S0), "topic",
-             msg->rkt ? ks((S) rd_kafka_topic_name(msg->rkt)) : r1(S0),
-             "client", ki(indexClient(rk)),
-             "partition", ki(msg->partition), "offset", kj(msg->offset),
-             "msgtime", z, "data", x, "key", y, (S) 0);
+  return xd0(8,
+    "mtype", msg->err ? ks((S) rd_kafka_err2name(msg->err)) : r1(S0), 
+    "topic", msg->rkt ? ks((S) rd_kafka_topic_name(msg->rkt)) : r1(S0),
+    "client", ki(indexClient(rk)), "partition", ki(msg->partition), "offset", kj(msg->offset),
+    "msgtime", z, "data", x, "key", y, (S) 0);
 }
 
 J pollClient(rd_kafka_t *rk, J timeout, J UNUSED(maxcnt)) {
@@ -558,18 +553,7 @@ EXP K kfkCallback(I d) {
   return KNL;
 }
 
-__attribute__((constructor)) V __attach(V) {
-  if(dumb_socketpair(spair, 1) == SOCK_ERROR){
-    fprintf(stderr, "Init failed. socketpair: %s\n", strerror(errno));
-    return;
-  }
-  clients= ktn(KS, 0);
-  topics= ktn(KS, 0);
-  S0= ks("");
-  printr0(sd1(-spair[0], &kfkCallback));
-}
-
-__attribute__((destructor)) V __detach(V) {
+static V detach(V) {
   I sp,i;
   if(topics) {
     for(i= 0; i < topics->n; i++)
@@ -582,11 +566,41 @@ __attribute__((destructor)) V __detach(V) {
     rd_kafka_wait_destroyed(1000); /* wait for cleanup*/
     r0(clients);
   }
-  sp= spair[0];
+  if(!(sp=spair[0])){
+    sd0(sp);
+    close(sp);
+  }
+  if(!(sp=spair[1])){
+    close(sp);
+  }
   spair[0]= 0;
-  sd0(sp);
-  close(sp);
-  sp= spair[1];
   spair[1]= 0;
-  close(sp);
+}
+
+static I init() {
+  if(!clients){
+    clients=ktn(KS,0);
+  }
+  if(!topics){
+    topics=ktn(KS,0);
+  }
+  if(!S0){
+    S0=ks("");
+  }
+  if(validsock)
+    return 0;
+  if(dumb_socketpair(spair, 1) == INVALID_SOCKET){
+    fprintf(stderr, "Init failed, creating socketpair: %s\n", strerror(errno));
+    return -1;
+  }
+  K r=sd1(-spair[0], &kfkCallback);
+  if(r==0){
+    fprintf(stderr, "Init failed, adding callback\n");
+    spair[0]=0;
+    spair[1]=0;
+    return -1;
+  }
+  r0(r);
+  atexit(detach);
+  return 0;
 }
