@@ -10,11 +10,11 @@ echo In particular add the modifications to user_path within this script to poin
 echo.
 :PROMPT
 SET /P AREYOUSURE=Are you happy this has all been completed (Y/[N])?
-IF /I "%AREYOUSURE%" NEQ "Y" GOTO END
+IF  /I "%AREYOUSURE%" NEQ "Y" GOTO END
 echo.
 :: Standalone build
-curl -fsSL -o k.h          https://github.com/KxSystems/kdb/raw/master/c/c/k.h                   || goto :error
-curl -fsSL -o q.lib        https://github.com/KxSystems/kdb/raw/master/w64/q.lib                 || goto :error
+curl -fsSL -o k.h   https://github.com/KxSystems/kdb/raw/master/c/c/k.h      || goto :error
+curl -fsSL -o q.lib https://github.com/KxSystems/kdb/raw/master/w64/q.lib    || goto :error
 
 SET INCLUDE_PATH="%USER_PATH%/librdkafka.redist.1.0.0/build/native/include/"
 

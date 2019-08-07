@@ -19,7 +19,6 @@
 #define INVALID_SOCKET -1
 #endif
 
-typedef unsigned int UI;
 #define KR -128
 #define KNL (K) 0
 #define KFK_OK RD_KAFKA_RESP_ERR_NO_ERROR
@@ -29,7 +28,7 @@ typedef unsigned int UI;
 #  define UNUSED(x) x
 #endif
 // create dictionary q dictionary from list of items (s1;v1;s2;v2;...)
-K xd0(I n, ...) {
+K xd0(I n, ...){
   va_list a;
   S s;
   K x, y= ktn(KS, n), z= ktn(0, n);
@@ -41,13 +40,17 @@ K xd0(I n, ...) {
   return xD(y, z);
 }
 #define xd(...) xd0(0, __VA_ARGS__, (S) 0)
+
+typedef unsigned int UI;
 static K S0;
 static K clients, topics;
 static I spair[2],validinit;
+
 K decodeParList(rd_kafka_topic_partition_list_t *t);
+
 // check type
 // letter as usual, + for table, ! for dict
-static I checkType(const C* tc, ...) {
+static I checkType(const C* tc, ...){
   va_list args;
   K x;
   static C lt[256]= " tvunzdmpscfejihg xb*BX GHIJEFCSPMDZNUVT";
@@ -57,21 +60,22 @@ static I checkType(const C* tc, ...) {
   lt[20 + 98]= '+';
   lt[20 + 99]= '!';
   va_start(args, tc);
-  for(; *tc;) {
+  for(; *tc;){
     match= 0;
     x= va_arg(args, K);
-    if(!x) {
+    if(!x){
       strcpy(b, "incomplete type string ");
       break;
     };
-    if('[' == *tc) {
-      while(*tc && ']' != *tc) {
+    if('[' == *tc){
+      while(*tc && ']' != *tc){
         match= match || lt[20 + xt] == *tc;
         ++tc;
       }
-    } else
+    }
+    else
       match= lt[20 + xt] == *tc;
-    if(!match) {
+    if(!match){
       strcat(strcpy(b, "type:expected "), tc0);
       break;
     };
@@ -84,11 +88,11 @@ static I checkType(const C* tc, ...) {
 }
 
 // use QS
-rd_kafka_t *clientIndex(K x) {
-  return (rd_kafka_t *) ((((UI) xi < clients->n) && kS(clients)[xi]) ?
-                             kS(clients)[xi] :
-                             (S) krr("unknown client"));
+rd_kafka_t *clientIndex(K x){
+  return (rd_kafka_t *) ((((UI) xi < clients->n) && kS(clients)[xi]) ?kS(clients)[xi] :(S) krr("unknown client"));
 }
+
+
 I indexClient(const rd_kafka_t *rk){
   int i;
   for (i = 0; i < clients->n; ++i){
@@ -96,14 +100,14 @@ I indexClient(const rd_kafka_t *rk){
   }
   return ni;
 }
-rd_kafka_topic_t *topicIndex(K x) {
-  return (rd_kafka_topic_t *) ((((UI) xi < topics->n) && kS(topics)[xi]) ?
-                                   kS(topics)[xi] :
-                                   (S) krr("unknown topic"));
+
+rd_kafka_topic_t *topicIndex(K x){
+  return (rd_kafka_topic_t *) ((((UI) xi < topics->n) && kS(topics)[xi]) ?kS(topics)[xi] :(S) krr("unknown topic"));
 }
+
 // print error if any and release K object.
 // should return 0 to indicate mem free to kafka where needed in callback
-static I printr0(K x) {
+static I printr0(K x){
   if(!x)
     return 0;
   if(KR == xt)
@@ -112,9 +116,10 @@ static I printr0(K x) {
   return 0;
 }
 
-static I statscb(rd_kafka_t*UNUSED(rk), S json, size_t json_len, V*UNUSED(opaque)) {
+static I statscb(rd_kafka_t*UNUSED(rk), S json, size_t json_len, V*UNUSED(opaque)){
   return printr0(k(0, (S) ".kfk.statcb", kpn(json, json_len), KNL));
 } // should return 0 to indicate mem free to kafka
+
 static V logcb(const rd_kafka_t *UNUSED(rk), int level, const char *fac,
                const char *buf) {
   printr0(k(0, (S) ".kfk.logcb", ki(level), kp((S) fac), kp((S) buf), KNL));
@@ -125,28 +130,29 @@ static V offsetcb(rd_kafka_t *rk, rd_kafka_resp_err_t err,rd_kafka_topic_partiti
 }
 
 K decodeMsg(const rd_kafka_t*rk,const rd_kafka_message_t *msg);
-static V drcb(rd_kafka_t*rk,const rd_kafka_message_t *msg,V*UNUSED(opaque)) {
+
+static V drcb(rd_kafka_t*rk,const rd_kafka_message_t *msg,V*UNUSED(opaque)){
   printr0(k(0,(S)".kfk.drcb",ki(indexClient(rk)), decodeMsg(rk,msg),KNL));
 }
+
 // client api
 // x - config dict sym->sym
-static K loadConf(rd_kafka_conf_t *conf, K x) {
+static K loadConf(rd_kafka_conf_t *conf, K x){
   char b[512];
   J i;
-  for(i= 0; i < xx->n; ++i) {
+  for(i= 0; i < xx->n; ++i){
     if(RD_KAFKA_CONF_OK !=
-       rd_kafka_conf_set(conf, kS(xx)[i], kS(xy)[i], b, sizeof(b))) {
+       rd_kafka_conf_set(conf, kS(xx)[i], kS(xy)[i], b, sizeof(b))){
       return krr((S) b);
     }
   }
   return knk(0);
 }
-static K loadTopConf(rd_kafka_topic_conf_t *conf, K x) {
+static K loadTopConf(rd_kafka_topic_conf_t *conf, K x){
   char b[512];
   J i;
-  for(i= 0; i < xx->n; ++i) {
-    if(RD_KAFKA_CONF_OK !=
-       rd_kafka_topic_conf_set(conf, kS(xx)[i], kS(xy)[i], b, sizeof(b))) {
+  for(i= 0; i < xx->n; ++i){
+    if(RD_KAFKA_CONF_OK !=rd_kafka_topic_conf_set(conf, kS(xx)[i], kS(xy)[i], b, sizeof(b))){
       return krr((S) b);
     }
   }
@@ -171,8 +177,7 @@ EXP K2(kfkClient){
   rd_kafka_conf_set_log_cb(conf, logcb);
   rd_kafka_conf_set_dr_msg_cb(conf,drcb);
   rd_kafka_conf_set_offset_commit_cb(conf,offsetcb);
-  if(RD_KAFKA_CONF_OK !=
-     rd_kafka_conf_set(conf, "log.queue", "true", b, sizeof(b))) {
+  if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, "log.queue", "true", b, sizeof(b))){
     return krr((S) b);
   }
   if(!(rk= rd_kafka_new(type, conf, b, sizeof(b))))
@@ -183,14 +188,14 @@ EXP K2(kfkClient){
   if(type == RD_KAFKA_CONSUMER){
     rd_kafka_poll_set_consumer(rk);
     rd_kafka_queue_io_event_enable(rd_kafka_queue_get_consumer(rk),spair[1],"X",1);
-  }else{
-    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_main(rk),spair[1],"X",1);
   }
+  else
+    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_main(rk),spair[1],"X",1);
   js(&clients, (S) rk);
   return ki(clients->n - 1);
 }
 
-EXP K1(kfkClientDel) {
+EXP K1(kfkClientDel){
   rd_kafka_t *rk;
   if(!checkType("i", x))
     return KNL;
@@ -201,6 +206,7 @@ EXP K1(kfkClientDel) {
   kS(clients)[x->i]= (S) 0;
   return KNL;
 }
+
 EXP K1(kfkClientName){
   rd_kafka_t *rk;
   if(!checkType("i", x))
@@ -209,6 +215,7 @@ EXP K1(kfkClientName){
     return KNL;
   return ks((S) rd_kafka_name(rk));
 }
+
 EXP K1(kfkClientMemberId){
   rd_kafka_t *rk;
   if(!checkType("i", x))
@@ -233,6 +240,7 @@ EXP K3(kfkTopic){
   js(&topics, (S) rkt);
   return ki(topics->n - 1);
 }
+
 EXP K1(kfkTopicDel){
   rd_kafka_topic_t *rkt;
   if(!checkType("i", x))
@@ -243,6 +251,7 @@ EXP K1(kfkTopicDel){
   kS(topics)[x->i]= (S) 0;
   return KNL;
 }
+
 EXP K1(kfkTopicName){
   rd_kafka_topic_t *rkt;
   if(!checkType("i", x))
@@ -254,12 +263,13 @@ EXP K1(kfkTopicName){
 
 // metadata api
 // rd_kafka_metadata_broker: `id`host`port!(id;host;port)
-K decodeMetaBroker(rd_kafka_metadata_broker_t *x) {
+K decodeMetaBroker(rd_kafka_metadata_broker_t *x){
   return xd("id", ki(x->id), "host", ks(x->host), "port", ki(x->port));
 }
+
 // rd_kafka_metadata_partition: `id`err`leader`replicas`isrs!(int;err;int;int
 // list;int list)
-K decodeMetaPart(rd_kafka_metadata_partition_t *p) {
+K decodeMetaPart(rd_kafka_metadata_partition_t *p){
   K x= ktn(KI, p->replica_cnt);
   J i;
   for(i= 0; i < xn; ++i)
@@ -267,18 +277,18 @@ K decodeMetaPart(rd_kafka_metadata_partition_t *p) {
   K y= ktn(KI, p->isr_cnt);
   for(i= 0; i < y->n; ++i)
     kI(y)[i]= p->isrs[i];
-  return xd("id", ki(p->id), "err", ks((S) rd_kafka_err2str(p->err)), "leader",
-            ki(p->leader), "replicas", x, "isrs", y);
+  return xd("id", ki(p->id), "err", ks((S) rd_kafka_err2str(p->err)),
+            "leader",ki(p->leader), "replicas", x, "isrs", y);
 }
 
 // rd_kafka_metadata_topic: `topic`partitions`err!(string;partition list;err)
-K decodeMetaTopic(rd_kafka_metadata_topic_t *t) {
+K decodeMetaTopic(rd_kafka_metadata_topic_t *t){
   K x= ktn(0, 0);
   J i;
   for(i= 0; i < t->partition_cnt; ++i)
     jk(&x, decodeMetaPart(&t->partitions[i]));
-  return xd("topic", ks(t->topic), "err", ks((S) rd_kafka_err2str(t->err)),
-            "partitions", x);
+  return xd("topic", ks(t->topic), 
+            "err",ks((S) rd_kafka_err2str(t->err)),"partitions", x);
 }
 
 // rd_kafka_metadata: `brokers`topics`orig_broker_id`orig_broker_name!(broker
@@ -291,8 +301,9 @@ K decodeMeta(const rd_kafka_metadata_t *meta) {
   K y= ktn(0, 0);
   for(i= 0; i < meta->topic_cnt; ++i)
     jk(&y, decodeMetaTopic(&meta->topics[i]));
-  return xd("orig_broker_id", ki(meta->orig_broker_id), "orig_broker_name",
-            ks(meta->orig_broker_name), "brokers", x, "topics", y);
+  return xd("orig_broker_id", ki(meta->orig_broker_id),
+            "orig_broker_name",ks(meta->orig_broker_name),
+            "brokers", x, "topics", y);
 }
 
 EXP K1(kfkMetadata){
@@ -311,10 +322,10 @@ EXP K1(kfkMetadata){
   return r;
 }
 
-K decodeTopPar(rd_kafka_topic_partition_t *tp) {
+K decodeTopPar(rd_kafka_topic_partition_t *tp){
   return xd("topic", ks((S) tp->topic), "partition", ki(tp->partition),
-            "offset", kj(tp->offset), "metadata",
-            kpn(tp->metadata, tp->metadata_size));
+            "offset", kj(tp->offset), 
+            "metadata",kpn(tp->metadata, tp->metadata_size));
 }
 
 K decodeParList(rd_kafka_topic_partition_list_t *t){
@@ -331,7 +342,6 @@ rd_kafka_topic_partition_list_t* plistoffsetdict(S topic,K partitions){
   I*p;J*o,i;
   if(dk->n==0) return NULL; // empty dicts for offsetless commit
   p=kI(dk);o=kJ(dv);
-  
   rd_kafka_topic_partition_list_t *t_partition=
       rd_kafka_topic_partition_list_new(dk->n);
   for(i= 0; i < dk->n; ++i){
@@ -365,7 +375,8 @@ EXP K3(kfkSub){
     return KNL;
   if(z->t == XD){
     t_partition = plistoffsetdict(y->s,z);
-  }else{
+  }
+  else{
     t_partition=
       rd_kafka_topic_partition_list_new(z->n);
     for(i= 0; i < z->n; ++i){
@@ -378,7 +389,7 @@ EXP K3(kfkSub){
   return knk(0);
 }
 
-EXP K1(kfkUnsub) {
+EXP K1(kfkUnsub){
   rd_kafka_t *rk;
   rd_kafka_resp_err_t err;
   if(!checkType("i", x))
@@ -470,6 +481,7 @@ EXP K1(kfkSubscription){
 	rd_kafka_topic_partition_list_destroy(t);
 	return r;
 }
+
 static J pu(J u){return 1000000LL*(u-10957LL*86400000LL);}
 // `mtype`topic`partition`data`key`offset`opaque
 K decodeMsg(const rd_kafka_t* rk, const rd_kafka_message_t *msg) {
@@ -516,6 +528,7 @@ EXP K3(kfkPoll) {
   n=pollClient(rk,y->j,z->j);
   return kj(n);
 }
+
 // other
 EXP K1(kfkOutQLen){
   rd_kafka_t *rk;
@@ -523,8 +536,10 @@ EXP K1(kfkOutQLen){
     return KNL;
   return ki(rd_kafka_outq_len(rk));
 }
-EXP K kfkVersion(K UNUSED(x)) { return ki(rd_kafka_version()); }
-EXP K kfkExportErr(K UNUSED(dummy)) {
+
+EXP K kfkVersion(K UNUSED(x)){return ki(rd_kafka_version());}
+
+EXP K kfkExportErr(K UNUSED(dummy)){
   const struct rd_kafka_err_desc *errdescs;
   size_t i,n;
   K x= ktn(0, 0), y= ktn(0, 0), z= ktn(0, 0);
@@ -537,8 +552,9 @@ EXP K kfkExportErr(K UNUSED(dummy)) {
     }
   return xT(xd("errid", x, "code", y, "desc", z));
 }
+
 // shared lib loading
-EXP K kfkCallback(I d) {
+EXP K kfkCallback(I d){
   char buf[1024];J i,n,consumed=0;
   /*MSG_DONTWAIT - set in sd1(-h,...) */
   while(0 < (n=recv(d, buf, sizeof(buf), 0)))
@@ -550,14 +566,14 @@ EXP K kfkCallback(I d) {
   return KNL;
 }
 
-static V detach(V) {
+static V detach(V){
   I sp,i;
-  if(topics) {
+  if(topics){
     for(i= 0; i < topics->n; i++)
       kfkTopicDel(ki(i));
     r0(topics);
   }
-  if(clients) {
+  if(clients){
     for(i= 0; i < clients->n; i++)
       kfkClientDel(ki(i));
     rd_kafka_wait_destroyed(1000); /* wait for cleanup*/
