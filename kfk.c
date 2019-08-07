@@ -43,8 +43,7 @@ K xd0(I n, ...) {
 #define xd(...) xd0(0, __VA_ARGS__, (S) 0)
 static K S0;
 static K clients, topics;
-static I spair[2], validsock;
-static I init();
+static I spair[2],validinit;
 K decodeParList(rd_kafka_topic_partition_list_t *t);
 // check type
 // letter as usual, + for table, ! for dict
@@ -157,8 +156,6 @@ static K loadTopConf(rd_kafka_topic_conf_t *conf, K x) {
 // x:client type p - producer, c - consumer
 // y:config dict sym->sym
 EXP K2(kfkClient){
-  if(-1==init())
-    return (K)0;
   rd_kafka_type_t type;
   rd_kafka_t *rk;
   rd_kafka_conf_t *conf;
@@ -570,37 +567,29 @@ static V detach(V) {
     sd0(sp);
     close(sp);
   }
-  if(!(sp=spair[1])){
+  if(!(sp=spair[1]))
     close(sp);
-  }
   spair[0]= 0;
   spair[1]= 0;
 }
 
-static I init() {
-  if(!clients){
-    clients=ktn(KS,0);
-  }
-  if(!topics){
-    topics=ktn(KS,0);
-  }
-  if(!S0){
-    S0=ks("");
-  }
-  if(validsock)
-    return 0;
-  if(dumb_socketpair(spair, 1) == INVALID_SOCKET){
+EXP K kfkInit(K UNUSED(x)){
+  if(!(0==validinit))
+   return 0; 
+  clients=ktn(KS,0);
+  topics=ktn(KS,0);
+  S0=ks("");
+  if(dumb_socketpair(spair, 1) == INVALID_SOCKET)
     fprintf(stderr, "Init failed, creating socketpair: %s\n", strerror(errno));
-    return -1;
-  }
   K r=sd1(-spair[0], &kfkCallback);
   if(r==0){
     fprintf(stderr, "Init failed, adding callback\n");
     spair[0]=0;
     spair[1]=0;
-    return -1;
+    return 0;
   }
   r0(r);
+  validinit=1;
   atexit(detach);
   return 0;
 }
