@@ -16,7 +16,7 @@
 #else
 #include <unistd.h>
 #define EXP
-#define INVALID_SOCKET -1
+#define SOCKET_ERROR -1
 #endif
 
 #define KR -128
@@ -44,7 +44,13 @@ K xd0(I n, ...){
 typedef unsigned int UI;
 static K S0;
 static K clients, topics;
-static I spair[2],validinit;
+static I validinit;
+#ifdef _WIN32
+static SOCKET spair[2];
+#else
+static I spair[2];
+#endif
+
 
 K decodeParList(rd_kafka_topic_partition_list_t *t);
 
@@ -579,11 +585,11 @@ static V detach(V){
     rd_kafka_wait_destroyed(1000); /* wait for cleanup*/
     r0(clients);
   }
-  if(!(sp=spair[0])){
-    sd0(sp);
+  if(sp=spair[0]){
+    sd0x(sp,0);
     close(sp);
   }
-  if(!(sp=spair[1]))
+  if(sp=spair[1])
     close(sp);
   spair[0]= 0;
   spair[1]= 0;
@@ -595,7 +601,8 @@ EXP K kfkInit(K UNUSED(x)){
   clients=ktn(KS,0);
   topics=ktn(KS,0);
   S0=ks("");
-  if(dumb_socketpair(spair, 1) == INVALID_SOCKET)
+  if(dumb_socketpair((SOCKET*)spair, 1) == INVALID_SOCKET)
+  //if(dumb_socketpair(spair, 1) == SOCKET_ERROR)
     fprintf(stderr, "Init failed, creating socketpair: %s\n", strerror(errno));
   K r=sd1(-spair[0], &kfkCallback);
   if(r==0){
