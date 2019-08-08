@@ -101,22 +101,25 @@ At present the windows compile of the shared object file for the kafka interface
 
 1. Install nuget for Windows: https:/nuget.com/downloads
 
-2. Install the redistributed version of librdkafka which is suitable for use with windows
+2. Install the redistributed version of librdkafka which is suitable for use with windows, documentation can be found [here](https://www.nuget.org/packages/librdkafka.redist/1.0.0)
 
         >nuget install librdkafka.redist
 
 3. Ensure that you have Windows Visual Studio 2017 installed.
 
-4. Place the installed librdkafka.redist into an appropriate location (suggestions `%HOME%` or `%QHOME%).
+4. Place the installed librdkafka.redist into an appropriate location (suggestions `%HOME%` or `%QHOME%`).
    For the remaining instructions the path to the install for this example is "C:/Users/jdoe/librdkafka.redist.1.0.0"
 
-5. Update LIB user environment variable to include path to rdkafka.h for appropriate Windows architecture in this case
-        - LIB =
+5. Update LIB user environment variable to include the following path to rdkafka.h for appropriate Windows architecture in this case
+
+        - LIB = C:/Users/jdoe/librdkafka.redist.1.0.0/build/native/lib/win/x64/win-x64-Release/v120
 
 6. Update PATH system environment variable to include path to native folder for appropriate computer architecture
+
         - PATH = C:/Users/jdoe/librdkafka.redist.1.0.0/runtimes/win-x64/native
 
-7. Create a user environment variable called `KAFKA_NATIVE` in line with the following example path
+7. Create a user environment variable `KAFKA_NATIVE` in line with the following example path (If not set a user will be prompted to do so at build time)
+
         - KAFKA_NATIVE = C:/Users/jdoe/librdkafka.redist.1.0.0/build/native/include/
 
 8. Clone the kafka interface from the KxSystems github
