@@ -356,7 +356,7 @@ rd_kafka_topic_partition_list_t* plistoffsetdict(S topic,K partitions){
 // producer api
 EXP K4(kfkPub){
   rd_kafka_topic_t *rkt;
-  if(!checkType("ii[CG][CG]", x, x, z, r))
+  if(!checkType("ii[CG][CG]", x, y, z, r))
     return KNL;
   if(!(rkt= topicIndex(x)))
     return KNL;
@@ -520,7 +520,7 @@ J pollClient(rd_kafka_t *rk, J timeout, J UNUSED(maxcnt)) {
 
 
 // for manual poll of the feed.
-EXP K3(kfkPoll) {
+EXP K3(kfkPoll){
   J n= 0;
   rd_kafka_t *rk;
   if(!checkType("ijj", x, y, z))

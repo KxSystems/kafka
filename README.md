@@ -141,7 +141,7 @@ See [code.kx.com/v2/interfaces/kafka](http://code.kx.com/v2/interfaces/kafka/).
 
 https://docs.confluent.io/2.0.0/clients/consumer.html#synchronous-commits
 
-To have `launched` start kafka now, and restart at login:
+To have `launchd` start kafka now, and restart at login:
 
 ```bash
 brew services start kafka
