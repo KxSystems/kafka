@@ -13,10 +13,12 @@
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "librdkafka.lib")
 #define EXP __declspec(dllexport)
+static SOCKET spair[2];
 #else
 #include <unistd.h>
 #define EXP
 #define SOCKET_ERROR -1
+static I spair[2];
 #endif
 
 #define KR -128
@@ -45,12 +47,6 @@ typedef unsigned int UI;
 static K S0;
 static K clients, topics;
 static I validinit;
-#ifdef _WIN32
-static SOCKET spair[2];
-#else
-static I spair[2];
-#endif
-
 
 K decodeParList(rd_kafka_topic_partition_list_t *t);
 
@@ -601,8 +597,7 @@ EXP K kfkInit(K UNUSED(x)){
   clients=ktn(KS,0);
   topics=ktn(KS,0);
   S0=ks("");
-  if(dumb_socketpair((SOCKET*)spair, 1) == INVALID_SOCKET)
-  //if(dumb_socketpair(spair, 1) == SOCKET_ERROR)
+  if(dumb_socketpair(spair, 1) == SOCKET_ERROR)
     fprintf(stderr, "Init failed, creating socketpair: %s\n", strerror(errno));
   K r=sd1(-spair[0], &kfkCallback);
   if(r==0){
