@@ -4,11 +4,11 @@
 
 
 `kfk` is a thin wrapper for kdb+ around [`librdkafka`](https://github.com/edenhill/librdkafka) C API for [Kafka](https://kafka.apache.org/). 
-It is part of the [_Fusion for kdb+_](http://code.kx.com/v2/interfaces/fusion/) interface collection.
+It is part of the [_Fusion for kdb+_](https://code.kx.com/v2/interfaces/fusion/) interface collection.
 
 Please [report issues](https://github.com/KxSystems/kafka/issues) in this repository.
 
-See [code.kx.com/v2/interfaces/kafka](http://code.kx.com/v2/interfaces/kafka/) for full documentation.
+See [code.kx.com/v2/interfaces/kafka](https://code.kx.com/v2/interfaces/kafka/) for full documentation.
 
 
 ## Step 1
@@ -90,7 +90,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/lib
 
 ## Documentation
 
-See [code.kx.com/v2/interfaces/kafka](http://code.kx.com/v2/interfaces/kafka/).
+See [code.kx.com/v2/interfaces/kafka](https://code.kx.com/v2/interfaces/kafka/).
 
 
 https://docs.confluent.io/2.0.0/clients/consumer.html#synchronous-commits
