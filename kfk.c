@@ -97,9 +97,8 @@ rd_kafka_t *clientIndex(K x){
 
 I indexClient(const rd_kafka_t *rk){
   int i;
-  for (i = 0; i < clients->n; ++i){
+  for (i = 0; i < clients->n; ++i)
     if(rk==(rd_kafka_t *)kS(clients)[i]) return i;
-  }
   return ni;
 }
 
@@ -154,9 +153,8 @@ static K loadTopConf(rd_kafka_topic_conf_t *conf, K x){
   char b[512];
   J i;
   for(i= 0; i < xx->n; ++i){
-    if(RD_KAFKA_CONF_OK !=rd_kafka_topic_conf_set(conf, kS(xx)[i], kS(xy)[i], b, sizeof(b))){
+    if(RD_KAFKA_CONF_OK !=rd_kafka_topic_conf_set(conf, kS(xx)[i], kS(xy)[i], b, sizeof(b)))
       return krr((S) b);
-    }
   }
   return knk(0);
 }
@@ -179,9 +177,8 @@ EXP K2(kfkClient){
   rd_kafka_conf_set_log_cb(conf, logcb);
   rd_kafka_conf_set_dr_msg_cb(conf,drcb);
   rd_kafka_conf_set_offset_commit_cb(conf,offsetcb);
-  if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, "log.queue", "true", b, sizeof(b))){
+  if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, "log.queue", "true", b, sizeof(b)))
     return krr((S) b);
-  }
   if(!(rk= rd_kafka_new(type, conf, b, sizeof(b))))
     return krr(b);
   /* Redirect logs to main queue */
@@ -562,9 +559,8 @@ EXP K kfkCallback(I d){
   while(0 < (n=recv(d, buf, sizeof(buf), 0)))
     consumed+=n;
   // pass consumed to poll for possible batching
-  for(i= 0; i < clients->n; i++) {
+  for(i= 0; i < clients->n; i++)
     pollClient((rd_kafka_t*)kS(clients)[i], 0, consumed);
-  }
   return KNL;
 }
 
@@ -586,9 +582,10 @@ static V detach(V){
     close(sp);
   }
   if(sp=spair[1])
-    close(sp);
+    close(sp); 
   spair[0]= 0;
   spair[1]= 0;
+  validinit = 0;
 }
 
 EXP K kfkInit(K UNUSED(x)){

@@ -15,5 +15,5 @@ test_topic:.kfk.Topic[producer;`test;()!()]
 show "Publishing on topic:",string .kfk.TopicName test_topic;
 .kfk.Pub[test_topic;0i;string .z.p;""];
 show "Published 1 message";
-show "Set timer with \\t 1000 to publish message every second";
+show "Set timer with \t 1000 to publish message every second";
 
