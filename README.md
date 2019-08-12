@@ -1,11 +1,11 @@
 # `kfk` – Kafka for kdb+
 
-`kfk` is a thin wrapper for kdb+ around [`librdkafka`](https://github.com/edenhill/librdkafka) C API for [Kafka](https://kafka.apache.org/).
-It is part of the [_Fusion for kdb+_](http://code.kx.com/v2/interfaces/fusion/) interface collection.
+`kfk` is a thin wrapper for kdb+ around [`librdkafka`](https://github.com/edenhill/librdkafka) C API for [Kafka](https://kafka.apache.org/). 
+It is part of the [_Fusion for kdb+_](https://code.kx.com/v2/interfaces/fusion/) interface collection.
 
 Please [report issues](https://github.com/KxSystems/kafka/issues) in this repository.
 
-See [code.kx.com/v2/interfaces/kafka](http://code.kx.com/v2/interfaces/kafka/) for full documentation.
+See [code.kx.com/v2/interfaces/kafka](https://code.kx.com/v2/interfaces/kafka/) for full documentation.
 
 This interface is supported for the following platforms
 
@@ -136,7 +136,7 @@ At present the Windows build of the `.dll` for the kafka interface has been test
 
 ## Documentation
 
-See [code.kx.com/v2/interfaces/kafka](http://code.kx.com/v2/interfaces/kafka/).
+See [code.kx.com/v2/interfaces/kafka](https://code.kx.com/v2/interfaces/kafka/).
 
 
 https://docs.confluent.io/2.0.0/clients/consumer.html#synchronous-commits
