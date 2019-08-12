@@ -1,6 +1,8 @@
 \d .kfk
 LIBPATH:`:libkfk 2:
 funcs:(
+		// .kfk.init[]:i
+	(`kfkInit;1);
 		// .kfk.Client[client_type:c;conf:S!S]:i
 	(`kfkClient;2);
 		// .kfk.ClientDel[client_id:i]:_
@@ -49,6 +51,8 @@ funcs:(
 // binding functions from dictionary funcs using rule
 // kfk<Name> -> .kfk.<Name>
 .kfk,:(`$3_'string funcs[;0])!LIBPATH@/:funcs
+
+Init[];
 
 // Current version of librdkafka
 Version:Version[];
