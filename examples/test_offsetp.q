@@ -1,4 +1,4 @@
-\l kfk.q
+\l ../kfk.q
 kfk_cfg:(!) . flip(
   (`metadata.broker.list;`localhost:9092);
   (`statistics.interval.ms;`10000);
@@ -8,11 +8,12 @@ kfk_cfg:(!) . flip(
 producer:.kfk.Producer[kfk_cfg]
 test_topic:.kfk.Topic[producer;`test;()!()]
 
-.z.ts:{.kfk.Pub[test_topic;.kfk.PARTITION_UA;string x;""]}
+.kfk.drcb:{[cid;msg]show "Delivered msg on ",string[cid],": ",.Q.s1 msg;}
+
+
+.z.ts:{.kfk.Pub[test_topic;0i;string x;""]}
 show "Publishing on topic:",string .kfk.TopicName test_topic;
-.kfk.Pub[test_topic;.kfk.PARTITION_UA;string .z.p;""];
+.kfk.Pub[test_topic;0i;string .z.p;""];
 show "Published 1 message";
-producer_meta:.kfk.Metadata[producer];
-show producer_meta`topics;
-show "Set timer with \\t 1000 to publish message every second";
+show "Set timer with \t 1000 to publish message every second";
 

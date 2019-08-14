@@ -1,4 +1,4 @@
-\l kfk.q
+\l ../kfk.q
 
 kfk_cfg:(!) . flip(
     (`metadata.broker.list;`localhost:9092);
@@ -23,8 +23,10 @@ show .kfk.AssignOffsets[client;TOPIC;(1#0i)!1#.kfk.OFFSET.END]     // start repl
 .kfk.Sub[client;TOPIC;(1#0i)!1#.kfk.OFFSET.END];
 
 
-\t 30000
+strt:.z.t
+\t 5000
 .z.ts:{
+  if[(5000<"i"$.z.t-strt)&1<count data;
   seen:exec last offset by partition from data;
   show "Position:";
   show .kfk.PositionOffsets[client;TOPIC;seen];
@@ -32,5 +34,5 @@ show .kfk.AssignOffsets[client;TOPIC;(1#0i)!1#.kfk.OFFSET.END]     // start repl
   show .kfk.CommittedOffsets[client;TOPIC;seen];
   .kfk.CommitOffsets[client;TOPIC;seen;0b];  // commit whatever is storred
   show "After commited:";
-  show .kfk.CommittedOffsets[client;TOPIC;seen];
+  show .kfk.CommittedOffsets[client;TOPIC;seen];]
   }
