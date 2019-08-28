@@ -350,6 +350,18 @@ rd_kafka_topic_partition_list_t* plistoffsetdict(S topic,K partitions){
   return t_partition;
 }
 
+EXP K2(kfkFlush){
+ rd_kafka_t *rk;
+ if(!checkType("ii",x , y))
+  return KNL;
+ if(!(rk= clientIndex(x)))
+  return KNL;
+ rd_kafka_resp_err_t err= rd_kafka_flush(rk,(I)y);
+  if(KFK_OK != err)
+    return krr((S) rd_kafka_err2str(err));
+  return KNL;
+ }
+
 // producer api
 EXP K4(kfkPub){
   rd_kafka_topic_t *rkt;
