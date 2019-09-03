@@ -29,7 +29,7 @@ all: k.h
 static: k.h
 	$(CC) kfk.c -m$(MS) $(OPTS) $(LDOPTS_STATIC)  $(LD_COMMON) -I$(KFK_INCLUDE) $(LNK) -o $(TGT) $(OSXOPTS)
 k.h:
-	curl -s -O -J -L https://github.com/KxSystems/kdb/raw/master/c/c/k.h 
+	curl -s -O -L https://github.com/KxSystems/kdb/raw/master/c/c/k.h 
 install:
 	install $(TGT) $(Q)
 clean:
