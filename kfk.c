@@ -357,13 +357,13 @@ EXP K2(kfkFlush){
   return KNL;
  if(!(rk= clientIndex(x)))
   return KNL;
-  SW(y->t){
-    CS(-KH,qy=y->h);
-    CS(-KI,qy=y->i);
-    CS(-KJ,qy=y->j);
-    CS(-KE,qy=y->e);
-    CD:R krr("timeout type");
-  }
+ SW(y->t){
+  CS(-KH,qy=y->h);
+  CS(-KI,qy=y->i);
+  CS(-KJ,qy=y->j);
+  CS(-KE,qy=y->e);
+  CD:R krr("timeout type");
+ }
  rd_kafka_resp_err_t err= rd_kafka_flush(rk,qy);
   if(KFK_OK != err)
     return krr((S) rd_kafka_err2str(err));
