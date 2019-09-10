@@ -21,17 +21,15 @@ else ifeq ($(shell uname),Darwin)
  OSXOPTS = -undefined dynamic_lookup  -mmacosx-version-min=10.12
 endif
 
-KH = curl -s -O -J -L https://github.com/KxSystems/kdb/raw/master/c/c/k.h
-
 QARCH = $(OSFLAG)$(MS)
 Q     = $(QHOME)/$(QARCH) 
 
-all:
-	$(KH)
+all: k.h
 	$(CC) kfk.c -m$(MS) $(OPTS) $(LDOPTS_DYNAMIC) $(LD_COMMON) -I$(KFK_INCLUDE) $(LNK) -o $(TGT) $(OSXOPTS)
-static:
-	$(KH)
-	$(CC) kfk.c -m$(MS) $(OPTS) $(LDOPTS_STATIC)  $(LD_COMMON) -I$(KFK_INCLUDE) $(LNK) -o $(TGT) $(OSXOPTS) 
+static: k.h
+	$(CC) kfk.c -m$(MS) $(OPTS) $(LDOPTS_STATIC)  $(LD_COMMON) -I$(KFK_INCLUDE) $(LNK) -o $(TGT) $(OSXOPTS)
+k.h:
+	curl -s -O -L https://github.com/KxSystems/kdb/raw/master/c/c/k.h 
 install:
 	install $(TGT) $(Q)
 clean:

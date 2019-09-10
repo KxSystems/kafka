@@ -142,8 +142,7 @@ static K loadConf(rd_kafka_conf_t *conf, K x){
   char b[512];
   J i;
   for(i= 0; i < xx->n; ++i){
-    if(RD_KAFKA_CONF_OK !=
-       rd_kafka_conf_set(conf, kS(xx)[i], kS(xy)[i], b, sizeof(b))){
+    if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, kS(xx)[i], kS(xy)[i], b, sizeof(b))){
       return krr((S) b);
     }
   }
@@ -350,6 +349,24 @@ rd_kafka_topic_partition_list_t* plistoffsetdict(S topic,K partitions){
   return t_partition;
 }
 
+EXP K2(kfkFlush){
+  rd_kafka_t *rk;
+  I qy=0;
+  if(!checkType("i[hij]",x,y))
+    return KNL;
+  if(!(rk= clientIndex(x)))
+    return KNL;
+  SW(y->t){
+    CS(-KH,qy=y->h);
+    CS(-KI,qy=y->i);
+    CS(-KJ,qy=y->j);
+  }
+  rd_kafka_resp_err_t err= rd_kafka_flush(rk,qy);
+  if(KFK_OK != err)
+    return krr((S) rd_kafka_err2str(err));
+  return KNL;
+ }
+
 // producer api
 EXP K4(kfkPub){
   rd_kafka_topic_t *rkt;
@@ -465,20 +482,20 @@ EXP K3(kfkPositionOffsets){
 }
 
 EXP K1(kfkSubscription){
-	K r;
-	rd_kafka_topic_partition_list_t *t;
-	rd_kafka_t *rk;
-	rd_kafka_resp_err_t err;
-	if (!checkType("i", x))
-		return KNL;
-	if (!(rk = clientIndex(x)))
-		return KNL;
-	err = rd_kafka_subscription(rk, &t);
-	if (KFK_OK != err)
-		return krr((S)rd_kafka_err2str(err));
-	r = decodeParList(t);
-	rd_kafka_topic_partition_list_destroy(t);
-	return r;
+  K r;
+  rd_kafka_topic_partition_list_t *t;
+  rd_kafka_t *rk;
+  rd_kafka_resp_err_t err;
+  if (!checkType("i", x))
+    return KNL;
+  if (!(rk = clientIndex(x)))
+    return KNL;
+  err = rd_kafka_subscription(rk, &t);
+  if (KFK_OK != err)
+    return krr((S)rd_kafka_err2str(err));
+  r = decodeParList(t);
+  rd_kafka_topic_partition_list_destroy(t);
+  return r;
 }
 
 static J pu(J u){return 1000000LL*(u-10957LL*86400000LL);}

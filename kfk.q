@@ -35,6 +35,8 @@ funcs:(
 	(`kfkPoll;3);
 		// .kfk.Version[]:i
 	(`kfkVersion;1);
+		// .kfk.Flush[producer_id:i;timeout_ms:i]
+	(`kfkFlush;2);
 		// .kfk.ExportErr[]:T
 	(`kfkExportErr;1);
 	 // .kfk.CommitOffsets[client_id;topic:s;partition_offsets:I!J;async:b]:()
