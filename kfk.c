@@ -351,8 +351,8 @@ rd_kafka_topic_partition_list_t* plistoffsetdict(S topic,K partitions){
 
 EXP K2(kfkFlush){
   rd_kafka_t *rk;
-  I qy;
-  if(!checkType("i",x))
+  I qy=0;
+  if(!checkType("i[hij]",x,y))
     return KNL;
   if(!(rk= clientIndex(x)))
     return KNL;
@@ -360,8 +360,6 @@ EXP K2(kfkFlush){
     CS(-KH,qy=y->h);
     CS(-KI,qy=y->i);
     CS(-KJ,qy=y->j);
-    CS(-KE,qy=y->e);
-    CD:R krr("timeout type");
   }
   rd_kafka_resp_err_t err= rd_kafka_flush(rk,qy);
   if(KFK_OK != err)
