@@ -1,52 +1,58 @@
 \d .kfk
 LIBPATH:`:libkfk 2:
 funcs:(
-		// .kfk.init[]:i
+	  // .kfk.init[]:i
 	(`kfkInit;1);
-		// .kfk.Client[client_type:c;conf:S!S]:i
+	  // .kfk.Client[client_type:c;conf:S!S]:i
 	(`kfkClient;2);
-		// .kfk.ClientDel[client_id:i]:_
+	  // .kfk.ClientDel[client_id:i]:_
 	(`kfkClientDel;1);
-		// .kfk.ClientName[client_id:i]:s
+	  // .kfk.ClientName[client_id:i]:s
 	(`kfkClientName;1);
-		// .kfk.ClientMemberId[client_id:i]:s
+	  // .kfk.ClientMemberId[client_id:i]:s
 	(`kfkClientMemberId;1);
-		// .kfk.Topic[client_id:i;topicname:s;conf:S!S]:i
+	  // .kfk.Topic[client_id:i;topicname:s;conf:S!S]:i
 	(`kfkTopic;3);
-		// .kfk.TopicDel[topic_id:i]:_
+	  // .kfk.TopicDel[topic_id:i]:_
 	(`kfkTopicDel;1);
-		// .kfk.TopicName[topic_id:i]:s
+	  // .kfk.TopicName[topic_id:i]:s
 	(`kfkTopicName;1);
-		// .kfk.Metadata[client_id:i]:S!()
+	  // .kfk.Metadata[client_id:i]:S!()
 	(`kfkMetadata;1);
-	// PRODUCER API
-		// .kfk.Pub[topic_id:i;partid:i;data;key]:_
+	  // .kfk.Pub[topic_id:i;partid:i;data;key]:_
 	(`kfkPub;4);
-		// .kfk.OutQLen[client_id:i]:i
+	  // .kfk.OutQLen[client_id:i]:i
 	(`kfkOutQLen;1);
-	// CONSUMER API
-		// .kfk.Sub[client_id:i;topicname:s;partition_list|partition_offsets:I!J]:()
+	  // .kfk.Sub[client_id:i;topicname:s;partition_list|partition_offsets:I!J]:()
 	(`kfkSub;3);
-		// .kfk.Unsub[client_id:i]:()
+	  // .kfk.Unsub[client_id:i]:()
 	(`kfkUnsub;1);
-		// .kfk.Subscription[client_id:i]
+	  // .kfk.Subscription[client_id:i]
 	(`kfkSubscription;1);
-		// .kfk.Poll[client_id:i;timeout;max_messages]
+	  // .kfk.Poll[client_id:i;timeout;max_messages]
 	(`kfkPoll;3);
-		// .kfk.Version[]:i
+	  // .kfk.Version[]:i
 	(`kfkVersion;1);
-		// .kfk.Flush[producer_id:i;timeout_ms:i]
+	  // .kfk.Flush[producer_id:i;timeout_ms:i]:()
 	(`kfkFlush;2);
-		// .kfk.ExportErr[]:T
+	  // .kfk.ExportErr[]:T
 	(`kfkExportErr;1);
-	 // .kfk.CommitOffsets[client_id;topic:s;partition_offsets:I!J;async:b]:()
+	  // .kfk.CommitOffsets[client_id;topic:s;partition_offsets:I!J;async:b]:()
 	(`kfkCommitOffsets;4);
-	 // .kfk.PositionOffsets[client_id:i;topic:s;partition_offsets:I!J]:partition_offsets
+	  // .kfk.PositionOffsets[client_id:i;topic:s;partition_offsets:I!J]:partition_offsets
 	(`kfkPositionOffsets;3);
-	 // .kfk.CommittedOffsets[client_id:i;topic:s;partition_offsets:I!J]:partition_offsets
+	  // .kfk.CommittedOffsets[client_id:i;topic:s;partition_offsets:I!J]:partition_offsets
 	(`kfkCommittedOffsets;3);
-	 // .kfk.AssignOffsets[client_id:i;topic:s;partition_offsets:I!J]:()
-	(`kfkAssignOffsets;3)
+	  // .kfk.AssignOffsets[client_id:i;topic:s;partition_offsets:I!J]:()
+	(`kfkAssignOffsets;3);
+          // .kfk.Partition_Available[topic_id:i]:i
+        (`kfkPartition_Available;2);
+          // .kfk.Thread_count[]:i
+        (`kfkThread_Count;1);
+          // .kfk.Version_str[]:s
+        (`kfkVersion_String;1);
+          // .kfk.Set_Logger_Level[int_level:i]:()
+        (`kfkSet_Logger_Level;2)
 	);
 
 

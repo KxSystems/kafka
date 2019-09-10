@@ -338,7 +338,9 @@ K decodeParList(rd_kafka_topic_partition_list_t *t){
 rd_kafka_topic_partition_list_t* plistoffsetdict(S topic,K partitions){
   K dk=kK(partitions)[0],dv=kK(partitions)[1];
   I*p;J*o,i;
-  if(dk->n==0) return NULL; // empty dicts for offsetless commit
+//  if(dk->n==0) return NULL; // empty dicts for offsetless commit
+  if(dk->n==0)
+    return(krr (S)"dictionary of zero length provided");
   p=kI(dk);o=kJ(dv);
   rd_kafka_topic_partition_list_t *t_partition=
       rd_kafka_topic_partition_list_new(dk->n);
@@ -553,7 +555,37 @@ EXP K1(kfkOutQLen){
   return ki(rd_kafka_outq_len(rk));
 }
 
+EXP K2(kfkPartition_Available){
+  rd_kafka_topic_t *rkt;
+  I qy=0;
+  if(!checkType("[hij]",y))
+    return KNL;
+  if(!(rkt=topicIndex(x)))
+    return KNL;
+  SW(y->t){
+    CS(-KH,qy=y->h);
+    CS(-KI,qy=y->i);
+    CS(-KJ,qy=y->j);
+  }
+  return kb(rd_kafka_topic_partition_available(rkt, qy));
+}
+
+// logger level is set based on Severity levels in syslog https://en.wikipedia.org/wiki/Syslog#Severity_level
+EXP K2(kfkSet_Logger_Level){
+  rd_kafka_t *rk;
+  if(!(rk=clientIndex(x)))
+    return KNL;
+  rd_kafka_set_log_level(rk, y->i);
+  return KNL;
+}
+
+// Returns the number of threads currently being used by librdkafka
+EXP K kfkThread_Count(K UNUSED(x)){return ki(rd_kafka_thread_cnt());}
+
 EXP K kfkVersion(K UNUSED(x)){return ki(rd_kafka_version());}
+
+// Returns the human readable librdkafka version
+EXP K kfkVersion_String(K UNUSED(x)){return ks((S)rd_kafka_version_str());}
 
 EXP K kfkExportErr(K UNUSED(dummy)){
   const struct rd_kafka_err_desc *errdescs;
