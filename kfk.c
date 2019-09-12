@@ -338,9 +338,6 @@ K decodeParList(rd_kafka_topic_partition_list_t *t){
 rd_kafka_topic_partition_list_t* plistoffsetdict(S topic,K partitions){
   K dk=kK(partitions)[0],dv=kK(partitions)[1];
   I*p;J*o,i;
-//  if(dk->n==0) return NULL; // empty dicts for offsetless commit
-  if(dk->n==0)
-    return(krr (S)"dictionary of zero length provided");
   p=kI(dk);o=kJ(dv);
   rd_kafka_topic_partition_list_t *t_partition=
       rd_kafka_topic_partition_list_new(dk->n);
@@ -427,6 +424,8 @@ EXP K3(kfkAssignOffsets){
   rd_kafka_resp_err_t err;
   if(!checkType("is!", x,y,z))
     return KNL;
+  if(!checkType("IJ",kK(z)[0],kK(z)[1]))
+    return KNL;
   if(!(rk= clientIndex(x)))
     return KNL;
   partitions = plistoffsetdict(y->s,z);
@@ -441,6 +440,8 @@ EXP K4(kfkCommitOffsets){
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
   if(!checkType("is!b", x, y, z, r))
+    return KNL;
+  if(!checkType("IJ",kK(z)[0],kK(z)[1]))
     return KNL;
   if(!(rk= clientIndex(x)))
     return KNL;
@@ -459,6 +460,8 @@ EXP K3(kfkCommittedOffsets){
     return KNL;
   if(!(rk= clientIndex(x)))
     return KNL;
+  if(!checkType("IJ",kK(z)[0],kK(z)[1]))
+    return KNL;
   t_partition = plistoffsetdict(y->s,z);
   if(KFK_OK != (err= rd_kafka_committed(rk, t_partition,5000)))
     return krr((S) rd_kafka_err2str(err));
@@ -472,6 +475,8 @@ EXP K3(kfkPositionOffsets){
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
   if(!checkType("is!", x, y, z))
+    return KNL;
+  if(!checkType("IJ",kK(z)[0],kK(z)[1]))
     return KNL;
   if(!(rk= clientIndex(x)))
     return KNL;
