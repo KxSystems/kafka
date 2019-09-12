@@ -578,9 +578,15 @@ EXP K2(kfkPartition_Available){
 // logger level is set based on Severity levels in syslog https://en.wikipedia.org/wiki/Syslog#Severity_level
 EXP K2(kfkSet_Logger_Level){
   rd_kafka_t *rk;
+  I qy=0;
   if(!(rk=clientIndex(x)))
     return KNL;
-  rd_kafka_set_log_level(rk, y->i);
+  SW(y->t){
+    CS(-KH,qy=y->h);
+    CS(-KI,qy=y->i);
+    CS(-KJ,qy=y->j);
+  }
+  rd_kafka_set_log_level(rk, qy);
   return KNL;
 }
 
