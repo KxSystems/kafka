@@ -51,10 +51,9 @@ funcs:(
         (`kfkThread_Count;1);
           // .kfk.Version_str[]:s
         (`kfkVersion_String;1);
-          // .kfk.Set_Logger_Level[int_level:i]:()
+          // .kfk.Set_Logger_Level[client_id:i;int_level:i]:()
         (`kfkSet_Logger_Level;2)
 	);
-
 
 // binding functions from dictionary funcs using rule
 // kfk<Name> -> .kfk.<Name>
@@ -67,6 +66,9 @@ Version:Version[];
 
 // Table with all errors return by kafka with codes and description
 Errors:ExportErr[];
+
+// Allows .kfk.CommittedOffsets to take topics as a list in z argument
+CommittedOffsets:{[cf;x;y;z]cf[x;y;$[99h=type z;z;(z,())!count[z]#0]]}CommittedOffsets
 
 // Unassigned partition.
 // The unassigned partition is used by the producer API for messages
