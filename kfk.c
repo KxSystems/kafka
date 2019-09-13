@@ -560,7 +560,7 @@ EXP K1(kfkOutQLen){
   return ki(rd_kafka_outq_len(rk));
 }
 
-EXP K2(kfkPartition_Available){
+EXP K2(kfkPartitionAvailable){
   rd_kafka_topic_t *rkt;
   I qy=0;
   if(!checkType("[hij]",y))
@@ -576,7 +576,7 @@ EXP K2(kfkPartition_Available){
 }
 
 // logger level is set based on Severity levels in syslog https://en.wikipedia.org/wiki/Syslog#Severity_level
-EXP K2(kfkSet_Logger_Level){
+EXP K2(kfkSetLoggerLevel){
   rd_kafka_t *rk;
   I qy=0;
   if(!(rk=clientIndex(x)))
@@ -591,12 +591,12 @@ EXP K2(kfkSet_Logger_Level){
 }
 
 // Returns the number of threads currently being used by librdkafka
-EXP K kfkThread_Count(K UNUSED(x)){return ki(rd_kafka_thread_cnt());}
+EXP K kfkThreadCount(K UNUSED(x)){return ki(rd_kafka_thread_cnt());}
 
 EXP K kfkVersion(K UNUSED(x)){return ki(rd_kafka_version());}
 
 // Returns the human readable librdkafka version
-EXP K kfkVersion_String(K UNUSED(x)){return ks((S)rd_kafka_version_str());}
+EXP K kfkVersionSym(K UNUSED(x)){return ks((S)rd_kafka_version_str());}
 
 EXP K kfkExportErr(K UNUSED(dummy)){
   const struct rd_kafka_err_desc *errdescs;

@@ -45,14 +45,14 @@ funcs:(
 	(`kfkCommittedOffsets;3);
 	  // .kfk.AssignOffsets[client_id:i;topic:s;partition_offsets:I!J]:()
 	(`kfkAssignOffsets;3);
-          // .kfk.Partition_Available[topic_id:i]:i
-        (`kfkPartition_Available;2);
-          // .kfk.Thread_count[]:i
-        (`kfkThread_Count;1);
-          // .kfk.Version_str[]:s
-        (`kfkVersion_String;1);
-          // .kfk.Set_Logger_Level[client_id:i;int_level:i]:()
-        (`kfkSet_Logger_Level;2)
+          // .kfk.PartitionAvailable[topic_id:i]:i
+        (`kfkPartitionAvailable;2);
+          // .kfk.Threadcount[]:i
+        (`kfkThreadCount;1);
+          // .kfk.VersionSym[]:s
+        (`kfkVersionSym;1);
+          // .kfk.SetLoggerLevel[client_id:i;int_level:i]:()
+        (`kfkSetLoggerLevel;2)
 	);
 
 // binding functions from dictionary funcs using rule
