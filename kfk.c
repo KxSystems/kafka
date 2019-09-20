@@ -560,25 +560,12 @@ EXP K1(kfkOutQLen){
   return ki(rd_kafka_outq_len(rk));
 }
 
-EXP K2(kfkPartitionAvailable){
-  rd_kafka_topic_t *rkt;
-  I qy=0;
-  if(!checkType("[hij]",y))
-    return KNL;
-  if(!(rkt=topicIndex(x)))
-    return KNL;
-  SW(y->t){
-    CS(-KH,qy=y->h);
-    CS(-KI,qy=y->i);
-    CS(-KJ,qy=y->j);
-  }
-  return kb(rd_kafka_topic_partition_available(rkt, qy));
-}
-
 // logger level is set based on Severity levels in syslog https://en.wikipedia.org/wiki/Syslog#Severity_level
 EXP K2(kfkSetLoggerLevel){
   rd_kafka_t *rk;
   I qy=0;
+  if(!checkType("i[hij]",x,y))
+    return KNL;
   if(!(rk=clientIndex(x)))
     return KNL;
   SW(y->t){

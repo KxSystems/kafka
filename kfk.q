@@ -45,8 +45,6 @@ funcs:(
 	(`kfkCommittedOffsets;3);
 	  // .kfk.AssignOffsets[client_id:i;topic:s;partition_offsets:I!J]:()
 	(`kfkAssignOffsets;3);
-          // .kfk.PartitionAvailable[topic_id:i]:i
-        (`kfkPartitionAvailable;2);
           // .kfk.Threadcount[]:i
         (`kfkThreadCount;1);
           // .kfk.VersionSym[]:s
@@ -67,9 +65,11 @@ Version:Version[];
 // Table with all errors return by kafka with codes and description
 Errors:ExportErr[];
 
+// projection function for handling int/long lists of partitions for offset functions
+osetp:{[cf;x;y;z]cf[x;y;$[99h=type z;z;("i"$z,())!count[z]#0]]}
 // Allow Offset functionality to take topics as a list in z argument
-CommittedOffsets:{[cf;x;y;z]cf[x;y;$[99h=type z;z;(z,())!count[z]#0]]}CommittedOffsets
-PositionOffsets:{[cf;x;y;z]cf[x;y;$[99h=type z;z;(z,())!count[z]#0]]}PositionOffsets
+CommittedOffsets:osetp[CommittedOffsets;;]
+PositionOffsets :osetp[PositionOffsets;;]
 
 // Unassigned partition.
 // The unassigned partition is used by the producer API for messages
