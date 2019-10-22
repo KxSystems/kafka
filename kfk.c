@@ -142,8 +142,7 @@ static K loadConf(rd_kafka_conf_t *conf, K x){
   char b[512];
   J i;
   for(i= 0; i < xx->n; ++i){
-    if(RD_KAFKA_CONF_OK !=
-       rd_kafka_conf_set(conf, kS(xx)[i], kS(xy)[i], b, sizeof(b))){
+    if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, kS(xx)[i], kS(xy)[i], b, sizeof(b))){
       return krr((S) b);
     }
   }
@@ -339,7 +338,6 @@ K decodeParList(rd_kafka_topic_partition_list_t *t){
 rd_kafka_topic_partition_list_t* plistoffsetdict(S topic,K partitions){
   K dk=kK(partitions)[0],dv=kK(partitions)[1];
   I*p;J*o,i;
-  if(dk->n==0) return NULL; // empty dicts for offsetless commit
   p=kI(dk);o=kJ(dv);
   rd_kafka_topic_partition_list_t *t_partition=
       rd_kafka_topic_partition_list_new(dk->n);
@@ -349,6 +347,24 @@ rd_kafka_topic_partition_list_t* plistoffsetdict(S topic,K partitions){
   }
   return t_partition;
 }
+
+EXP K2(kfkFlush){
+  rd_kafka_t *rk;
+  I qy=0;
+  if(!checkType("i[hij]",x,y))
+    return KNL;
+  if(!(rk= clientIndex(x)))
+    return KNL;
+  SW(y->t){
+    CS(-KH,qy=y->h);
+    CS(-KI,qy=y->i);
+    CS(-KJ,qy=y->j);
+  }
+  rd_kafka_resp_err_t err= rd_kafka_flush(rk,qy);
+  if(KFK_OK != err)
+    return krr((S) rd_kafka_err2str(err));
+  return KNL;
+ }
 
 // producer api
 EXP K4(kfkPub){
@@ -408,6 +424,8 @@ EXP K3(kfkAssignOffsets){
   rd_kafka_resp_err_t err;
   if(!checkType("is!", x,y,z))
     return KNL;
+  if(!checkType("IJ",kK(z)[0],kK(z)[1]))
+    return KNL;
   if(!(rk= clientIndex(x)))
     return KNL;
   partitions = plistoffsetdict(y->s,z);
@@ -422,6 +440,8 @@ EXP K4(kfkCommitOffsets){
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
   if(!checkType("is!b", x, y, z, r))
+    return KNL;
+  if(!checkType("IJ",kK(z)[0],kK(z)[1]))
     return KNL;
   if(!(rk= clientIndex(x)))
     return KNL;
@@ -440,6 +460,8 @@ EXP K3(kfkCommittedOffsets){
     return KNL;
   if(!(rk= clientIndex(x)))
     return KNL;
+  if(!checkType("IJ",kK(z)[0],kK(z)[1]))
+    return KNL;
   t_partition = plistoffsetdict(y->s,z);
   if(KFK_OK != (err= rd_kafka_committed(rk, t_partition,5000)))
     return krr((S) rd_kafka_err2str(err));
@@ -454,6 +476,8 @@ EXP K3(kfkPositionOffsets){
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
   if(!checkType("is!", x, y, z))
     return KNL;
+  if(!checkType("IJ",kK(z)[0],kK(z)[1]))
+    return KNL;
   if(!(rk= clientIndex(x)))
     return KNL;
   t_partition = plistoffsetdict(y->s,z);
@@ -465,20 +489,20 @@ EXP K3(kfkPositionOffsets){
 }
 
 EXP K1(kfkSubscription){
-	K r;
-	rd_kafka_topic_partition_list_t *t;
-	rd_kafka_t *rk;
-	rd_kafka_resp_err_t err;
-	if (!checkType("i", x))
-		return KNL;
-	if (!(rk = clientIndex(x)))
-		return KNL;
-	err = rd_kafka_subscription(rk, &t);
-	if (KFK_OK != err)
-		return krr((S)rd_kafka_err2str(err));
-	r = decodeParList(t);
-	rd_kafka_topic_partition_list_destroy(t);
-	return r;
+  K r;
+  rd_kafka_topic_partition_list_t *t;
+  rd_kafka_t *rk;
+  rd_kafka_resp_err_t err;
+  if (!checkType("i", x))
+    return KNL;
+  if (!(rk = clientIndex(x)))
+    return KNL;
+  err = rd_kafka_subscription(rk, &t);
+  if (KFK_OK != err)
+    return krr((S)rd_kafka_err2str(err));
+  r = decodeParList(t);
+  rd_kafka_topic_partition_list_destroy(t);
+  return r;
 }
 
 static J pu(J u){return 1000000LL*(u-10957LL*86400000LL);}
@@ -536,7 +560,30 @@ EXP K1(kfkOutQLen){
   return ki(rd_kafka_outq_len(rk));
 }
 
+// logger level is set based on Severity levels in syslog https://en.wikipedia.org/wiki/Syslog#Severity_level
+EXP K2(kfkSetLoggerLevel){
+  rd_kafka_t *rk;
+  I qy=0;
+  if(!checkType("i[hij]",x,y))
+    return KNL;
+  if(!(rk=clientIndex(x)))
+    return KNL;
+  SW(y->t){
+    CS(-KH,qy=y->h);
+    CS(-KI,qy=y->i);
+    CS(-KJ,qy=y->j);
+  }
+  rd_kafka_set_log_level(rk, qy);
+  return KNL;
+}
+
+// Returns the number of threads currently being used by librdkafka
+EXP K kfkThreadCount(K UNUSED(x)){return ki(rd_kafka_thread_cnt());}
+
 EXP K kfkVersion(K UNUSED(x)){return ki(rd_kafka_version());}
+
+// Returns the human readable librdkafka version
+EXP K kfkVersionSym(K UNUSED(x)){return ks((S)rd_kafka_version_str());}
 
 EXP K kfkExportErr(K UNUSED(dummy)){
   const struct rd_kafka_err_desc *errdescs;
