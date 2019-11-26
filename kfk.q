@@ -114,7 +114,4 @@ offsetcb:{[cid;err;offsets]}
 // Main callback for consuming messages(including errors)
 consumecb:{[msg]}
 
-// Throttle callback call to(rd_kafka_conf_set_throttle_cb)
-throttlecb:{[cid;bname;bif;throttle]}
-
 \d .
