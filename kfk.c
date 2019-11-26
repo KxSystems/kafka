@@ -387,9 +387,9 @@ EXP K4(kfkPub){
 EXP K3(kfkSub){
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
-  J i;
+  J i,j;
   I*p;
-  if(!checkType("is[I!]", x, y, z))
+  if(!checkType("i[sS][I!]", x, y, z))
     return KNL;
   if(!(rk= clientIndex(x)))
     return KNL;
@@ -401,7 +401,13 @@ EXP K3(kfkSub){
       rd_kafka_topic_partition_list_new(z->n);
     for(i= 0; i < z->n; ++i){
       p=kI(z);
-      rd_kafka_topic_partition_list_add(t_partition, y->s, p[i]);
+      if(y->t == -KS)
+        rd_kafka_topic_partition_list_add(t_partition, y->s, p[i]);
+      else{
+        for(j=0;j < y->n; ++j){
+          rd_kafka_topic_partition_list_add(t_partition, kS(y)[j], p[i]);
+        }
+      }
     }
   }
   if(KFK_OK != (err= rd_kafka_subscribe(rk, t_partition)))
