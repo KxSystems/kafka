@@ -10,29 +10,38 @@ kfk_cfg:(!) . flip(
     (`enable.auto.offset.store;`false)
     );
 client:.kfk.Consumer[kfk_cfg];
-TOPIC:`test
+
+// Topics to be published to
+topic1:`test1
+topic2:`test2
 data:();
+
+// Callback function for managing of messages
 .kfk.consumecb:{[msg]
     msg[`data]:"c"$msg[`data];
     msg[`rcvtime]:.z.p;
     data,::enlist msg;}
+// Define Offset callback functionality
 .kfk.offsetcb:{[cid;err;offsets]show (cid;err;offsets);}
 
-
-show .kfk.AssignOffsets[client;TOPIC;(1#0i)!1#.kfk.OFFSET.END]     // start replaying from the end
-.kfk.Sub[client;TOPIC;(1#0i)!1#.kfk.OFFSET.END];
-
+// Assign partitions to consume from specified offsets
+show .kfk.AssignOffsets[client;;(1#0i)!1#.kfk.OFFSET.END]each (topic1;topic2)
+// Subscribe to relevant topics from a defined client
+.kfk.Sub[client;;(1#0i)!1#.kfk.OFFSET.END]each (topic1;topic2)
 
 strt:.z.t
+// The following example has been augmented to display and commit offsets for each of
+// the available topics every 10 seconds
 \t 5000
-.z.ts:{
+.z.ts:{n+:1;topic:$[n mod 2;topic1;topic2];
   if[(5000<"i"$.z.t-strt)&1<count data;
-  seen:exec last offset by partition from data;
-  show "Position:";
-  show .kfk.PositionOffsets[client;TOPIC;seen];
-  show "Before commited:";
-  show .kfk.CommittedOffsets[client;TOPIC;seen];
-  .kfk.CommitOffsets[client;TOPIC;seen;0b];  // commit whatever is storred
-  show "After commited:";
-  show .kfk.CommittedOffsets[client;TOPIC;seen];]
+    -1 "\nPublishing information from topic :",string topic;
+    seen:exec last offset by partition from data;
+    show "Position:";
+    show .kfk.PositionOffsets[client;topic;seen];
+    show "Before commited:";
+    show .kfk.CommittedOffsets[client;topic;seen];
+    .kfk.CommitOffsets[client;topic;seen;0b];
+    show "After commited:";
+    show .kfk.CommittedOffsets[client;topic;seen];]
   }
