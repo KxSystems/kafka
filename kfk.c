@@ -428,8 +428,7 @@ EXP K3(kfkAssignOffsets){
     return KNL;
   t_partition = rd_kafka_topic_partition_list_new(z->n);
   plistoffsetdict(y->s,z,t_partition);
-  err=rd_kafka_assign(rk,t_partition);
-  if(KFK_OK != err)
+  if(KFK_OK != (err=rd_kafka_assign(rk,t_partition)))
     return krr((S) rd_kafka_err2str(err));
   rd_kafka_topic_partition_list_destroy(t_partition);
   return knk(0);

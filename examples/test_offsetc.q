@@ -36,7 +36,7 @@ strt:.z.t
 .z.ts:{n+:1;topic:$[n mod 2;topic1;topic2];
   if[(5000<"i"$.z.t-strt)&1<count data;
     -1 "\nPublishing information from topic :",string topic;
-    seen:exec last offset by partition from data;
+    show seen:exec last offset by partition from data where topic=topic;
     show "Position:";
     show .kfk.PositionOffsets[client;topic;seen];
     show "Before commited:";
