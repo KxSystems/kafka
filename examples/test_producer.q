@@ -7,13 +7,18 @@ kfk_cfg:(!) . flip(
   );
 producer:.kfk.Producer[kfk_cfg]
 
-test_topic:.kfk.Topic[producer;`test;()!()]
+topic1:.kfk.Topic[producer;`test1;()!()]
+topic2:.kfk.Topic[producer;`test2;()!()]
 
-.z.ts:{.kfk.Pub[test_topic;.kfk.PARTITION_UA;string x;""]}
-show "Publishing on topic:",string .kfk.TopicName test_topic;
-.kfk.Pub[test_topic;.kfk.PARTITION_UA;string .z.p;""];
-show "Published 1 message";
+.z.ts:{n+:1;topic:$[n mod 2;topic1;topic2];
+       .kfk.Pub[topic;.kfk.PARTITION_UA;string x;""]}
+
+
+
+-1 "Publishing on topics:",string[.kfk.TopicName topic1],", ",string[.kfk.TopicName topic2];
+.kfk.Pub[;.kfk.PARTITION_UA;string .z.p;""]each(topic1;topic2);
+-1 "Published one message for each topic";
 producer_meta:.kfk.Metadata[producer];
 show producer_meta`topics;
-show "Set timer with \t 1000 to publish message every second";
+-1 "Set timer with \\t 500 to publish a message each second to each topic.";
 

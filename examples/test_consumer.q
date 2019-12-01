@@ -8,13 +8,18 @@ kfk_cfg:(!) . flip(
     (`statistics.interval.ms;`10000)
     );
 client:.kfk.Consumer[kfk_cfg];
+
 data:();
 .kfk.consumecb:{[msg]
     msg[`data]:"c"$msg[`data];
     msg[`rcvtime]:.z.p;
     data,::enlist msg;}
 
-.kfk.Sub[client;`test;enlist .kfk.PARTITION_UA];
+// Topics to subscribe to
+topic1:`test1; topic2:`test2;
+
+// Subscribe to multiple topics from a single client
+.kfk.Sub[client;;enlist .kfk.PARTITION_UA]each(topic1;topic2);
 
 client_meta:.kfk.Metadata[client];
 show client_meta`topics;

@@ -335,17 +335,15 @@ K decodeParList(rd_kafka_topic_partition_list_t *t){
   return r;
 }
 
-rd_kafka_topic_partition_list_t* plistoffsetdict(S topic,K partitions){
+
+static V plistoffsetdict(S topic,K partitions,rd_kafka_topic_partition_list_t *t_partition){
   K dk=kK(partitions)[0],dv=kK(partitions)[1];
   I*p;J*o,i;
   p=kI(dk);o=kJ(dv);
-  rd_kafka_topic_partition_list_t *t_partition=
-      rd_kafka_topic_partition_list_new(dk->n);
   for(i= 0; i < dk->n; ++i){
     rd_kafka_topic_partition_list_add(t_partition, topic, p[i]);
     rd_kafka_topic_partition_list_set_offset(t_partition, topic, p[i],o[i]);
   }
-  return t_partition;
 }
 
 EXP K2(kfkFlush){
@@ -388,19 +386,19 @@ EXP K3(kfkSub){
     return KNL;
   if(!(rk= clientIndex(x)))
     return KNL;
+  if(KFK_OK != (err = rd_kafka_subscription(rk, &t_partition)))
+    return krr((S)rd_kafka_err2str(err));
   if(z->t == XD){
-    t_partition = plistoffsetdict(y->s,z);
+    if(!checkType("IJ", kK(z)[0], kK(z)[1]))
+      return KNL;
+    plistoffsetdict(y->s,z,t_partition);
   }
-  else{
-    t_partition=
-      rd_kafka_topic_partition_list_new(z->n);
-    for(i= 0; i < z->n; ++i){
-      p=kI(z);
+  else
+    for(p=kI(z), i= 0; i < z->n; ++i)
       rd_kafka_topic_partition_list_add(t_partition, y->s, p[i]);
-    }
-  }
   if(KFK_OK != (err= rd_kafka_subscribe(rk, t_partition)))
     return krr((S) rd_kafka_err2str(err));
+  rd_kafka_topic_partition_list_destroy(t_partition);
   return knk(0);
 }
 
@@ -420,7 +418,7 @@ EXP K1(kfkUnsub){
 // https://github.com/edenhill/librdkafka/wiki/Manually-setting-the-consumer-start-offset
 EXP K3(kfkAssignOffsets){
   rd_kafka_t *rk;
-  rd_kafka_topic_partition_list_t *partitions;
+  rd_kafka_topic_partition_list_t *t_partition;
   rd_kafka_resp_err_t err;
   if(!checkType("is!", x,y,z))
     return KNL;
@@ -428,11 +426,11 @@ EXP K3(kfkAssignOffsets){
     return KNL;
   if(!(rk= clientIndex(x)))
     return KNL;
-  partitions = plistoffsetdict(y->s,z);
-  err=rd_kafka_assign(rk, partitions);
-  if(KFK_OK != err)
+  t_partition = rd_kafka_topic_partition_list_new(z->n);
+  plistoffsetdict(y->s,z,t_partition);
+  if(KFK_OK != (err=rd_kafka_assign(rk,t_partition)))
     return krr((S) rd_kafka_err2str(err));
-  rd_kafka_topic_partition_list_destroy(partitions); 
+  rd_kafka_topic_partition_list_destroy(t_partition);
   return knk(0);
 }
 
@@ -444,8 +442,9 @@ EXP K4(kfkCommitOffsets){
   if(!checkType("IJ",kK(z)[0],kK(z)[1]))
     return KNL;
   if(!(rk= clientIndex(x)))
-    return KNL;
-  t_partition = plistoffsetdict(y->s,z);
+    return KNL;  
+  t_partition = rd_kafka_topic_partition_list_new(z->n);
+  plistoffsetdict(y->s,z,t_partition);
   if(KFK_OK != (err= rd_kafka_commit(rk, t_partition,r->g)))
     return krr((S) rd_kafka_err2str(err));
   rd_kafka_topic_partition_list_destroy(t_partition);
@@ -462,7 +461,8 @@ EXP K3(kfkCommittedOffsets){
     return KNL;
   if(!checkType("IJ",kK(z)[0],kK(z)[1]))
     return KNL;
-  t_partition = plistoffsetdict(y->s,z);
+  t_partition = rd_kafka_topic_partition_list_new(z->n);
+  plistoffsetdict(y->s,z,t_partition);
   if(KFK_OK != (err= rd_kafka_committed(rk, t_partition,5000)))
     return krr((S) rd_kafka_err2str(err));
   r=decodeParList(t_partition);
@@ -480,7 +480,8 @@ EXP K3(kfkPositionOffsets){
     return KNL;
   if(!(rk= clientIndex(x)))
     return KNL;
-  t_partition = plistoffsetdict(y->s,z);
+  t_partition = rd_kafka_topic_partition_list_new(z->n);
+  plistoffsetdict(y->s,z,t_partition); 
   if(KFK_OK != (err= rd_kafka_position(rk, t_partition)))
     return krr((S) rd_kafka_err2str(err));
   r=decodeParList(t_partition);
@@ -497,8 +498,7 @@ EXP K1(kfkSubscription){
     return KNL;
   if (!(rk = clientIndex(x)))
     return KNL;
-  err = rd_kafka_subscription(rk, &t);
-  if (KFK_OK != err)
+  if (KFK_OK != (err= rd_kafka_subscription(rk, &t)))
     return krr((S)rd_kafka_err2str(err));
   r = decodeParList(t);
   rd_kafka_topic_partition_list_destroy(t);
