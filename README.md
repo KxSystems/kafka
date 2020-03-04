@@ -80,7 +80,9 @@ Compile, install and move shared object file to appropriate location.
 
 1. Make sure you have `QHOME` set as an environment variable.
 
-2. Run the following set of commands to set up the system as outlined
+2. If your librdkafka install is not located in `$HOME/include` as defaulted by the above instructions set `KAFKA_ROOT` environment variable to the appropriate include location.
+
+3. Run the following set of commands to set up the system as outlined
 
 ```bash
 // in kfk source folder
