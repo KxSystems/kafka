@@ -29,6 +29,8 @@ funcs:(
 	(`kfkUnsub;1);
 	  // .kfk.Subscription[client_id:i]
 	(`kfkSubscription;1);
+	  // .kfk.MaxMsgsPerPoll[max_messages]
+	(`kfkMaxMsgsPerPoll;1);
 	  // .kfk.Poll[client_id:i;timeout;max_messages]
 	(`kfkPoll;3);
 	  // .kfk.Version[]:i
