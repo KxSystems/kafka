@@ -2,27 +2,33 @@
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/kxsystems/kafka)](https://github.com/kxsystems/kafka/releases) [![Travis (.org) branch](https://img.shields.io/travis/kxsystems/kafka/master)](https://travis-ci.org/kxsystems/kafka/branches)
 
+## Introduction
+
 `kfk` is a thin wrapper for kdb+ around [`librdkafka`](https://github.com/edenhill/librdkafka) C API for [Kafka](https://kafka.apache.org/).
 It is part of the [_Fusion for kdb+_](https://code.kx.com/v2/interfaces/fusion/) interface collection.
-
-Please [report issues](https://github.com/KxSystems/kafka/issues) in this repository.
-
-See [code.kx.com/v2/interfaces/kafka](https://code.kx.com/v2/interfaces/kafka/) for full documentation.
 
 This interface is supported for the following platforms
 
 * 32 & 64 bit MacOS and Linux
 * 64 bit Windows
 
-The following sections outline the instructions for building from source the linux, macOS and Windows builds the kafka interface for kdb+.
+## New to kdb+ ?
 
-## Linux & Mac
+Kdb+ is the world's fastest time-series database, optimized for ingesting, analyzing and storing massive amounts of structured data. To get started with kdb+, please visit https://code.kx.com/q/learn/ for downloads and developer information. For general information, visit https://kx.com/
 
-### Step 1
+## Documentation
+
+Documentation outlining the functionality available for this interface can be found [here](https://code.kx.com/v2/interfaces/kafka/).
+
+## Running
+
+### Linux & Mac
+
+#### Step 1
 
 Build or install the latest version of `librdkafka`. The minimum required version is v0.11.0.
 
-#### Install
+##### Install
 
 _macOS_
 
@@ -42,8 +48,7 @@ _RHEL/CentOS_
 sudo yum install librdkafka-devel
 ```
 
-
-#### Build from source 
+##### Build from source 
 
 Follow [requirements for `librdkafka` compilation](https://github.com/edenhill/librdkafka#requirements).
 
@@ -74,7 +79,7 @@ make install
 ```
 
 
-### Step 2
+#### Step 2
 
 Compile, install and move shared object file to appropriate location.
 
@@ -99,7 +104,7 @@ Note: If compiling dynamically linked `libkfk.so` make sure you have `librdkafka
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/lib
 ```
 
-## Windows
+### Windows
 
 At present the Windows build of the `.dll` for the kafka interface has been tested on Visual Studio 2017 with `librdkafka.redist.1.0.0`. The following are the steps completed to achieve this
 
@@ -138,21 +143,9 @@ At present the Windows build of the `.dll` for the kafka interface has been test
 
 11. Move the created `.dll` from the build folder to `%QHOME%/<arch>`
 
-## Documentation
+## Status
+This interface is provided here under an Apache 2.0 license.
 
-See [code.kx.com/v2/interfaces/kafka](https://code.kx.com/v2/interfaces/kafka/).
+If you find issues with the interface or have feature requests please consider raising an issue [here](https://github.com/KxSystems/kafka/issues).
 
-
-https://docs.confluent.io/2.0.0/clients/consumer.html#synchronous-commits
-
-To have `launchd` start kafka now, and restart at login:
-
-```bash
-brew services start kafka
-```
-
-Or, if you don’t want or need a background service you can just run:
-
-```bash
-zookeeper-server-start /usr/local/etc/kafka/zookeeper.properties & kafka-server-start /usr/local/etc/kafka/server.properties
-```
+If you wish to contribute to this project please follow the contributing guide [here](CONTRIBUTING.md).
