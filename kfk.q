@@ -29,6 +29,8 @@ funcs:(
 	(`kfkUnsub;1);
 	  // .kfk.Subscription[client_id:i]
 	(`kfkSubscription;1);
+	  // .kfk.MaxMsgsPerPoll[max_messages]
+	(`kfkMaxMsgsPerPoll;1);
 	  // .kfk.Poll[client_id:i;timeout;max_messages]
 	(`kfkPoll;3);
 	  // .kfk.Version[]:i
@@ -115,5 +117,18 @@ offsetcb:{[cid;err;offsets]}
 
 // Main callback for consuming messages(including errors)
 consumecb:{[msg]}
+
+// Addition of error callback (rd_kafka_conf_set_error_cb)
+/* cid is an integer
+/* err_int is an integer code relating to the kafka issue
+/* reason is a string denoting the reason for the error
+errcb:{[cid;err_int;reason]}
+
+// Triggered callback on non-zero throttle time from a broker (rd_kafka_conf_set_throttle_cb)
+/* cid is an integer
+/* broker_name is a string
+/* broker_id is an integer
+/* throttle_time_ms is an integer
+throttlecb:{[cid;broker_name;broker_id;throttle_time_ms]}
 
 \d .

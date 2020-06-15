@@ -20,6 +20,7 @@ static SOCKET spair[2];
 #define SOCKET_ERROR -1
 static I spair[2];
 #endif
+static J maxMsgsPerPoll = 0;
 
 #define KR -128
 #define KNL (K) 0
@@ -117,23 +118,33 @@ static I printr0(K x){
   return 0;
 }
 
+K decodeMsg(const rd_kafka_t*rk,const rd_kafka_message_t *msg);
+
 static I statscb(rd_kafka_t*UNUSED(rk), S json, size_t json_len, V*UNUSED(opaque)){
   return printr0(k(0, (S) ".kfk.statcb", kpn(json, json_len), KNL));
 } // should return 0 to indicate mem free to kafka
 
-static V logcb(const rd_kafka_t *UNUSED(rk), int level, const char *fac,
-               const char *buf) {
+static V logcb(const rd_kafka_t *UNUSED(rk), int level, const char *fac, const char *buf){
   printr0(k(0, (S) ".kfk.logcb", ki(level), kp((S) fac), kp((S) buf), KNL));
 }
 
-static V offsetcb(rd_kafka_t *rk, rd_kafka_resp_err_t err,rd_kafka_topic_partition_list_t*offsets, V*UNUSED(opaque)){
+static V offsetcb(rd_kafka_t *rk, rd_kafka_resp_err_t err,
+                  rd_kafka_topic_partition_list_t*offsets, V*UNUSED(opaque)){
   printr0(k(0, (S) ".kfk.offsetcb", ki(indexClient(rk)), kp((S)rd_kafka_err2str(err)), decodeParList(offsets),KNL));
 }
 
-K decodeMsg(const rd_kafka_t*rk,const rd_kafka_message_t *msg);
-
 static V drcb(rd_kafka_t*rk,const rd_kafka_message_t *msg,V*UNUSED(opaque)){
   printr0(k(0,(S)".kfk.drcb",ki(indexClient(rk)), decodeMsg(rk,msg),KNL));
+}
+
+static V errorcb(rd_kafka_t *rk, int err, const char *reason, V*UNUSED(opaque)){
+  printr0(k(0, (S) ".kfk.errcb", ki(indexClient(rk)), ki(err), kp((S)reason), KNL));
+}
+
+static V throttlecb(rd_kafka_t *rk, const char *brokername,
+                    int32_t brokerid, int throttle_time_ms, V*UNUSED(opaque)){
+  printr0(k(0,(S) ".kfk.throttlecb", ki(indexClient(rk)),
+          kp((S)brokername), ki(brokerid), ki(throttle_time_ms),KNL));
 }
 
 // client api
@@ -176,6 +187,8 @@ EXP K2(kfkClient){
   rd_kafka_conf_set_log_cb(conf, logcb);
   rd_kafka_conf_set_dr_msg_cb(conf,drcb);
   rd_kafka_conf_set_offset_commit_cb(conf,offsetcb);
+  rd_kafka_conf_set_throttle_cb(conf,throttlecb);
+  rd_kafka_conf_set_error_cb(conf,errorcb);
   if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, "log.queue", "true", b, sizeof(b)))
     return krr((S) b);
   if(!(rk= rd_kafka_new(type, conf, b, sizeof(b))))
@@ -520,25 +533,35 @@ K decodeMsg(const rd_kafka_t* rk, const rd_kafka_message_t *msg) {
     "msgtime", z, "data", x, "key", y, (S) 0);
 }
 
-J pollClient(rd_kafka_t *rk, J timeout, J UNUSED(maxcnt)) {
+J pollClient(rd_kafka_t *rk, J timeout, J maxcnt) {
+  if(rd_kafka_type(rk) == RD_KAFKA_PRODUCER)
+    return rd_kafka_poll(rk, timeout);
   K r;
   J n= 0;
   rd_kafka_message_t *msg;
-  rd_kafka_type_t rk_type;
-  rk_type= rd_kafka_type(rk);
-  if(rk_type == RD_KAFKA_PRODUCER) {
-    n= rd_kafka_poll(rk, timeout);
-    return n;
-  }
   while((msg= rd_kafka_consumer_poll(rk, timeout))) {
     r= decodeMsg(rk,msg);
     printr0(k(0, ".kfk.consumecb", r, KNL));
     rd_kafka_message_destroy(msg);
-    n++;
+    ++n;
+    /* as n is never 0 in next call, when maxcnt is 0 and maxMsgsPerPoll is 0, doesnt return early */
+    /* maxcnt has priority over maxMsgsPerPoll */
+    if ((maxcnt==n) || (maxMsgsPerPoll==n && maxcnt==0)) 
+    {
+      char data = 'Z';
+      send(spair[1], &data, 1, 0);
+      return n;
+    }
   }
   return n;
 }
 
+EXP K1(kfkMaxMsgsPerPoll){
+  if(!checkType("j", x))
+    return KNL;
+  maxMsgsPerPoll=x->j;
+  return kj(maxMsgsPerPoll);
+}
 
 // for manual poll of the feed.
 EXP K3(kfkPoll){
@@ -607,7 +630,7 @@ EXP K kfkCallback(I d){
     consumed+=n;
   // pass consumed to poll for possible batching
   for(i= 0; i < clients->n; i++)
-    pollClient((rd_kafka_t*)kS(clients)[i], 0, consumed);
+    pollClient((rd_kafka_t*)kS(clients)[i], 0, 0);
   return KNL;
 }
 
