@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <librdkafka/rdkafka.h>
 #include "socketpair.c"
+#include <fcntl.h>
 #include "k.h"
 #define K3(f) K f(K x,K y,K z)
 #define K4(f) K f(K x,K y,K z,K r)
@@ -666,6 +667,18 @@ EXP K kfkInit(K UNUSED(x)){
   S0=ks("");
   if(dumb_socketpair(spair, 1) == SOCKET_ERROR)
     fprintf(stderr, "Init failed, creating socketpair: %s\n", strerror(errno));
+#ifdef WIN32
+  u_long iMode = 1;
+  if (ioctlsocket(spair[0], FIONBIO, &iMode) != NO_ERROR)
+    return krr((S)"Init couldn't set socket to non-blocking");
+  if (ioctlsocket(spair[1], FIONBIO, &iMode) != NO_ERROR)
+    return krr((S)"Init couldn't set socket to non-blocking");
+#else
+  if (fcntl(spair[0], F_SETFL, O_NONBLOCK) == -1)
+    return krr((S)"Init couldn't set socket to non-blocking");
+  if (fcntl(spair[1], F_SETFL, O_NONBLOCK) == -1)
+    return krr((S)"Init couldn't set socket to non-blocking");
+#endif
   K r=sd1(-spair[0], &kfkCallback);
   if(r==0){
     fprintf(stderr, "Init failed, adding callback\n");
