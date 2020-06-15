@@ -90,7 +90,9 @@ Producer:Client[PRODUCER;]
 
 // Consumer client code
 CONSUMER:"c"
-Consumer:Client[CONSUMER;]
+Consumer:{
+  if[not `group.id in key y;'"Consumers are required to define a `group.id within the config"];
+  Client[x;y]}[CONSUMER;]
 
 // table with kafka statistics
 stats:() 	
