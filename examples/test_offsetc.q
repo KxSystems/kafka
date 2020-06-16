@@ -16,8 +16,8 @@ topic1:`test1
 topic2:`test2
 data:();
 
-// Callback function for managing of messages
-.kfk.consumecb:{[msg]
+// Default callback function overwritten for managing of consumption from all topics
+.kfk.consumetopic[`]:{[msg]
     msg[`data]:"c"$msg[`data];
     msg[`rcvtime]:.z.p;
     data,::enlist msg;}
@@ -26,6 +26,7 @@ data:();
 
 // Assign partitions to consume from specified offsets
 show .kfk.AssignOffsets[client;;(1#0i)!1#.kfk.OFFSET.END]each (topic1;topic2)
+
 // Subscribe to relevant topics from a defined client
 .kfk.Sub[client;;(1#0i)!1#.kfk.OFFSET.END]each (topic1;topic2)
 

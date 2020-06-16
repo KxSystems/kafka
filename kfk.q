@@ -115,8 +115,22 @@ drcb:{[cid;msg]}
 // CONSUMER: offset commit callback(rd_kafka_conf_set_offset_commit_cb)
 offsetcb:{[cid;err;offsets]}
 
-// Main callback for consuming messages(including errors)
-consumecb:{[msg]}
+// Default callback for consuming messages if individual topic callbacks not defined(including errors)
+consumetopic.:{[msg]}
+
+// Main function called on consumption of data for both default and per topic callback
+consumecb:{[msg]$[null f:consumetopic msg`topic;consumetopic.;f]msg}
+
+// Subscribe to a topic from a client, with a defined topic/partition offset and unique callback function
+/* cid  = Integer denoting client Id
+/* top  = Topic to be subscribed to as a symbol
+/* part = Partition list or partition/offset dictionary
+/* cb   = callback function to be used for the specified topic
+Subscribe:{[cid;top;part;cb]
+  Sub[cid;top;part];
+  if[not null cb;consumetopic[top]:cb];
+  }
+
 
 // Addition of error callback (rd_kafka_conf_set_error_cb)
 /* cid is an integer
