@@ -399,7 +399,7 @@ EXP K4(kfkPub){
  *          reference: https://github.com/edenhill/librdkafka/blob/master/src/rdkafka.h (rd_kafka_resp_err_t)
  */
 
-#if (RD_KAFKA_VERSION >= 0x00080400)
+#if (RD_KAFKA_VERSION >= 0x000b04ff)
 
 EXP K4(kfkBatchPub){
   rd_kafka_topic_t *rkt;
