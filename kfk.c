@@ -395,6 +395,8 @@ EXP K4(kfkPub){
  * @param y Partition to use for all message (int) or partition per message (list of ints)
  * @param z Payload for all messages (mixed list containing either bytes or string).
  * @param r Key. Empty string to use auto key for all messages, or key per message (mixed list containing either bytes or string)
+ * @returns Integer list with a status for each send message (zero indicates success) 
+ *          reference: https://github.com/edenhill/librdkafka/blob/master/src/rdkafka.h (rd_kafka_resp_err_t)
  */
 EXP K4(kfkBatchPub){
   rd_kafka_topic_t *rkt;
@@ -438,8 +440,11 @@ EXP K4(kfkBatchPub){
       rkmessages[i].partition = kI(y)[i]; /* use partition per msg */
   }
   int numOk = rd_kafka_produce_batch(rkt,defaultPartition,msgFlags,rkmessages,msgcnt);
+  K results = ktn(KI, msgcnt);
+  for (i = 0 ; i < msgcnt ; i++)
+    kI(results)[i]=rkmessages[i].err;
   free(rkmessages);
-  return ki(numOk);
+  return results;
 }
 
 // consume api
