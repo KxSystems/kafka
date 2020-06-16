@@ -390,6 +390,58 @@ EXP K4(kfkPub){
   return KNL;
 }
 
+/**
+ * @param x Topic Index (prev created)
+ * @param y Partition to use for all message (int) or partition per message (list of ints)
+ * @param z Payload for all messages (mixed list containing either bytes or string).
+ * @param r Key. Empty string to use auto key for all messages, or key per message (mixed list containing either bytes or string)
+ */
+EXP K4(kfkBatchPub){
+  rd_kafka_topic_t *rkt;
+  if(!checkType("i[iI]*[CG*]", x, y, z, r))
+    return KNL;
+  int msgcnt = z->n;
+  if ((r->t == 0) && (msgcnt != r->n))
+    return krr((S)"msg field not same len as key field");
+  if ((y->t == KI) && (msgcnt != y->n))
+    return krr((S)"msg field not same len as partition field");
+  int i=0;
+  for (i = 0 ; i < msgcnt ; i++)
+  {
+    if (((K*)z->G0)[i]->t != KG && ((K*)z->G0)[i]->t !=KC)
+      return krr((S)"incorrect type for msg");
+    if ((r->t ==0) && ((K*)r->G0)[i]->t != KG && ((K*)r->G0)[i]->t !=KC)
+      return krr((S)"incorrect type for key");
+  }
+  if(!(rkt= topicIndex(x)))
+    return KNL;
+  int defaultPartition = RD_KAFKA_PARTITION_UA;
+  int msgFlags = RD_KAFKA_MSG_F_COPY;
+  if (y->t == KI)
+    msgFlags |= RD_KAFKA_MSG_F_PARTITION; /* use partition per msg */
+  else
+    defaultPartition = y->i; /* partition passed for all msgs */
+  
+  rd_kafka_message_t *rkmessages;
+  rkmessages = calloc(sizeof(*rkmessages), msgcnt);
+  K key = r;
+  for (i = 0 ; i < msgcnt ; i++)
+  {
+    K msg = ((K*)z->G0)[i];
+    if (r->t == 0)
+      key = ((K*)r->G0)[i];
+    rkmessages[i].payload = kG(msg);
+    rkmessages[i].len = msg->n;
+    rkmessages[i].key = kG(key);
+    rkmessages[i].key_len = key->n;
+    if (y->t == KI)
+      rkmessages[i].partition = kI(y)[i]; /* use partition per msg */
+  }
+  int numOk = rd_kafka_produce_batch(rkt,defaultPartition,msgFlags,rkmessages,msgcnt);
+  free(rkmessages);
+  return ki(numOk);
+}
+
 // consume api
 EXP K3(kfkSub){
   rd_kafka_resp_err_t err;

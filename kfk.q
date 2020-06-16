@@ -21,6 +21,8 @@ funcs:(
 	(`kfkMetadata;1);
 	  // .kfk.Pub[topic_id:i;partid:i;data;key]:_
 	(`kfkPub;4);
+	  // .kfk.BatchPub[topic_id:i;partid:i;data;key]:_
+	(`kfkBatchPub;4);
 	  // .kfk.OutQLen[client_id:i]:i
 	(`kfkOutQLen;1);
 	  // .kfk.Sub[client_id:i;topicname:s;partition_list|partition_offsets:I!J]:()
