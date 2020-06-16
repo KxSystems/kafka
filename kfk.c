@@ -398,6 +398,9 @@ EXP K4(kfkPub){
  * @returns Integer list with a status for each send message (zero indicates success) 
  *          reference: https://github.com/edenhill/librdkafka/blob/master/src/rdkafka.h (rd_kafka_resp_err_t)
  */
+
+#if (RD_KAFKA_VERSION >= 0x00080400)
+
 EXP K4(kfkBatchPub){
   rd_kafka_topic_t *rkt;
   if(!checkType("i[iI]*[CG*]", x, y, z, r))
@@ -439,13 +442,21 @@ EXP K4(kfkBatchPub){
     if (y->t == KI)
       rkmessages[i].partition = kI(y)[i]; /* use partition per msg */
   }
-  int numOk = rd_kafka_produce_batch(rkt,defaultPartition,msgFlags,rkmessages,msgcnt);
+  rd_kafka_produce_batch(rkt,defaultPartition,msgFlags,rkmessages,msgcnt);
   K results = ktn(KI, msgcnt);
   for (i = 0 ; i < msgcnt ; i++)
     kI(results)[i]=rkmessages[i].err;
   free(rkmessages);
   return results;
 }
+
+#else
+
+EXP K kfkBatchPub(K UNUSED(x), K UNUSED(y), K UNUSED(z), K UNUSED(r)){
+  return krr("BatchPub unsupported - please update librdkafka");
+}
+
+#endif
 
 // consume api
 EXP K3(kfkSub){
