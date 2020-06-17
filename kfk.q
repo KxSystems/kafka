@@ -54,7 +54,15 @@ funcs:(
           // .kfk.VersionSym[]:s
         (`kfkVersionSym;1);
           // .kfk.SetLoggerLevel[client_id:i;int_level:i]:()
-        (`kfkSetLoggerLevel;2)
+        (`kfkSetLoggerLevel;2);
+          // .kfk.Assignment[client_id:i]:T
+        (`kfkAssignment;1);
+          // .kfk.Assign[client_id:i;topic_partition:S!J]:()
+        (`kfkAssign;2);
+          // .kfk.AssignmentAdd[client_id:i;topic_partition:S!J]:()
+        (`kfkAssignmentAdd;2);
+          // .kfk.AssignmentDel[client_id:i;topic_partition:S!J]:()
+        (`kfkAssignDel;2);
 	);
 
 // binding functions from dictionary funcs using rule
