@@ -678,11 +678,11 @@ static V ptlistdel(K dict,rd_kafka_topic_partition_list_t *t_partition){
  * @returns Null value on correct execution
 */
 
-EXP K2(kfkAssign){
+EXP K2(kfkAssignTopPar){
   rd_kafka_t *rk;
   rd_kafka_topic_partition_list_t *t_partition;
   rd_kafka_resp_err_t err;
-  if(!checkType("i!", x, y))
+  if(!checkType("i", x))
     return KNL;
   if(!(rk= clientIndex(x)))
     return KNL;

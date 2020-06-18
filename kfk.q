@@ -57,8 +57,8 @@ funcs:(
         (`kfkSetLoggerLevel;2);
           // .kfk.Assignment[client_id:i]:T
         (`kfkAssignment;1);
-          // .kfk.Assign[client_id:i;topic_partition:S!J]:()
-        (`kfkAssign;2);
+          // .kfk.AssignTopPar[client_id:i;topic_partition:S!J]:()
+        (`kfkAssignTopPar;2);
           // .kfk.AssignmentAdd[client_id:i;topic_partition:S!J]:()
         (`kfkAssignmentAdd;2);
           // .kfk.AssignmentDel[client_id:i;topic_partition:S!J]:()
@@ -144,10 +144,21 @@ Subscribe:{[cid;top;part;cb]
 
 // Assignment API logic
 
+// Assign a new topic-partition dictionary to be consumed by a designated clientid
+/* cid    = Integer denoting client ID
+/* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
+Assign:{[cid;toppar]
+  i.checkDict[toppar];
+  // Create a distinct set of topic-partition pairs to assign, non distinct entries cause a segfault
+  toppar:(!). flip distinct(,'/)(key::;value::)@\:toppar;
+  AssignTopPar[cid](!). flip distinct(,'/)(key::;value::)@\:toppar;
+  }
+
 // Assign additional topic-partition pairs which could be consumed from
 /* cid    = Integer denoting client ID
 /* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
 AssignAdd:{[cid;toppar]
+  i.checkDict[toppar];
   // Generate the unique topic partition lists used to compare to current assignment
   tplist:(,'/)(key::;value::)@\:toppar;
   // Mark locations where user is attempting to add an already existing assignment
@@ -161,12 +172,13 @@ AssignAdd:{[cid;toppar]
 /* cid    = Integer denoting client ID
 /* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
 AssignDel:{[cid;toppar]
+  i.checkDict[toppar];
   // Generate the unique topic partition lists used to compare to current assignment
   tplist:(,'/)(key::;value::)@\:toppar;
   // Mark locations where user is attempting to delete from an non existent assignment
   loc:not i.compAssign[cid;tplist];
   $[any loc;
-    [show tplist where loc;'"The above topic-partition pairs cannot be deleted as they are not currently assigned"];
+    [show tplist where loc;'"The above topic-partition pairs cannot be deleted as they are not assigned"];
     AssignmentDel[cid;toppar]];
   }
 
@@ -174,6 +186,13 @@ AssignDel:{[cid;toppar]
 i.compAssign:{[cid;tplist]
   assignment:Assignment[cid];
   tplist in(assignment@'`topic),'"j"$assignment@'`partition
+  }
+
+// Ensure that the dictionaries used in assignments map symbol to long
+i.checkDict:{[dict]
+  if[not 99h=type dict      ;'"Final parameter must be a dictionary"];
+  if[not 11h=type key dict  ;'"Dictionary key must of type symbol"];
+  if[not 7h =type value dict;'"Dictionary values must be of type long"];
   }
 
 
