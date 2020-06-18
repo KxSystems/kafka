@@ -62,7 +62,7 @@ funcs:(
           // .kfk.AssignmentAdd[client_id:i;topic_partition:S!J]:()
         (`kfkAssignmentAdd;2);
           // .kfk.AssignmentDel[client_id:i;topic_partition:S!J]:()
-        (`kfkAssignDel;2);
+        (`kfkAssignmentDel;2)
 	);
 
 // binding functions from dictionary funcs using rule
@@ -142,17 +142,52 @@ Subscribe:{[cid;top;part;cb]
   }
 
 
+// Assignment API logic
+
+// Assign additional topic-partition pairs which could be consumed from
+/* cid    = Integer denoting client ID
+/* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
+AssignAdd:{[cid;toppar]
+  // Generate the unique topic partition lists used to compare to current assignment
+  tplist:(,'/)(key::;value::)@\:toppar;
+  // Mark locations where user is attempting to add an already existing assignment
+  loc:i.compAssign[cid;tplist];
+  $[any loc;
+    [show tplist where loc;'"The above topic-partition pairs already exist, please modify dictionary"];
+    AssignmentAdd[cid;toppar]];
+  }
+
+// Remove assigned topic-parition pairs from the current assignment from which data can be consumed
+/* cid    = Integer denoting client ID
+/* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
+AssignDel:{[cid;toppar]
+  // Generate the unique topic partition lists used to compare to current assignment
+  tplist:(,'/)(key::;value::)@\:toppar;
+  // Mark locations where user is attempting to delete from an non existent assignment
+  loc:not i.compAssign[cid;tplist];
+  $[any loc;
+    [show tplist where loc;'"The above topic-partition pairs cannot be deleted as they are not currently assigned"];
+    AssignmentDel[cid;toppar]];
+  }
+
+// dictionary defining the current assignment for used in comparisons 
+i.compAssign:{[cid;tplist]
+  assignment:Assignment[cid];
+  tplist in(assignment@'`topic),'"j"$assignment@'`partition
+  }
+
+
 // Addition of error callback (rd_kafka_conf_set_error_cb)
-/* cid is an integer
-/* err_int is an integer code relating to the kafka issue
-/* reason is a string denoting the reason for the error
+/* cid     = Integer denoting client ID 
+/* err_int = Integer denoting the error code relating to the kafka issue raised
+/* reason  = String denoting the reason for the error
 errcb:{[cid;err_int;reason]}
 
 // Triggered callback on non-zero throttle time from a broker (rd_kafka_conf_set_throttle_cb)
-/* cid is an integer
-/* broker_name is a string
-/* broker_id is an integer
-/* throttle_time_ms is an integer
+/* cid = Integer denoting client ID
+/* broker_name = String denoting the name of the broker from which the callback originated
+/* broker_id = Integer denoting the identifying number of the broker
+/* throttle_time_ms = is an integer denoting the throttle time
 throttlecb:{[cid;broker_name;broker_id;throttle_time_ms]}
 
 \d .
