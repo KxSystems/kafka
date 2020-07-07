@@ -378,6 +378,55 @@ EXP K2(kfkFlush){
   return KNL;
  }
 
+#if (RD_KAFKA_VERSION >= 0x000b04ff)
+
+EXP K kfkPubWithHeaders(K clientIdx,K topicIdx,K partition,K val,K key,K hdrs){
+  rd_kafka_t *rk;
+  rd_kafka_topic_t *rkt;
+  if(!checkType("iii[CG][CG]!", clientIdx, topicIdx, partition, val, key, hdrs))
+    return KNL;
+  if(!(rk= clientIndex(clientIdx)))
+    return KNL;
+  if(!(rkt= topicIndex(topicIdx)))
+    return KNL;
+  K hdrNames = (kK(hdrs)[0]);
+  K hdrValues = (kK(hdrs)[1]);
+  if (hdrNames->t != KS && hdrValues->t != 0)
+    return krr((S)"Incorrect header type");
+  int idx=0;
+  for (idx=0;idx<hdrValues->n;++idx)
+  {
+    K hdrval = kK(hdrValues)[idx];
+    if (hdrval->t != KG && hdrval->t != KC)
+      return krr((S)"Incorrect header value type");
+  }
+  rd_kafka_headers_t* msghdrs = rd_kafka_headers_new((int)hdrNames->n);
+  for (idx=0;idx<hdrNames->n;++idx)
+  {
+    K hdrval = kK(hdrValues)[idx];
+    if (hdrval->t == KG || hdrval->t == KC)
+      rd_kafka_header_add(msghdrs,kS(hdrNames)[idx],-1,hdrval->G0,hdrval->n);
+  }
+  rd_kafka_resp_err_t err = rd_kafka_producev(
+                        rk,
+                        RD_KAFKA_V_RKT(rkt),
+                        RD_KAFKA_V_PARTITION(partition->i),
+                        RD_KAFKA_V_MSGFLAGS(RD_KAFKA_MSG_F_COPY),
+                        RD_KAFKA_V_VALUE(kG(val), val->n),
+                        RD_KAFKA_V_KEY(kG(key), key->n),
+                        RD_KAFKA_V_HEADERS(msghdrs),
+                        RD_KAFKA_V_END);
+  if (err)
+    return krr((S) rd_kafka_err2str(err));
+  return KNL;
+}
+
+#else
+EXP K kfkPubWithHeaders(K UNUSED(clientIdx),K UNUSED(topicIdx),K UNUSED(partition),K UNUSED(val),K UNUSED(key),K UNUSED(hdrs)) {
+  return krr("PubWithHeaders unsupported - please update to librdkafka >= 0.11.4");
+}
+#endif
+
 // producer api
 EXP K4(kfkPub){
   rd_kafka_topic_t *rkt;
@@ -453,7 +502,7 @@ EXP K4(kfkBatchPub){
 #else
 
 EXP K kfkBatchPub(K UNUSED(x), K UNUSED(y), K UNUSED(z), K UNUSED(r)){
-  return krr("BatchPub unsupported - please update librdkafka");
+  return krr("BatchPub unsupported - please update to librdkafka >= 0.11.4");
 }
 
 #endif
