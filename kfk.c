@@ -393,8 +393,14 @@ EXP K kfkPubWithHeaders(K clientIdx,K topicIdx,K partition,K val,K key,K hdrs){
   K hdrValues = (kK(hdrs)[1]);
   if (hdrNames->t != KS && hdrValues->t != 0)
     return krr((S)"Incorrect header type");
-  rd_kafka_headers_t* msghdrs = rd_kafka_headers_new((int)hdrNames->n);
   int idx=0;
+  for (idx=0;idx<hdrValues->n;++idx)
+  {
+    K hdrval = kK(hdrValues)[idx];
+    if (hdrval->t != KG && hdrval->t != KC)
+      return krr((S)"Incorrect header value type");
+  }
+  rd_kafka_headers_t* msghdrs = rd_kafka_headers_new((int)hdrNames->n);
   for (idx=0;idx<hdrNames->n;++idx)
   {
     K hdrval = kK(hdrValues)[idx];
@@ -417,7 +423,7 @@ EXP K kfkPubWithHeaders(K clientIdx,K topicIdx,K partition,K val,K key,K hdrs){
 
 #else
 EXP K kfkPubWithHeaders(K UNUSED(clientIdx),K UNUSED(topicIdx),K UNUSED(partition),K UNUSED(val),K UNUSED(key),K UNUSED(hdrs)) {
-  return krr("PubWithHeaders unsupported - please update librdkafka");
+  return krr("PubWithHeaders unsupported - please update to librdkafka >= 0.11.4");
 }
 #endif
 
@@ -496,7 +502,7 @@ EXP K4(kfkBatchPub){
 #else
 
 EXP K kfkBatchPub(K UNUSED(x), K UNUSED(y), K UNUSED(z), K UNUSED(r)){
-  return krr("BatchPub unsupported - please update librdkafka");
+  return krr("BatchPub unsupported - please update to librdkafka >= 0.11.4");
 }
 
 #endif
