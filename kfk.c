@@ -378,6 +378,55 @@ EXP K2(kfkFlush){
   return KNL;
  }
 
+#if (RD_KAFKA_VERSION >= 0x000b04ff)
+
+EXP K kfkPubWithHeaders(K clientIdx,K topicIdx,K partition,K val,K key,K hdrs){
+  rd_kafka_t *rk;
+  rd_kafka_topic_t *rkt;
+  if(!checkType("iii[CG][CG]!", clientIdx, topicIdx, partition, val, key, hdrs))
+    return KNL;
+  if(!(rk= clientIndex(clientIdx)))
+    return KNL;
+  if(!(rkt= topicIndex(topicIdx)))
+    return KNL;
+  K hdrNames = (kK(hdrs)[0]);
+  K hdrValues = (kK(hdrs)[1]);
+  if (hdrNames->t != KS && hdrValues->t != 0)
+    return krr((S)"Incorrect header type");
+  int idx=0;
+  for (idx=0;idx<hdrValues->n;++idx)
+  {
+    K hdrval = kK(hdrValues)[idx];
+    if (hdrval->t != KG && hdrval->t != KC)
+      return krr((S)"Incorrect header value type");
+  }
+  rd_kafka_headers_t* msghdrs = rd_kafka_headers_new((int)hdrNames->n);
+  for (idx=0;idx<hdrNames->n;++idx)
+  {
+    K hdrval = kK(hdrValues)[idx];
+    if (hdrval->t == KG || hdrval->t == KC)
+      rd_kafka_header_add(msghdrs,kS(hdrNames)[idx],-1,hdrval->G0,hdrval->n);
+  }
+  rd_kafka_resp_err_t err = rd_kafka_producev(
+                        rk,
+                        RD_KAFKA_V_RKT(rkt),
+                        RD_KAFKA_V_PARTITION(partition->i),
+                        RD_KAFKA_V_MSGFLAGS(RD_KAFKA_MSG_F_COPY),
+                        RD_KAFKA_V_VALUE(kG(val), val->n),
+                        RD_KAFKA_V_KEY(kG(key), key->n),
+                        RD_KAFKA_V_HEADERS(msghdrs),
+                        RD_KAFKA_V_END);
+  if (err)
+    return krr((S) rd_kafka_err2str(err));
+  return KNL;
+}
+
+#else
+EXP K kfkPubWithHeaders(K UNUSED(clientIdx),K UNUSED(topicIdx),K UNUSED(partition),K UNUSED(val),K UNUSED(key),K UNUSED(hdrs)) {
+  return krr("PubWithHeaders unsupported - please update to librdkafka >= 0.11.4");
+}
+#endif
+
 // producer api
 EXP K4(kfkPub){
   rd_kafka_topic_t *rkt;
@@ -453,7 +502,7 @@ EXP K4(kfkBatchPub){
 #else
 
 EXP K kfkBatchPub(K UNUSED(x), K UNUSED(y), K UNUSED(z), K UNUSED(r)){
-  return krr("BatchPub unsupported - please update librdkafka");
+  return krr("BatchPub unsupported - please update to librdkafka >= 0.11.4");
 }
 
 #endif
@@ -590,16 +639,44 @@ EXP K1(kfkSubscription){
 static J pu(J u){return 1000000LL*(u-10957LL*86400000LL);}
 // `mtype`topic`partition`data`key`offset`opaque
 K decodeMsg(const rd_kafka_t* rk, const rd_kafka_message_t *msg) {
+
+#if (RD_KAFKA_VERSION >= 0x000b04ff)
+  rd_kafka_headers_t* hdrs = NULL;
+  rd_kafka_message_headers(msg,&hdrs);
+  K kHdrs = NULL;
+  if (hdrs==NULL)
+    kHdrs = xD(ktn(KS,0),ktn(KS,0));
+  else
+  {
+    K keys = ktn(KS,(int)rd_kafka_header_cnt(hdrs));
+    K vals = knk(0);
+    size_t idx = 0;
+    const char *name;
+    const void *value;
+    size_t size;
+    while (!rd_kafka_header_get_all(hdrs, idx++,&name, &value, &size))
+    {
+      kS(keys)[idx-1]=ss((char*)name);
+      K val = ktn(KG,(int)size);
+      memcpy(kG(val),value,(int)size);
+      jk(&vals,val);
+    }
+    kHdrs = xD(keys,vals);
+  }
+#else
+  K kHdrs = xD(ktn(KS,0),ktn(KS,0));
+#endif
+
   K x= ktn(KG, msg->len), y=ktn(KG, msg->key_len), z;
   J ts= rd_kafka_message_timestamp(msg, NULL);
   memmove(kG(x), msg->payload, msg->len);
   memmove(kG(y), msg->key, msg->key_len);
   z= ktj(-KP, ts > 0 ? pu(ts) : nj);
-  return xd0(8,
+  return xd0(9,
     "mtype", msg->err ? ks((S) rd_kafka_err2name(msg->err)) : r1(S0), 
     "topic", msg->rkt ? ks((S) rd_kafka_topic_name(msg->rkt)) : r1(S0),
     "client", ki(indexClient(rk)), "partition", ki(msg->partition), "offset", kj(msg->offset),
-    "msgtime", z, "data", x, "key", y, (S) 0);
+    "msgtime", z, "data", x, "key", y, "headers", kHdrs, (S) 0);
 }
 
 J pollClient(rd_kafka_t *rk, J timeout, J maxcnt) {
