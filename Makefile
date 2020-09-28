@@ -1,17 +1,13 @@
 OSFLAG :=
 MS :=
 
-ifeq ($(KAFKA_ROOT)),)
-        KFK_ROOT="${HOME}"
-else
-        KFK_ROOT="${KAFKA_ROOT}"
-endif
+KFK_ROOT=${HOME}
 KFK_INCLUDE    = ${KFK_ROOT}/include
 W_OPTS         = -Wall -Wno-strict-aliasing -Wno-parentheses -Wextra -Werror -Wsign-compare
 OPTS           = -DKXVER=3 -shared -fPIC $(W_OPTS)
 LD_COMMON      = -lz -lpthread -lssl -g -O2
-LDOPTS_DYNAMIC = -L${KAFKA_ROOT}/lib/ -lrdkafka
-LDOPTS_STATIC  = ${KAFKA_ROOT}/lib/librdkafka.a
+LDOPTS_DYNAMIC = -L${KFK_ROOT}/lib/ -lrdkafka
+LDOPTS_STATIC  = ${KFK_ROOT}/lib/librdkafka.a
 MS             = $(shell getconf LONG_BIT)
 TGT            = libkfk.so
 

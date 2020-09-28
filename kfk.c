@@ -96,7 +96,6 @@ rd_kafka_t *clientIndex(K x){
   return (rd_kafka_t *) ((((UI) xi < clients->n) && kS(clients)[xi]) ?kS(clients)[xi] :(S) krr("unknown client"));
 }
 
-
 I indexClient(const rd_kafka_t *rk){
   int i;
   for (i = 0; i < clients->n; ++i)
@@ -711,10 +710,12 @@ static V detach(V){
     r0(topics);
   }
   if(clients){
-    for(i= 0; i < clients->n; i++)
-      kfkClientDel(ki(i));
-    rd_kafka_wait_destroyed(1000); /* wait for cleanup*/
-    r0(clients);
+    for(i= 0; i < clients->n; i++){
+      if(!((S)0 == kS(clients)[i]))   /* ignore any clients that have been deleted previously */
+        kfkClientDel(ki(i));
+    }
+    rd_kafka_wait_destroyed(1000);    /* wait for cleanup*/
+    r0(clients); 
   }
   if(sp=spair[0]){
     sd0x(sp,0);
