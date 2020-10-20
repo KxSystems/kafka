@@ -198,17 +198,33 @@ i.checkDict:{[dict]
   }
 
 
-// Addition of error callback (rd_kafka_conf_set_error_cb)
-/* cid     = Integer denoting client ID 
-/* err_int = Integer denoting the error code relating to the kafka issue raised
-/* reason  = String denoting the reason for the error
-errcb:{[cid;err_int;reason]}
+// Handling of error callbacks (rd_kafka_conf_set_error_cb)
+/* cid is an integer
+/* err_int is an integer code relating to the kafka issue
+/* reason is a string denoting the reason for the error
 
-// Triggered callback on non-zero throttle time from a broker (rd_kafka_conf_set_throttle_cb)
-/* cid = Integer denoting client ID
-/* broker_name = String denoting the name of the broker from which the callback originated
-/* broker_id = Integer denoting the identifying number of the broker
-/* throttle_time_ms = is an integer denoting the throttle time
-throttlecb:{[cid;broker_name;broker_id;throttle_time_ms]}
+// Default callback for the handling of errors 
+errclient.:{[cid;err_int;reason]}
+// Main function for the handling of error callbacks
+errcb:{[cid;err_int;reason]$[null f:errclient`$string cid;errclient.;f].(cid;err_int;reason)}
+// Registration function allowing error callbacks to be added on a per client basis
+errcbreg:{[cid;cb]if[not null cb;errclient[`$string cid]:cb];}
+
+
+// Handling of throttle callbacks (rd_kafka_conf_set_throttle_cb)
+/* cid is an integer denoting the client id from which the callback is triggered
+/* bname is a string denoting the name of the broker
+/* bid is an integer denoting the broker id
+/* throttle_time is an integer denoting the non-zero throttle time that triggered the callback
+
+// Default callback for the handling of throttle events
+throttleclient.:{[cid;bname;bid;throttle_time]}
+// Main function for the handling of throttle events
+throttlecb:{[cid;bname;bid;throttle_time]
+  $[null f:throttleclient`$string cid;throttleclient.;f].(cid;bname;bid;throttle_time)
+  }
+// Registration function allowing throttle callbacks to be set of a per client basis
+throttlecbreg:{[cid;cb]if[not null cb;throttleclient[`$string cid]:cb];}
+
 
 \d .

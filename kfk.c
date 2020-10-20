@@ -895,8 +895,10 @@ EXP K kfkCallback(I d){
   while(0 < (n=recv(d, buf, sizeof(buf), 0)))
     consumed+=n;
   // pass consumed to poll for possible batching
-  for(i= 0; i < clients->n; i++)
-    pollClient((rd_kafka_t*)kS(clients)[i], 0, 0);
+  for(i= 0; i < clients->n; i++){
+    if(!(((S)0)==kS(clients)[i]))
+      pollClient((rd_kafka_t*)kS(clients)[i], 0, 0);
+  }
   return KNL;
 }
 
@@ -908,8 +910,10 @@ static V detach(V){
     r0(topics);
   }
   if(clients){
-    for(i= 0; i < clients->n; i++)
-      kfkClientDel(ki(i));
+    for(i= 0; i < clients->n; i++){
+      if(!(((S)0) == kS(clients)[i]))
+        kfkClientDel(ki(i));
+    }
     rd_kafka_wait_destroyed(1000); /* wait for cleanup*/
     r0(clients);
   }
