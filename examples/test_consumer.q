@@ -3,7 +3,6 @@
 kfk_cfg:(!) . flip(
     (`metadata.broker.list;`localhost:9092);
     (`group.id;`0);
-    (`queue.buffering.max.ms;`1);
     (`fetch.wait.max.ms;`10);
     (`statistics.interval.ms;`10000)
     );

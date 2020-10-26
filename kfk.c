@@ -186,8 +186,10 @@ EXP K2(kfkClient){
     return KNL;
   rd_kafka_conf_set_stats_cb(conf, statscb);
   rd_kafka_conf_set_log_cb(conf, logcb);
-  rd_kafka_conf_set_dr_msg_cb(conf,drcb);
-  rd_kafka_conf_set_offset_commit_cb(conf,offsetcb);
+  if('p' == xg)
+    rd_kafka_conf_set_dr_msg_cb(conf,drcb);
+  else
+    rd_kafka_conf_set_offset_commit_cb(conf,offsetcb);
   rd_kafka_conf_set_throttle_cb(conf,throttlecb);
   rd_kafka_conf_set_error_cb(conf,errorcb);
   if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, "log.queue", "true", b, sizeof(b)))
