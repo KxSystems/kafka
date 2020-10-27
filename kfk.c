@@ -787,8 +787,10 @@ EXP K kfkCallback(I d){
 static V detach(V){
   I sp,i;
   if(topics){
-    for(i= 0; i < topics->n; i++)
-      kfkTopicDel(ki(i));
+    for(i= 0; i < topics->n; i++){
+      if(!(((S)0) == kS(clients)[i]))
+        kfkTopicDel(ki(i));
+    }
     r0(topics);
   }
   if(clients){
