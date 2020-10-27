@@ -186,8 +186,10 @@ EXP K2(kfkClient){
     return KNL;
   rd_kafka_conf_set_stats_cb(conf, statscb);
   rd_kafka_conf_set_log_cb(conf, logcb);
-  rd_kafka_conf_set_dr_msg_cb(conf,drcb);
-  rd_kafka_conf_set_offset_commit_cb(conf,offsetcb);
+  if('p' == xg)
+    rd_kafka_conf_set_dr_msg_cb(conf,drcb);
+  else
+    rd_kafka_conf_set_offset_commit_cb(conf,offsetcb);
   rd_kafka_conf_set_throttle_cb(conf,throttlecb);
   rd_kafka_conf_set_error_cb(conf,errorcb);
   if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, "log.queue", "true", b, sizeof(b)))
@@ -207,7 +209,7 @@ EXP K2(kfkClient){
   return ki(clients->n - 1);
 }
 
-EXP K1(kfkClientDel){
+EXP K1(kfkdeleteClient){
   rd_kafka_t *rk;
   if(!checkType("i", x))
     return KNL;
@@ -238,7 +240,7 @@ EXP K1(kfkClientMemberId){
 }
 
 // topic api
-EXP K3(kfkTopic){
+EXP K3(kfkgenerateTopic){
   rd_kafka_topic_t *rkt;
   rd_kafka_t *rk;
   rd_kafka_topic_conf_t *rd_topic_conf;
@@ -906,13 +908,14 @@ static V detach(V){
   I sp,i;
   if(topics){
     for(i= 0; i < topics->n; i++)
-      kfkTopicDel(ki(i));
+      if(!(((S)0) == kS(topics)[i]))
+        kfkTopicDel(ki(i));
     r0(topics);
   }
   if(clients){
     for(i= 0; i < clients->n; i++){
       if(!(((S)0) == kS(clients)[i]))
-        kfkClientDel(ki(i));
+        kfkdeleteClient(ki(i));
     }
     rd_kafka_wait_destroyed(1000); /* wait for cleanup*/
     r0(clients);

@@ -5,14 +5,14 @@ funcs:(
 	(`kfkInit;1);
 	  // .kfk.Client[client_type:c;conf:S!S]:i
 	(`kfkClient;2);
-	  // .kfk.ClientDel[client_id:i]:_
-	(`kfkClientDel;1);
+	  // .kfk.deleteClient[client_id:i]:_
+	(`kfkdeleteClient;1);
 	  // .kfk.ClientName[client_id:i]:s
 	(`kfkClientName;1);
 	  // .kfk.ClientMemberId[client_id:i]:s
 	(`kfkClientMemberId;1);
-	  // .kfk.Topic[client_id:i;topicname:s;conf:S!S]:i
-	(`kfkTopic;3);
+	  // .kfk.generateTopic[client_id:i;topicname:s;conf:S!S]:i
+	(`kfkgenerateTopic;3);
 	  // .kfk.TopicDel[topic_id:i]:_
 	(`kfkTopicDel;1);
 	  // .kfk.TopicName[topic_id:i]:s
@@ -96,15 +96,35 @@ OFFSET.END:     		-1  /**< Start consuming from end of kafka partition queue: ne
 OFFSET.STORED:	 -1000  /**< Start consuming from offset retrieved from offset store */
 OFFSET.INVALID:	 -1001  /**< Invalid offset */
 
+// Placeholder to allow mapping between client and associated topics
+ClientTopicMap:(`int$())!()
+
 // Producer client code
 PRODUCER:"p"
-Producer:Client[PRODUCER;]
+Producer:{
+  client:Client[x;y];
+  .kfk.ClientTopicMap,:enlist[client]!enlist ();
+  client}[PRODUCER]
 
 // Consumer client code
 CONSUMER:"c"
 Consumer:{
   if[not `group.id in key y;'"Consumers are required to define a `group.id within the config"];
-  Client[x;y]}[CONSUMER;]
+  client:Client[x;y];
+  .kfk.ClientTopicMap,:enlist[client]!enlist ();
+  client}[CONSUMER]
+
+// Addition of topics and mapping
+Topic:{[cid;tname;conf]
+  topic:generateTopic[cid;tname;conf];
+  .kfk.ClientTopicMap[cid],:topic;
+  topic
+  }
+
+ClientDel:{[cid]
+  @[TopicDel;;()]each ClientTopicMap[cid];
+  deleteClient[cid]
+  }
 
 // table with kafka statistics
 stats:() 	
