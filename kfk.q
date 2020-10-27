@@ -89,13 +89,13 @@ OFFSET.STORED:	 -1000  /**< Start consuming from offset retrieved from offset st
 OFFSET.INVALID:	 -1001  /**< Invalid offset */
 
 // Placeholder to allow mapping between 
-ClientTopicMap:()!()
+ClientTopicMap:(`int$())!()
 
 // Producer client code
 PRODUCER:"p"
 Producer:{
   client:Client[x;y];
-  .kfk.ClientTopicMap,::enlist[client]!enlist ();
+  .kfk.ClientTopicMap,:enlist[client]!enlist ();
   client}[PRODUCER]
 
 // Consumer client code
@@ -103,20 +103,20 @@ CONSUMER:"c"
 Consumer:{
   if[not `group.id in key y;'"Consumers are required to define a `group.id within the config"];
   client:Client[x;y];
-  .kfk.ClientTopicMap,::enlist[client]!enlist ();
+  .kfk.ClientTopicMap,:enlist[client]!enlist ();
   client}[CONSUMER]
 
 // Addition of topics and mapping
 Topic:{[cid;tname;conf]
   topic:generateTopic[cid;tname;conf];
-  .kfk.ClientTopicMap[cid],::topic;
+  .kfk.ClientTopicMap[cid],:topic;
   topic
   }
 
-ClientDel:{[clientMap;cid]
-  @[TopicDel;;()]each .kfk.ClientTopicMap[cid];
+ClientDel:{[cid]
+  @[TopicDel;;()]each ClientTopicMap[cid];
   deleteClient[cid]
-  }[ClientTopicMap]
+  }
 
 // table with kafka statistics
 stats:() 	
