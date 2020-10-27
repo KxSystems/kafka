@@ -5,7 +5,7 @@ funcs:(
 	(`kfkInit;1);
 	  // .kfk.Client[client_type:c;conf:S!S]:i
 	(`kfkClient;2);
-	  // .kfk.ClientDel[client_id:i]:_
+	  // .kfk.deleteClient[client_id:i]:_
 	(`kfkdeleteClient;1);
 	  // .kfk.ClientName[client_id:i]:s
 	(`kfkClientName;1);
