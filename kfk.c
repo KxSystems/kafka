@@ -209,7 +209,7 @@ EXP K2(kfkClient){
   return ki(clients->n - 1);
 }
 
-EXP K1(kfkClientDel){
+EXP K1(kfkdeleteClient){
   rd_kafka_t *rk;
   if(!checkType("i", x))
     return KNL;
@@ -240,7 +240,7 @@ EXP K1(kfkClientMemberId){
 }
 
 // topic api
-EXP K3(kfkTopic){
+EXP K3(kfkgenerateTopic){
   rd_kafka_topic_t *rkt;
   rd_kafka_t *rk;
   rd_kafka_topic_conf_t *rd_topic_conf;
@@ -788,13 +788,14 @@ static V detach(V){
   I sp,i;
   if(topics){
     for(i= 0; i < topics->n; i++)
-      kfkTopicDel(ki(i));
+      if(!(((S)0) == kS(topics)[i]))
+        kfkTopicDel(ki(i));
     r0(topics);
   }
   if(clients){
     for(i= 0; i < clients->n; i++){
       if(!(((S)0) == kS(clients)[i]))
-        kfkClientDel(ki(i));
+        kfkdeleteClient(ki(i));
     }
     rd_kafka_wait_destroyed(1000); /* wait for cleanup*/
     r0(clients);
