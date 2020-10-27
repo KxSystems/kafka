@@ -88,7 +88,7 @@ OFFSET.END:     		-1  /**< Start consuming from end of kafka partition queue: ne
 OFFSET.STORED:	 -1000  /**< Start consuming from offset retrieved from offset store */
 OFFSET.INVALID:	 -1001  /**< Invalid offset */
 
-// Placeholder to allow mapping between 
+// Placeholder to allow mapping between client and associated topics
 ClientTopicMap:(`int$())!()
 
 // Producer client code
