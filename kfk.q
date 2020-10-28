@@ -56,7 +56,15 @@ funcs:(
           // .kfk.VersionSym[]:s
         (`kfkVersionSym;1);
           // .kfk.SetLoggerLevel[client_id:i;int_level:i]:()
-        (`kfkSetLoggerLevel;2)
+        (`kfkSetLoggerLevel;2);
+          // .kfk.Assignment[client_id:i]:T
+        (`kfkAssignment;1);
+          // .kfk.AssignTopPar[client_id:i;topic_partition:S!J]:()
+        (`kfkAssignTopPar;2);
+          // .kfk.AssignmentAdd[client_id:i;topic_partition:S!J]:()
+        (`kfkAssignmentAdd;2);
+          // .kfk.AssignmentDel[client_id:i;topic_partition:S!J]:()
+        (`kfkAssignmentDel;2)
 	);
 
 // binding functions from dictionary funcs using rule
@@ -153,6 +161,71 @@ consumecb:{[msg]$[null f:consumetopic msg`topic;consumetopic.;f]msg}
 Subscribe:{[cid;top;part;cb]
   Sub[cid;top;part];
   if[not null cb;consumetopic[top]:cb];
+  }
+
+
+// Assignment API logic
+
+// Assign a new topic-partition dictionary to be consumed by a designated clientid
+/* cid    = Integer denoting client ID
+/* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
+Assign:{[cid;toppar]
+  i.checkDict[toppar];
+  // Create a distinct set of topic-partition pairs to assign,
+  // non distinct entries cause a segfault
+  toppar:(!). flip distinct(,'/)(key;value)@\:toppar;
+  AssignTopPar[cid;toppar]
+  }
+
+// Assign additional topic-partition pairs which could be consumed from
+/* cid    = Integer denoting client ID
+/* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
+AssignAdd:{[cid;toppar]
+  tpdict:i.assignCheck[cid;toppar;0b];
+  AssignmentAdd[cid;tpdict];
+  }
+
+// Remove assigned topic-parition pairs from the current assignment from which data can be consumed
+/* cid    = Integer denoting client ID
+/* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
+AssignDel:{[cid;toppar]
+  tpdict:i.assignCheck[cid;toppar;1b];
+  AssignmentDel[cid;tpdict];
+  }
+
+// Utility function to check current assignment against proposed additions/deletions,
+// retirn unique toppar pairs as a dictionary to avoid segfaults from duplicate 
+/* cid    = Integer denoting the client ID
+/* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
+/* addDel = Boolean denoting addition/deletion functionality
+i.assignCheck:{[cid;toppar;addDel]
+  i.checkDict[toppar];
+  // Generate the partition provided used to compare to current assignment
+  tplist:distinct(,'/)(key;value)@\:toppar;
+  // Mark locations where user is attempting to delete from an non existent assignment
+  loc:$[addDel;not;]i.compAssign[cid;tplist];
+  if[any loc;
+    show tplist where loc;
+    $[addDel;
+      '"The above topic-partition pairs cannot be deleted as they are not assigned";
+      '"The above topic-partition pairs already exist, please modify dictionary"]
+    ];
+  (!). flip tplist
+  }
+
+// dictionary defining the current assignment for used in comparisons 
+i.compAssign:{[cid;tplist]
+  assignment:Assignment[cid];
+  // current assignment is a list of dictionaries
+  currentTopPar:(assignment@'`topic),'"j"$assignment@'`partition;
+  tplist in currentTopPar
+  }
+
+// Ensure that the dictionaries used in assignments map symbol to long
+i.checkDict:{[dict]
+  if[not 99h=type dict      ;'"Final parameter must be a dictionary"];
+  if[not 11h=type key dict  ;'"Dictionary key must of type symbol"];
+  if[not 7h =type value dict;'"Dictionary values must be of type long"];
   }
 
 

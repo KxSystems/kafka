@@ -723,6 +723,126 @@ EXP K3(kfkPoll){
   return kj(n);
 }
 
+
+/* The following set of functions define interactions with the assign functionality with Kafka.
+ * This provides more control to the user over where data can be consumed from.
+ * Note the differences between Kafka Assign vs Subscribe functionality, summarised in part
+ * https://github.com/confluentinc/confluent-kafka-dotnet/issues/278#issuecomment-318858243
+*/
+
+/** Define functionality needed for the addition and deletion of topic-partition 
+ ** pairs to the current assignment
+ * @param dict topic!associated-partitions --> S!J
+*/
+
+static V ptlistadd(K dict, rd_kafka_topic_partition_list_t *t_partition){
+  K dk=kK(dict)[0],dv=kK(dict)[1];
+  S*p;J*o,i;
+  p=kS(dk);o=kJ(dv);
+  for(i = 0; i < dk->n; i++)
+    rd_kafka_topic_partition_list_add(t_partition,p[i],o[i]);
+}
+
+static V ptlistdel(K dict,rd_kafka_topic_partition_list_t *t_partition){
+  K dk=kK(dict)[0],dv=kK(dict)[1];
+  S*p;J*o,i;
+  p=kS(dk);o=kJ(dv);
+  for(i = 0; i < dk->n; i++)
+    rd_kafka_topic_partition_list_del(t_partition,p[i],o[i]);
+}
+
+/** Assign the partitions from which to consume data for specified topics
+ * @param x Client Index (previously created)
+ * @param y Dictionary mapping individual topics to associated partitions. S!J
+ * @returns Null value on correct execution
+*/
+
+EXP K2(kfkAssignTopPar){
+  rd_kafka_t *rk;
+  rd_kafka_topic_partition_list_t *t_partition;
+  rd_kafka_resp_err_t err;
+  if(!checkType("i", x))
+    return KNL;
+  if(!(rk= clientIndex(x)))
+    return KNL;
+  t_partition = rd_kafka_topic_partition_list_new(y->n);
+  // topic-partition assignment
+  ptlistadd(y,t_partition);
+  if(KFK_OK != (err=rd_kafka_assign(rk,t_partition)))
+    return krr((S) rd_kafka_err2str(err));
+  rd_kafka_topic_partition_list_destroy(t_partition);
+  return KNL;
+}
+
+/** Return the current consumption assignment for a specified client
+ * @param x Client Index (previously created) 
+ * @returns List of dictionaries defining information about the current assignment
+*/
+EXP K1(kfkAssignment){
+  K r;
+  rd_kafka_topic_partition_list_t *t;
+  rd_kafka_t *rk;
+  rd_kafka_resp_err_t err;
+  if(!checkType("i", x))
+    return KNL;
+  if(!(rk= clientIndex(x)))
+    return KNL;
+  if(KFK_OK != (err=rd_kafka_assignment(rk, &t)))
+    return krr((S)rd_kafka_err2str(err));
+  r = decodeParList(t);
+  rd_kafka_topic_partition_list_destroy(t);
+  return r;
+}
+
+/** Add to the current assignment for a client with new topic-partition pair
+ * @param x Client Index (previously created)
+ * @param y Dictionary mapping individual topics to associated partitions. S!J
+ * @returns Null value on correct execution
+*/
+
+EXP K2(kfkAssignmentAdd){
+  rd_kafka_t *rk;
+  rd_kafka_topic_partition_list_t *t;
+  rd_kafka_resp_err_t err;
+  if(!checkType("i", x))
+    return KNL;
+  if(!(rk= clientIndex(x)))
+    return KNL;
+  // retrieve the current assignment
+  if(KFK_OK != (err=rd_kafka_assignment(rk, &t)))
+    return krr((S)rd_kafka_err2str(err));
+  ptlistadd(y,t);
+  if(KFK_OK != (err=rd_kafka_assign(rk,t)))
+    return krr((S) rd_kafka_err2str(err));
+  rd_kafka_topic_partition_list_destroy(t);
+  return 0;
+}
+
+/** Delete a topic-partition mapped dictionary from the current assignment for a client
+ * @param x Client Index (previously created)
+ * @param y Dictionary mapping individual topics to associated partitions. S!J
+ * @returns Null value on correct execution
+*/
+
+EXP K2(kfkAssignmentDel){
+  rd_kafka_t *rk;
+  rd_kafka_topic_partition_list_t *t;
+  rd_kafka_resp_err_t err;
+  if(!checkType("i", x))
+    return KNL;
+  if(!(rk= clientIndex(x)))
+    return KNL;
+  // retrieve the current assignment
+  if(KFK_OK != (err=rd_kafka_assignment(rk, &t)))
+    return krr((S)rd_kafka_err2str(err));
+  ptlistdel(y,t);
+  if(KFK_OK != (err=rd_kafka_assign(rk,t)))
+    return krr((S) rd_kafka_err2str(err));
+  rd_kafka_topic_partition_list_destroy(t);
+  return 0;
+}
+
+
 // other
 EXP K1(kfkOutQLen){
   rd_kafka_t *rk;
