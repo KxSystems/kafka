@@ -171,43 +171,54 @@ Subscribe:{[cid;top;part;cb]
 /* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
 Assign:{[cid;toppar]
   i.checkDict[toppar];
-  // Create a distinct set of topic-partition pairs to assign, non distinct entries cause a segfault
-  toppar:(!). flip distinct(,'/)(key::;value::)@\:toppar;
-  AssignTopPar[cid](!). flip distinct(,'/)(key::;value::)@\:toppar;
+  // Create a distinct set of topic-partition pairs to assign,
+  // non distinct entries cause a segfault
+  toppar:(!). flip distinct(,'/)(key;value)@\:toppar;
+  AssignTopPar[cid;toppar]
   }
 
 // Assign additional topic-partition pairs which could be consumed from
 /* cid    = Integer denoting client ID
 /* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
 AssignAdd:{[cid;toppar]
-  i.checkDict[toppar];
-  // Generate the unique topic partition lists used to compare to current assignment
-  tplist:(,'/)(key::;value::)@\:toppar;
-  // Mark locations where user is attempting to add an already existing assignment
-  loc:i.compAssign[cid;tplist];
-  $[any loc;
-    [show tplist where loc;'"The above topic-partition pairs already exist, please modify dictionary"];
-    AssignmentAdd[cid;toppar]];
+  tpdict:i.assignCheck[cid;toppar;0b];
+  AssignmentAdd[cid;tpdict];
   }
 
 // Remove assigned topic-parition pairs from the current assignment from which data can be consumed
 /* cid    = Integer denoting client ID
 /* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
 AssignDel:{[cid;toppar]
+  tpdict:i.assignCheck[cid;toppar;1b];
+  AssignmentDel[cid;tpdict];
+  }
+
+// Utility function to check current assignment against proposed additions/deletions,
+// retirn unique toppar pairs as a dictionary to avoid segfaults from duplicate 
+/* cid    = Integer denoting the client ID
+/* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
+/* addDel = Boolean denoting addition/deletion functionality
+i.assignCheck:{[cid;toppar;addDel]
   i.checkDict[toppar];
-  // Generate the unique topic partition lists used to compare to current assignment
-  tplist:(,'/)(key::;value::)@\:toppar;
+  // Generate the partition provided used to compare to current assignment
+  tplist:distinct(,'/)(key;value)@\:toppar;
   // Mark locations where user is attempting to delete from an non existent assignment
-  loc:not i.compAssign[cid;tplist];
-  $[any loc;
-    [show tplist where loc;'"The above topic-partition pairs cannot be deleted as they are not assigned"];
-    AssignmentDel[cid;toppar]];
+  loc:$[addDel;not;]i.compAssign[cid;tplist];
+  if[any loc;
+    show tplist where loc;
+    $[addDel;
+      '"The above topic-partition pairs cannot be deleted as they are not assigned";
+      '"The above topic-partition pairs already exist, please modify dictionary"]
+    ];
+  (!). flip tplist
   }
 
 // dictionary defining the current assignment for used in comparisons 
 i.compAssign:{[cid;tplist]
   assignment:Assignment[cid];
-  tplist in(assignment@'`topic),'"j"$assignment@'`partition
+  // current assignment is a list of dictionaries
+  currentTopPar:(assignment@'`topic),'"j"$assignment@'`partition;
+  tplist in currentTopPar
   }
 
 // Ensure that the dictionaries used in assignments map symbol to long
