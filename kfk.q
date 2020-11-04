@@ -64,7 +64,9 @@ funcs:(
           // .kfk.AssignmentAdd[client_id:i;topic_partition:S!J]:()
         (`kfkAssignmentAdd;2);
           // .kfk.AssignmentDel[client_id:i;topic_partition:S!J]:()
-        (`kfkAssignmentDel;2)
+        (`kfkAssignmentDel;2);
+        // .kfk.OffsetsForTimes[client_id:i;topic:s;partition_offsets:I!J;timeout_ms]:partition_offsets
+        (`kfkOffsetsForTimes;4);
 	);
 
 // binding functions from dictionary funcs using rule
