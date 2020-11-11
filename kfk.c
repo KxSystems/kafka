@@ -603,7 +603,7 @@ EXP K3(kfkCommittedOffsets){
   return r;
 }
 
-EXP K4(kfkOffsetsForTimes){
+EXP K4(kfkoffsetForTime){
   K t;
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
