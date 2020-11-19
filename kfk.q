@@ -9,8 +9,8 @@ funcs:(
 	(`kfkdeleteClient;1);
 	  // .kfk.ClientName[client_id:i]:s
 	(`kfkClientName;1);
-	  // .kfk.ClientMemberId[client_id:i]:s
-	(`kfkClientMemberId;1);
+	  // .kfk.memberId[client_id:i]:s
+	(`kfkmemberID;1);
 	  // .kfk.generateTopic[client_id:i;topicname:s;conf:S!S]:i
 	(`kfkgenerateTopic;3);
 	  // .kfk.TopicDel[topic_id:i]:_
@@ -98,14 +98,17 @@ OFFSET.END:     		-1  /**< Start consuming from end of kafka partition queue: ne
 OFFSET.STORED:	 -1000  /**< Start consuming from offset retrieved from offset store */
 OFFSET.INVALID:	 -1001  /**< Invalid offset */
 
-// Placeholder to allow mapping between client and associated topics
+// Mapping between client and the topics associated with these clients
 ClientTopicMap:(`int$())!()
+// Mapping between client and the type of handle created i.e. producer/consumer
+ClientTypeMap :(`int$())!`symbol$()
 
 // Producer client code
 PRODUCER:"p"
 Producer:{
   client:Client[x;y];
   .kfk.ClientTopicMap,:enlist[client]!enlist ();
+  .kfk.ClientTypeMap ,:enlist[client]!enlist[`Producer];
   client}[PRODUCER]
 
 // Consumer client code
@@ -114,6 +117,7 @@ Consumer:{
   if[not `group.id in key y;'"Consumers are required to define a `group.id within the config"];
   client:Client[x;y];
   .kfk.ClientTopicMap,:enlist[client]!enlist ();
+  .kfk.ClientTypeMap ,:enlist[client]!enlist[`Consumer];
   client}[CONSUMER]
 
 // Addition of topics and mapping
@@ -136,9 +140,13 @@ stats:()
 
 // statistics provided by kafka about current state (rd_kafka_conf_set_stats_cb)
 statcb:{[j]
-	s:.j.k j;if[all `ts`time in key s;s[`ts]:-10957D+`timestamp$s[`ts]*1000;s[`time]:-10957D+`timestamp$1000000000*s[`time]];
-	.kfk.stats,::enlist s;
-	delete from `.kfk.stats where i<count[.kfk.stats]-100;}
+  s:.j.k j;
+  if[all `ts`time in key s;
+    s[`ts]:-10957D+`timestamp$s[`ts]*1000;
+    s[`time]:-10957D+`timestamp$1000000000*s[`time]
+    ];
+  .kfk.stats,::enlist s;
+  delete from `.kfk.stats where i<count[.kfk.stats]-100;}
 
 // logger callback(rd_kafka_conf_set_log_cb)
 logcb:{[level;fac;buf] show -3!(level;fac;buf);}
@@ -163,6 +171,14 @@ consumecb:{[msg]$[null f:consumetopic msg`topic;consumetopic.;f]msg}
 Subscribe:{[cid;top;part;cb]
   Sub[cid;top;part];
   if[not null cb;consumetopic[top]:cb];
+  }
+
+
+// Retrieve the client member id associated with an assigned consumer
+/* cid    = Integer denoting client ID
+ClientMemberId:{[cid]
+  if[`Producer~ClientTypeMap[cid];'".kfk.ClientMemberID cannot be called on Producer clients"];
+  memberID[cid]
   }
 
 

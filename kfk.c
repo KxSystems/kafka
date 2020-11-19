@@ -230,7 +230,7 @@ EXP K1(kfkClientName){
   return ks((S) rd_kafka_name(rk));
 }
 
-EXP K1(kfkClientMemberId){
+EXP K1(kfkmemberID){
   rd_kafka_t *rk;
   if(!checkType("i", x))
     return KNL;
