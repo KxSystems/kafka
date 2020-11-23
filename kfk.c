@@ -603,6 +603,31 @@ EXP K3(kfkCommittedOffsets){
   return r;
 }
 
+EXP K4(kfkoffsetForTime){
+  K t;
+  rd_kafka_resp_err_t err;
+  rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
+  I qr=0;
+  if(!checkType("is![hij]", x, y, z, r))
+    return KNL;
+  if(!checkType("IJ",kK(z)[0],kK(z)[1]))
+    return KNL;
+  if(!(rk= clientIndex(x)))
+    return KNL;
+  SW(r->t){
+    CS(-KH, qr=r->h);
+    CS(-KI, qr=r->i);
+    CS(-KJ, qr=r->j);
+  }
+  t_partition = rd_kafka_topic_partition_list_new(z->n);
+  plistoffsetdict(y->s,z,t_partition);
+  if(KFK_OK != (err= rd_kafka_offsets_for_times(rk, t_partition, qr)))
+    return krr((S) rd_kafka_err2str(err));
+  t=decodeParList(t_partition);
+  rd_kafka_topic_partition_list_destroy(t_partition);
+  return t;
+}
+
 EXP K3(kfkPositionOffsets){
   K r;
   rd_kafka_resp_err_t err;
