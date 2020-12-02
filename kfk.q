@@ -143,6 +143,7 @@ statcb:{[j]
     s[`ts]:-10957D+`timestamp$s[`ts]*1000;
     s[`time]:-10957D+`timestamp$1000000000*s[`time]
     ];
+  if[not `cgrp in key s;s[`cgrp]:()];
   .kfk.stats,::enlist s;
   delete from `.kfk.stats where i<count[.kfk.stats]-100;}
 
