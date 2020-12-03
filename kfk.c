@@ -1,3 +1,7 @@
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                     Load Libraries                    //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -7,8 +11,8 @@
 #include "socketpair.c"
 #include <fcntl.h>
 #include "k.h"
-#define K3(f) K f(K x,K y,K z)
-#define K4(f) K f(K x,K y,K z,K r)
+
+//%% Socket Library %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 #ifdef _WIN32
 #pragma comment(lib, "ws2_32.lib")
@@ -21,86 +25,210 @@ static SOCKET spair[2];
 #define SOCKET_ERROR -1
 static I spair[2];
 #endif
-static J maxMsgsPerPoll = 0;
 
-#define KR -128
-#define KNL (K) 0
-#define KFK_OK RD_KAFKA_RESP_ERR_NO_ERROR
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                         Macros                        //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+//%% Utility for Quench Warning %%//vvvvvvvvvvvvvvvvvvvvvv/
+
 #ifdef __GNUC__
 #  define UNUSED(x) x __attribute__((__unused__))
 #else
 #  define UNUSED(x) x
 #endif
-// create dictionary q dictionary from list of items (s1;v1;s2;v2;...)
-K xd0(I n, ...){
-  va_list a;
-  S s;
-  K x, y= ktn(KS, n), z= ktn(0, n);
-  y->n=0;z->n=0;
-  va_start(a, n);
-  for(; s= va_arg(a, S), s && (x= va_arg(a, K));)
-    js(&y, ss(s)), jk(&z, x);
-  va_end(a);
-  return xD(y, z);
-}
-#define xd(...) xd0(0, __VA_ARGS__, (S) 0)
+
+//%% Utility for Function Signature %%//vvvvvvvvvvvvvvvvvv/
+
+#define K3(f) K f(K x,K y,K z)
+#define K4(f) K f(K x,K y,K z,K r)
+
+//%% Type Alias %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 typedef unsigned int UI;
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                    Global Variables                   //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+/**
+ * @brief Error type of K object
+ */
+#define KR -128
+
+/**
+ * @brief Null of K object
+ */
+#define KNL (K) 0
+
+/**
+ * @brief Indicator of successful response from Kafka
+ */
+#define KFK_OK RD_KAFKA_RESP_ERR_NO_ERROR
+
+/**
+ *  @brief Maximum number of messages to poll at once. Set `0` by default.
+ */
+static J MAX_MESSAGES_PER_POLL = 0;
+
 static K S0;
-static K clients, topics;
+
+/**
+ * @brief Client names expressed in symbol list
+ */
+static K CLIENTS;
+
+/**
+ * @brief Topic names expressed in symbol list
+ */
+static K topics;
+
 static I validinit;
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                       Functions                       //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+//%% Pre-Declaration %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 K decodeParList(rd_kafka_topic_partition_list_t *t);
 
-// check type
-// letter as usual, + for table, ! for dict
-static I checkType(const C* tc, ...){
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                   Private Functions                   //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+/**
+ * @brief Internal function to create dictionary q dictionary from list of items (s1;v1;s2;v2;...)
+ * @param n: Dummy parameter
+ * @param args: Expressed as variadic. key and value of dictionary appear alternately.
+ */
+K xd0(I n, ...){
+  // Holder of variadic
   va_list args;
-  K x;
-  static C lt[256]= " tvunzdmpscfejihg xb*BX GHIJEFCSPMDZNUVT";
-  static C b[256];
-  const C* tc0= tc;
-  I match=0;
-  lt[20 + 98]= '+';
-  lt[20 + 99]= '!';
-  va_start(args, tc);
-  for(; *tc;){
+  // Receiver of keys and values from variadic
+  S key_holder;
+  K value_holder;
+  // Container of keys and values
+  K keys= ktn(KS, n);
+  K values= ktn(0, n);
+  keys->n=0;
+  values->n=0;
+  va_start(args, n);
+  for(; key_holder= va_arg(args, S), key_holder && (value_holder= va_arg(args, K));){
+    js(&keys, ss(key_holder));
+    jk(&values, value_holder);
+  } 
+  va_end(args);
+  return xD(keys, values);
+}
+
+/**
+ * @brief Create dictionary q dictionary from list of items (s1;v1;s2;v2;...)
+ * @param args: Expressed as variadic. key and value of dictionary appear alternately.
+ */
+#define xd(...) xd0(0, __VA_ARGS__, (S) 0)
+
+
+/**
+ * @brief Check type of arguments.
+ * @param types: Type indicators to test.
+ * - Letter denotes kdb+ simple type
+ * - '+' denotes table
+ * - '!' denotes dict
+ * - [xyz] denotes any of x, y or z
+ * @param args: Arguments to check their types.
+ * @example
+ * Check if:
+ * - `x` is int
+ * - `y` is symbol
+ * - `z` is dictionary
+ * ```
+ * checkType("is!",x ,y ,z)
+ * ```
+ */
+static I checkType(const C* types, ...){
+  // Holder of variadic
+  va_list args;
+  // Receiver of K object to test its type
+  K obj;
+  // Type indicators sorted in ascending order by underlying integer values
+  static C indicators[256]= " tvunzdmpscfejihg xb*BX GHIJEFCSPMDZNUVT";
+  // Holder of error message if any
+  static C error_message[256];
+  const C* start= types;
+  I match;
+  indicators[20 + 98]= '+';
+  indicators[20 + 99]= '!';
+  va_start(args, types);
+  for(; *types;){
     match= 0;
-    x= va_arg(args, K);
-    if(!x){
-      strcpy(b, "incomplete type string ");
+    obj= va_arg(args, K);
+
+    if(!obj){
+      // Null K object
+      // Is this right error message?? Rather "extra type indicator" is better.
+      // strcpy(error_message, "incomplete type string ");
+      strcpy(error_message, "extra type indicator ");
       break;
     };
-    if('[' == *tc){
-      while(*tc && ']' != *tc){
-        match= match || lt[20 + xt] == *tc;
-        ++tc;
+
+    if('[' == *types){
+      // Check if it is any type in [].
+      while(*types && ']' != *types){
+        match= match || indicators[20 + (obj -> t)] == *types;
+        // Progress pointer of type array
+        ++types;
       }
     }
-    else
-      match= lt[20 + xt] == *tc;
+    else{
+      // Specific type indicator 
+      match= indicators[20 + (obj -> t)] == *types;
+    }
+
+    // Break in case of type mismatch  
     if(!match){
-      strcat(strcpy(b, "type:expected "), tc0);
+      strcat(strcpy(error_message, "type:expected "), start);
       break;
     };
-    ++tc;
+
+    // Progress pointer of type array
+    ++types;
   }
   va_end(args);
+
+  // Return error if any
   if(!match)
-    krr(b);
+    krr(error_message);
+
   return match;
 }
 
-// use QS
-rd_kafka_t *clientIndex(K x){
-  return (rd_kafka_t *) ((((UI) xi < clients->n) && kS(clients)[xi]) ?kS(clients)[xi] :(S) krr("unknown client"));
+/**
+ * @brief Retrieve client name from a given index.
+ * @param index: Index of client.
+ * @return
+ * - symbol: client name if index is valid
+ * - error: error message if index is not valid
+ */
+rd_kafka_t *clientIndex(K index){
+  return (rd_kafka_t *) ((((UI) index->i < CLIENTS->n) && kS(CLIENTS)[index->i]) ? kS(CLIENTS)[index->i] :(S) krr("unknown client"));
 }
 
-
+/**
+ * @brief Retrieve index from a given client handle.
+ * @param rk: Client handle
+ * @return
+ * - int: Index of the given client
+ * - null int: if the client name is not valid
+ */
 I indexClient(const rd_kafka_t *rk){
-  int i;
-  for (i = 0; i < clients->n; ++i)
-    if(rk==(rd_kafka_t *)kS(clients)[i]) return i;
+  //int i;
+  for (int i = 0; i < CLIENTS->n; ++i){
+    if(rk==(rd_kafka_t *)kS(CLIENTS)[i])
+      return i;
+  }
+  
+  // If there is no matched client for the handle return null 0Ni
   return ni;
 }
 
@@ -205,8 +333,8 @@ EXP K2(kfkClient){
   }
   else
     rd_kafka_queue_io_event_enable(rd_kafka_queue_get_main(rk),spair[1],"X",1);
-  js(&clients, (S) rk);
-  return ki(clients->n - 1);
+  js(&CLIENTS, (S) rk);
+  return ki(CLIENTS->n - 1);
 }
 
 EXP K1(kfkdeleteClient){
@@ -217,7 +345,7 @@ EXP K1(kfkdeleteClient){
     return KNL;
   rd_kafka_consumer_close(rk);
   rd_kafka_destroy(rk);
-  kS(clients)[x->i]= (S) 0;
+  kS(CLIENTS)[x->i]= (S) 0;
   return KNL;
 }
 
@@ -692,9 +820,9 @@ J pollClient(rd_kafka_t *rk, J timeout, J maxcnt) {
     printr0(k(0, ".kfk.consumecb", r, KNL));
     rd_kafka_message_destroy(msg);
     ++n;
-    /* as n is never 0 in next call, when maxcnt is 0 and maxMsgsPerPoll is 0, doesnt return early */
-    /* maxcnt has priority over maxMsgsPerPoll */
-    if ((maxcnt==n) || (maxMsgsPerPoll==n && maxcnt==0)) 
+    /* as n is never 0 in next call, when maxcnt is 0 and MAX_MESSAGES_PER_POLL is 0, doesnt return early */
+    /* maxcnt has priority over MAX_MESSAGES_PER_POLL */
+    if ((maxcnt==n) || (MAX_MESSAGES_PER_POLL==n && maxcnt==0)) 
     {
       char data = 'Z';
       send(spair[1], &data, 1, 0);
@@ -707,8 +835,8 @@ J pollClient(rd_kafka_t *rk, J timeout, J maxcnt) {
 EXP K1(kfkMaxMsgsPerPoll){
   if(!checkType("j", x))
     return KNL;
-  maxMsgsPerPoll=x->j;
-  return kj(maxMsgsPerPoll);
+  MAX_MESSAGES_PER_POLL=x->j;
+  return kj(MAX_MESSAGES_PER_POLL);
 }
 
 // for manual poll of the feed.
@@ -897,9 +1025,9 @@ EXP K kfkCallback(I d){
   while(0 < (n=recv(d, buf, sizeof(buf), 0)))
     consumed+=n;
   // pass consumed to poll for possible batching
-  for(i= 0; i < clients->n; i++){
-    if(!(((S)0)==kS(clients)[i]))
-      pollClient((rd_kafka_t*)kS(clients)[i], 0, 0);
+  for(i= 0; i < CLIENTS->n; i++){
+    if(!(((S)0)==kS(CLIENTS)[i]))
+      pollClient((rd_kafka_t*)kS(CLIENTS)[i], 0, 0);
   }
   return KNL;
 }
@@ -912,13 +1040,13 @@ static V detach(V){
         kfkTopicDel(ki(i));
     r0(topics);
   }
-  if(clients){
-    for(i= 0; i < clients->n; i++){
-      if(!(((S)0) == kS(clients)[i]))
+  if(CLIENTS){
+    for(i= 0; i < CLIENTS->n; i++){
+      if(!(((S)0) == kS(CLIENTS)[i]))
         kfkdeleteClient(ki(i));
     }
     rd_kafka_wait_destroyed(1000); /* wait for cleanup*/
-    r0(clients);
+    r0(CLIENTS);
   }
   if(sp=spair[0]){
     sd0x(sp,0);
@@ -934,7 +1062,7 @@ static V detach(V){
 EXP K kfkInit(K UNUSED(x)){
   if(!(0==validinit))
    return 0; 
-  clients=ktn(KS,0);
+  CLIENTS=ktn(KS,0);
   topics=ktn(KS,0);
   S0=ks("");
   if(dumb_socketpair(spair, 1) == SOCKET_ERROR)

@@ -51,20 +51,20 @@ funcs:(
 	(`kfkCommittedOffsets;3);
 	  // .kfk.AssignOffsets[client_id:i;topic:s;partition_offsets:I!J]:()
 	(`kfkAssignOffsets;3);
-          // .kfk.Threadcount[]:i
-        (`kfkThreadCount;1);
-          // .kfk.VersionSym[]:s
-        (`kfkVersionSym;1);
-          // .kfk.SetLoggerLevel[client_id:i;int_level:i]:()
-        (`kfkSetLoggerLevel;2);
-          // .kfk.Assignment[client_id:i]:T
-        (`kfkAssignment;1);
-          // .kfk.AssignTopPar[client_id:i;topic_partition:S!J]:()
-        (`kfkAssignTopPar;2);
-          // .kfk.AssignmentAdd[client_id:i;topic_partition:S!J]:()
-        (`kfkAssignmentAdd;2);
-          // .kfk.AssignmentDel[client_id:i;topic_partition:S!J]:()
-        (`kfkAssignmentDel;2)
+    // .kfk.Threadcount[]:i
+  (`kfkThreadCount;1);
+    // .kfk.VersionSym[]:s
+  (`kfkVersionSym;1);
+    // .kfk.SetLoggerLevel[client_id:i;int_level:i]:()
+  (`kfkSetLoggerLevel;2);
+    // .kfk.Assignment[client_id:i]:T
+  (`kfkAssignment;1);
+    // .kfk.AssignTopPar[client_id:i;topic_partition:S!J]:()
+  (`kfkAssignTopPar;2);
+    // .kfk.AssignmentAdd[client_id:i;topic_partition:S!J]:()
+  (`kfkAssignmentAdd;2);
+    // .kfk.AssignmentDel[client_id:i;topic_partition:S!J]:()
+  (`kfkAssignmentDel;2)
 	);
 
 // binding functions from dictionary funcs using rule
