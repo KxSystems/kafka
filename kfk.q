@@ -191,8 +191,12 @@ AssignOffsets:{[cid;top;partoff]
   assignment:.kfk.Assignment[cid];
   toppar:(count[partoff]#top)!key partoff;
   tplist:distinct(,'/)(key;{"j"$value x})@\:toppar;
+  // Find locations where the current assigment needs to be overwritten
   loc:where i.compAssign[cid;tplist];
-  if[count loc;AssignDel[cid;(!) . flip tplist]];
+  if[count loc;
+    currentAssign:(!). flip tplist loc;
+    AssignDel[cid;currentAssign]
+    ];
   assignOffsets[cid;top;partoff]
   }
 
