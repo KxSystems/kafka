@@ -65,6 +65,8 @@ funcs:(
   (`kfkAssignmentAdd;2);
     // .kfk.AssignmentDel[client_id:i;topic_partition:S!J]:()
   (`kfkAssignmentDel;2)
+    // .kfk.OffsetsForTimes[client_id:i;topic:s;partition_offsets:I!J;timeout_ms]:partition_offsets
+  (`kfkoffsetForTime;4)
 	);
 
 // binding functions from dictionary funcs using rule
@@ -143,6 +145,7 @@ statcb:{[j]
     s[`ts]:-10957D+`timestamp$s[`ts]*1000;
     s[`time]:-10957D+`timestamp$1000000000*s[`time]
     ];
+  if[not `cgrp in key s;s[`cgrp]:()];
   .kfk.stats,::enlist s;
   delete from `.kfk.stats where i<count[.kfk.stats]-100;}
 
@@ -207,6 +210,24 @@ AssignAdd:{[cid;toppar]
 AssignDel:{[cid;toppar]
   tpdict:i.assignCheck[cid;toppar;1b];
   AssignmentDel[cid;tpdict];
+  }
+
+
+// Retrieval of offset associated with a specified time
+/* cid is an integer denoting client id
+/* top is the topic which is being queried
+/* partoff is a dictionary mapping the partition to the offset being queried
+/*   in this case offset can be a long denoting milliseconds since 1970.01.01,
+/*   a timestamp or date.
+/* tout is the maximum timeout in milliseconds the function will block for
+OffsetsForTimes:{[cid;top;partoff;tout]
+  if[6h<>type key partoff;'"'partoff' key must be an integer list"];
+  offsetType:type value partoff;
+  if[not offsetType in(7h;12h;14h);
+    '"'partoff' value must be a list of longs, timestamps or dates only"];
+  timeOffset:$[14h=offsetType;0t+;]partoff;
+  if[7h<>offsetType;timeOffset:floor(`long$timeOffset-1970.01.01D00)%1e6];
+  offsetForTime[cid;top;timeOffset;tout]
   }
 
 // Utility function to check current assignment against proposed additions/deletions,
