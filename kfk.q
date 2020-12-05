@@ -55,12 +55,8 @@ SHARED_FUNCTIONS_:(
 	(`kfkUnsub;1);
 	// .kfk.Subscription[client_id:i]
 	(`kfkSubscription;1);
-	// .kfk.MaxMsgsPerPoll[max_messages]
-	(`kfkMaxMsgsPerPoll;1);
 	// .kfk.Poll[client_id:i;timeout;max_messages]
 	(`kfkPoll;3);
-	// .kfk.Version[]:i
-	(`kfkVersion;1);
 	// .kfk.Flush[producer_id:i;timeout_ms:i]:()
 	(`kfkFlush;2);
 	// .kfk.ExportErr[]:T
@@ -94,7 +90,7 @@ SHARED_FUNCTIONS_:(
 // Add functions to namespace dictionary
 // ex.) kfkAssignmentAdd => .kfk.assignmentAdd
 LIBPATH_:`:libkfk 2:;
-.kfk,: (`$3_' (.Q.a .Q.A?first each funcnames),' 1 _/: funcnames:string SHARED_FUNCTIONS_[::; 0])!LIBPATH @/: SHARED_FUNCTIONS_;
+.kfk,: (`$3_' (.Q.a .Q.A?first each funcnames),' 1 _/: funcnames:string SHARED_FUNCTIONS_[::; 0])!LIBPATH_ @/: SHARED_FUNCTIONS_;
 
 /
 * @todo
@@ -132,20 +128,32 @@ ClientTypeMap :(`int$())!`symbol$();
 /
 * @brief Dictionary of error callback functions per client index.
 * @key
-* int: Client index
+* int: Client index in `CLIENTS`.
 * @value
 * function: Callback function called in `error_cb`.
 \
-ERROR_CALLBACK_PER_CLIENT:(`int$())!();
+ERROR_CALLBACK_PER_CLIENT:enlist[0Ni]!enlist (::);
 
 /
 * @brief Dictionary of throttle callback functions per client index.
 * @key
-* int: Client index
+* int: Client index in `CLIENTS`.
 * @value
 * function: Callback function called in `throttle_cb`.
 \
-THROTTLE_CALLBACK_PER_CLIENT:(`int$())!();
+THROTTLE_CALLBACK_PER_CLIENT:enlist[0Ni]!enlist (::);
+
+
+/
+* @brief Dictionary of consume_callback functions for each topic per client index.
+* @key
+* int: Client index in `CLIENTS`.
+* @value
+* dictionary: Dictionary of callback function for each topic.
+* - key: symbol: topic.
+* - value: function: callback function called inside `.kfk.consume_callback`.
+\
+CONSUME_TOPIC_CALLBACK_PER_CLIENT:enlist[0Ni]!enlist ()!();
 
 PRODUCER:"p";
 CONSUMER:"c";
@@ -300,13 +308,6 @@ error_cb:{[cid;error_code;reason]
   $[null registered_error_cb:ERROR_CALLBACK_PER_CLIENT cid; default_error_cb; registered_error_cb] . (cid; error_code; reason)
  };
 
-// Handling of throttle callbacks (rd_kafka_conf_set_throttle_cb)
-/* cid is an integer denoting the client id from which the callback is triggered
-/* bname is a string denoting the name of the broker
-/* bid is an integer denoting the broker id
-/* throttle_time is an integer denoting the non-zero throttle time that triggered the callback
-
-
 /
 * @brief Default callback function for throttle events to request producing and consuming. Called inside `.kfk.throttle_cb`.
 * @param handle: Index of client.
@@ -346,19 +347,39 @@ throttle_cb:{[client_id;broker_name;broker_id;throttle_time]
   $[null registered_throttle_cb:THROTTLE_CALLBACK_PER_CLIENT client_id; default_throttle_cb; registered_throttle_cb] . (client_id; broker_name; broker_id; throttle_time)
  };
 
-// Default callback for consuming messages if individual topic callbacks not defined(including errors)
-consumetopic.:{[msg]}
+/
+* @brief Default callback for consuming messages called inside `.kfk.consume_cb`.
+* @param message: Dictionary containing a message returned by `rd_kafka_consumer_poll()`.
+\
+default_consume_cb:{[msg]}
 
-// Main function called on consumption of data for both default and per topic callback
-consumecb:{[msg]$[null f:consumetopic msg`topic;consumetopic.;f]msg}
+/
+* @brief Callback function for consuming messages triggered by `rd_kafka_consumer_poll()`. Deligated by C function `poll_client`.
+* @param client_idx: Index of client (consumer).
+* @type
+* - int
+* @param message: Dictionary containing a message returned by `rd_kafka_consumer_poll()`.
+* @type
+* - dictionary
+\
+consume_cb:{[client_idx; message]
+  show message; 
+  show CONSUME_TOPIC_CALLBACK_PER_CLIENT[client_idx; message `topic];
+  // Call registered callback function for the topic in the message if any; otherwise call default callback function.
+  $[null registered_consume_cb:CONSUME_TOPIC_CALLBACK_PER_CLIENT[client_idx; message `topic]; default_consume_cb; registered_consume_cb] message
+ };
 
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Pubic Interface                    //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-// Current version of librdkafka
-Version:Version[];
+/
+* @brief Return current version of librdkafka.
+* @return
+* - int: Version of librdkafka.
+\
+version:LIBPATH_	(`kfkVersion; 1);
 
 // Table with all errors return by kafka with codes and description
 Errors:ExportErr[];
@@ -401,15 +422,26 @@ ClientDel:{[cid]
 
 
 
-// Subscribe to a topic from a client, with a defined topic/partition offset and unique callback function
-/* cid  = Integer denoting client Id
-/* top  = Topic to be subscribed to as a symbol
-/* part = Partition list or partition/offset dictionary
-/* cb   = callback function to be used for the specified topic
-Subscribe:{[cid;top;part;cb]
-  Sub[cid;top;part];
-  if[not null cb;consumetopic[top]:cb];
-  }
+/
+* @brief Subscribe to a topic from a client, with a defined topic/partition offset and unique callback function
+* @param cid: Client index inside `CLIENTS`.
+* @type
+* - int
+* @param topic: Topic to be subscribed
+* @type
+* - symbol
+* @param partition: Partition or partition and offset.
+* @type
+* - list: Partition list
+* - dictionary: Partition/offset dictionary
+* @param callback: Callback function to be used for the specified topic.
+* @type
+* - function
+\
+Subscribe:{[client_idx;topic;partition;callback]
+  Sub[client_idx; topic; partition];
+  if[not null callback; CONSUME_TOPIC_CALLBACK_PER_CLIENT[client_idx],::enlist[topic]!enlist callback];
+ };
 
 
 // Retrieve the client member id associated with an assigned consumer
@@ -473,7 +505,7 @@ OffsetsForTimes:{[cid;top;partoff;tout]
 
 /
 * @brief Register error calback function for a client.
-* @param client_idx: Index of client.
+* @param client_idx: Index of client in `CLIENTS`.
 * @type
 * - int
 * @param callback: Callback function.
@@ -484,30 +516,10 @@ registerErrorCallback:{[client_idx;callback]
   if[not null callback; ERROR_CALLBACK_PER_CLIENT[client_idx]:callback];
  };
 
-/
-* @brief Register error calback function for a client.
-* @param client_idx: Index of client.
-* @type
-* - int
-* @param callback: Callback function.
-* @type
-* - function
-* @note
-* Deprecated. Use `.kfk.registerErrorCallback` instead.
-\
-errcbreg:{[client_idx;callback]
-  if[DEPRECATED_ERRCBREG_USE_FIRST;
-    DEPRECATED_ERRCBREG_USE_FIRST:0b;
-    -1 "Use of deprecated function: .kfk.errcbreg";
-    -1 "Use .kfk.registerErrorCallback instead.";
-  ];
-  registerErrorCallback[client_idx; callback]
- };
-
 // Registration function allowing throttle callbacks to be set of a per client basis
 /
 * @brief Register error calback function for a client.
-* @param client_idx: Index of client.
+* @param client_idx: Index of client in `CLIENTS`.
 * @type
 * - int
 * @param callback: Callback function.
@@ -518,9 +530,42 @@ registerThrottleCallback:{[client_idx;callback]
   if[not null callback; THROTTLE_CALLBACK_PER_CLIENT[client_idx]:callback];
  };
 
+
+	// .kfk.MaxMsgsPerPoll[max_messages]
+setMaxNumPolling:LIBPATH_ (`set_maximum_number_of_polling; 1);
+
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                  Deprecated Functions                 //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+// Flags to dispay warning. Use only once.
+DEPRECATED_ERRCBREG_USE_FIRST:1b;
+DEPRECATED_THROTTLECBREG_USE_FIRST:1b;
+
 /
 * @brief Register error calback function for a client.
-* @param client_idx: Index of client.
+* @param client_idx: Index of client in `CLIENTS`.
+* @type
+* - int
+* @param callback: Callback function.
+* @type
+* - function
+* @note
+* Deprecated. Use `.kfk.registerErrorCallback` instead.
+\
+errcbreg:{[client_idx;callback]
+  if[DEPRECATED_ERRCBREG_USE_FIRST;
+    DEPRECATED_ERRCBREG_USE_FIRST::0b;
+    -1 "Use of deprecated function: .kfk.errcbreg";
+    -1 "Use .kfk.registerErrorCallback instead.";
+  ];
+  registerErrorCallback[client_idx; callback]
+ };
+
+/
+* @brief Register error calback function for a client.
+* @param client_idx: Index of client in `CLIENTS`.
 * @type
 * - int
 * @param callback: Callback function.
@@ -531,7 +576,7 @@ registerThrottleCallback:{[client_idx;callback]
 \
 throttlecbreg:{[client_idx;callback]
   if[DEPRECATED_THROTTLECBREG_USE_FIRST;
-    DEPRECATED_THROTTLECBREG_USE_FIRST:0b;
+    DEPRECATED_THROTTLECBREG_USE_FIRST::0b;
     -1 "Use of deprecated function: .kfk.throttlecbreg";
     -1 "Use .kfk.registerThrotteCallback instead.";
   ];

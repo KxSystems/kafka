@@ -78,12 +78,23 @@ static const J KDB_DAY_OFFSET=10957;
  */
 static const J ONEDAY_MILLIS=86400000;
 
+/**
+ * @brief Type indicators sorted in ascending order by underlying integer values.
+ * @note
+ * By adding 20 to `arg->t`, the value matches the position in this letters. For example, 't' isnidcates time type whose
+ *  integer indicator is -19. Adding 20 to -19 equals 1 and `QTYPE_INDICATORS[1]` matches 't'. Additionally, '+' denotes table
+ *  and '!' denotes dictionary.
+ */
+static const C QTYPE_INDICATORS[256]= " tvunzdmpscfejihg xb*BX GHIJEFCSPMDZNUVT                                                                              +!";
+
 //%% Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
- *  @brief Maximum number of messages to poll at once. Set `0` by default.
+ * @brief Maximum number of polling at execution of `poll_client`. Set `0` by default.
+ * @note
+ * In order to make this parameter effective, pass `0` for `max_poll_cnt` in `poll_client`.
  */
-static J MAX_MESSAGES_PER_POLL = 0;
+static J MAXIMUM_NUMBER_OF_POLLING = 0;
 
 /**
  * @brief WHAT IS THIS??
@@ -150,7 +161,6 @@ K build_dictionary_n(I n, ...){
  */
 #define build_dictionary(...) build_dictionary_n(0, __VA_ARGS__, (S) 0)
 
-
 /**
  * @brief Check type of arguments.
  * @param types: Type indicators to test.
@@ -165,24 +175,20 @@ K build_dictionary_n(I n, ...){
  * - `y` is symbol
  * - `z` is dictionary
  * ```
- * checkType("is!",x ,y ,z)
+ * check_qtype("is!",x ,y ,z)
  * ```
  */
-static I checkType(const C* types, ...){
+static I check_qtype(const C* types, ...){
   // Holder of variadic
   va_list args;
   // Receiver of K object to test its type
   K obj;
-  // Type indicators sorted in ascending order by underlying integer values
-  static C indicators[256]= " tvunzdmpscfejihg xb*BX GHIJEFCSPMDZNUVT";
   // Holder of error message if any
-  static C error_message[256];
+  C error_message[256];
   const C* start= types;
   I match;
-  indicators[20 + 98]= '+';
-  indicators[20 + 99]= '!';
   va_start(args, types);
-  for(; *types;){
+  while(*types){
     match= 0;
     obj= va_arg(args, K);
 
@@ -197,14 +203,14 @@ static I checkType(const C* types, ...){
     if('[' == *types){
       // Check if it is any type in [].
       while(*types && ']' != *types){
-        match= match || indicators[20 + (obj -> t)] == *types;
+        match= match || QTYPE_INDICATORS[20 + (obj -> t)] == *types;
         // Progress pointer of type array
         ++types;
       }
     }
     else{
       // Specific type indicator 
-      match= indicators[20 + (obj -> t)] == *types;
+      match= QTYPE_INDICATORS[20 + (obj -> t)] == *types;
     }
 
     // Break in case of type mismatch  
@@ -248,18 +254,20 @@ rd_kafka_t *clientIndex(K index){
 
 /**
  * @brief Retrieve index from a given client handle.
- * @param handle: Client handle
+ * @param handle: Client handle.
  * @return
- * - int: Index of the given client
- * - null int: if the client name is not valid
+ * - int: Index of the given client in `CLIENTS`.
+ * - null int: if the client handle is not a registered one.
  */
 I indexClient(const rd_kafka_t *handle){
   for (int i = 0; i < CLIENTS->n; ++i){
+    // Handle is stored as symbol in `CLIENTS` (see `kfkClient`)
+    // Re-cast as handle
     if(handle==(rd_kafka_t *)kS(CLIENTS)[i])
       return i;
   }
   
-  // If there is no matched client for the handle return null 0Ni
+  // If there is no matched client for the handle, return 0Ni
   return ni;
 }
 
@@ -268,7 +276,7 @@ I indexClient(const rd_kafka_t *handle){
  * @param index: Index of topic
  * @return
  * - symbol: Topic
- * - error if index is invalid
+ * - error if index is out of range or topic for the index is null
  */
 rd_kafka_topic_t *topicIndex(K index){
   return (rd_kafka_topic_t *) ((((UI) index->i < TOPICS->n) && kS(TOPICS)[index->i])? kS(TOPICS)[index->i]: (S) krr("unknown topic"));
@@ -277,70 +285,49 @@ rd_kafka_topic_t *topicIndex(K index){
 
 //%% Client %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
-// x - config dict sym->sym
-static K loadConf(rd_kafka_conf_t *conf, K x){
-  char b[512];
-  J i;
-  for(i= 0; i < xx->n; ++i){
-    if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, kS(xx)[i], kS(xy)[i], b, sizeof(b))){
-      return krr((S) b);
+/**
+ * @brief Set configuration in q dictionary on kafka configuration object.
+ * @param conf: Destination kafka configuration object.
+ * @param q_config: Source q configuration object.
+ * @return
+ * - error (nullptr): Failure
+ * - empty list: Success
+ */
+static K load_config(rd_kafka_conf_t *conf, K q_config){
+  // Buffer for error message
+  char error_message[512];
+  for(J i= 0; i < kK(q_config)[0]->n; ++i){
+    if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, kS(kK(q_config)[0])[i], kS(kK(q_config)[1])[i], error_message, sizeof(error_message))){
+      return krr((S) error_message);
     }
   }
+  // Arbitrary value `()` other than nullptr so that caller of this function can tell error(`krr`) and success
   return knk(0);
 }
 
-static K loadTopConf(rd_kafka_topic_conf_t *conf, K x){
-  char b[512];
-  J i;
-  for(i= 0; i < xx->n; ++i){
-    if(RD_KAFKA_CONF_OK !=rd_kafka_topic_conf_set(conf, kS(xx)[i], kS(xy)[i], b, sizeof(b)))
-      return krr((S) b);
+/**
+ * @brief Set topic configuration in q dictionary on kafka topic configuration object.
+ * @param tpc_conf: Destination kafka topic configuration object
+ * @param q_tpc_config: Source q topic configuration object.
+ * @return
+ * - error (nullptr): Failure
+ * - empty list: Success
+ */
+static K load_topic_config(rd_kafka_topic_conf_t *tpc_conf, K q_tpc_config){
+  // Buffer for error message
+  char error_message[512];
+  for(J i= 0; i < kK(q_tpc_config)[0]->n; ++i){
+    if(RD_KAFKA_CONF_OK !=rd_kafka_topic_conf_set(tpc_conf, kS(kK(q_tpc_config)[0])[i], kS(kK(q_tpc_config)[1])[i], error_message, sizeof(error_message)))
+      return krr((S) error_message);
   }
+  // Arbitrary value `()` other than nullptr so that caller of this function can tell error(`krr`) and success
   return knk(0);
 }
 
-// x:client type p - producer, c - consumer
-// y:config dict sym->sym
-EXP K2(kfkClient){
-  rd_kafka_type_t type;
-  rd_kafka_t *rk;
-  rd_kafka_conf_t *conf;
-  char b[512];
-  if(!checkType("c!", x, y))
-    return KNULL;
-  if('p' != xg && 'c' != xg)
-    return krr("type: unknown client type");
-  type= 'p' == xg ? RD_KAFKA_PRODUCER : RD_KAFKA_CONSUMER;
-  if(!loadConf(conf= rd_kafka_conf_new(), y))
-    return KNULL;
-  rd_kafka_conf_set_stats_cb(conf, stats_cb);
-  rd_kafka_conf_set_log_cb(conf, log_cb);
-  if('p' == xg)
-    rd_kafka_conf_set_dr_msg_cb(conf, dr_msg_cb);
-  else
-    rd_kafka_conf_set_offset_commit_cb(conf, offset_commit_cb);
-  rd_kafka_conf_set_throttle_cb(conf, throttle_cb);
-  rd_kafka_conf_set_error_cb(conf, error_cb);
-  if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, "log.queue", "true", b, sizeof(b)))
-    return krr((S) b);
-  if(!(rk= rd_kafka_new(type, conf, b, sizeof(b))))
-    return krr(b);
-  /* Redirect logs to main queue */
-  rd_kafka_set_log_queue(rk,NULL);
-  /* Redirect rd_kafka_poll() to consumer_poll() */
-  if(type == RD_KAFKA_CONSUMER){
-    rd_kafka_poll_set_consumer(rk);
-    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_consumer(rk),spair[1],"X",1);
-  }
-  else
-    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_main(rk),spair[1],"X",1);
-  js(&CLIENTS, (S) rk);
-  return ki(CLIENTS->n - 1);
-}
 
 EXP K1(kfkdeleteClient){
   rd_kafka_t *rk;
-  if(!checkType("i", x))
+  if(!check_qtype("i", x))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;
@@ -352,7 +339,7 @@ EXP K1(kfkdeleteClient){
 
 EXP K1(kfkClientName){
   rd_kafka_t *rk;
-  if(!checkType("i", x))
+  if(!check_qtype("i", x))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;
@@ -361,7 +348,7 @@ EXP K1(kfkClientName){
 
 EXP K1(kfkmemberID){
   rd_kafka_t *rk;
-  if(!checkType("i", x))
+  if(!check_qtype("i", x))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;
@@ -373,12 +360,12 @@ EXP K3(kfkgenerateTopic){
   rd_kafka_topic_t *rkt;
   rd_kafka_t *rk;
   rd_kafka_topic_conf_t *rd_topic_conf;
-  if(!checkType("is!",x ,y ,z))
+  if(!check_qtype("is!",x ,y ,z))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;
   rd_topic_conf= rd_kafka_topic_conf_new();
-  loadTopConf(rd_topic_conf, z);
+  load_topic_config(rd_topic_conf, z);
   rkt= rd_kafka_topic_new(rk, y->s, rd_topic_conf);
   js(&TOPICS, (S) rkt);
   return ki(TOPICS->n - 1);
@@ -386,7 +373,7 @@ EXP K3(kfkgenerateTopic){
 
 EXP K1(kfkTopicDel){
   rd_kafka_topic_t *rkt;
-  if(!checkType("i", x))
+  if(!check_qtype("i", x))
     return KNULL;
   if(!(rkt= topicIndex(x)))
     return KNULL;
@@ -397,7 +384,7 @@ EXP K1(kfkTopicDel){
 
 EXP K1(kfkTopicName){
   rd_kafka_topic_t *rkt;
-  if(!checkType("i", x))
+  if(!check_qtype("i", x))
     return KNULL;
   if(!(rkt= topicIndex(x)))
     return KNULL;
@@ -465,7 +452,7 @@ EXP K1(kfkMetadata){
   const struct rd_kafka_metadata *meta;
   K r;
   rd_kafka_t *rk;
-  if(!checkType("i", x))
+  if(!check_qtype("i", x))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;
@@ -520,7 +507,7 @@ static V plistoffsetdict(S topic,K partitions,rd_kafka_topic_partition_list_t *t
 EXP K2(kfkFlush){
   rd_kafka_t *rk;
   I qy=0;
-  if(!checkType("i[hij]",x,y))
+  if(!check_qtype("i[hij]",x,y))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;
@@ -540,7 +527,7 @@ EXP K2(kfkFlush){
 EXP K kfkPubWithHeaders(K clientIdx,K topicIdx,K partition,K val,K key,K hdrs){
   rd_kafka_t *rk;
   rd_kafka_topic_t *rkt;
-  if(!checkType("iii[CG][CG]!", clientIdx, topicIdx, partition, val, key, hdrs))
+  if(!check_qtype("iii[CG][CG]!", clientIdx, topicIdx, partition, val, key, hdrs))
     return KNULL;
   if(!(rk= clientIndex(clientIdx)))
     return KNULL;
@@ -589,7 +576,7 @@ EXP K kfkPubWithHeaders(K UNUSED(clientIdx),K UNUSED(topicIdx),K UNUSED(partitio
 // producer api
 EXP K4(kfkPub){
   rd_kafka_topic_t *rkt;
-  if(!checkType("ii[CG][CG]", x, y, z, r))
+  if(!check_qtype("ii[CG][CG]", x, y, z, r))
     return KNULL;
   if(!(rkt= topicIndex(x)))
     return KNULL;
@@ -611,7 +598,7 @@ EXP K4(kfkPub){
 
 EXP K4(kfkBatchPub){
   rd_kafka_topic_t *rkt;
-  if(!checkType("i[iI]*[CG*]", x, y, z, r))
+  if(!check_qtype("i[iI]*[CG*]", x, y, z, r))
     return KNULL;
   int msgcnt = z->n;
   if ((r->t == 0) && (msgcnt != r->n))
@@ -672,14 +659,14 @@ EXP K3(kfkSub){
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
   J i;
   I*p;
-  if(!checkType("is[I!]", x, y, z))
+  if(!check_qtype("is[I!]", x, y, z))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;
   if(KFK_OK != (err = rd_kafka_subscription(rk, &t_partition)))
     return krr((S)rd_kafka_err2str(err));
   if(z->t == XD){
-    if(!checkType("IJ", kK(z)[0], kK(z)[1]))
+    if(!check_qtype("IJ", kK(z)[0], kK(z)[1]))
       return KNULL;
     plistoffsetdict(y->s,z,t_partition);
   }
@@ -695,7 +682,7 @@ EXP K3(kfkSub){
 EXP K1(kfkUnsub){
   rd_kafka_t *rk;
   rd_kafka_resp_err_t err;
-  if(!checkType("i", x))
+  if(!check_qtype("i", x))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;
@@ -710,9 +697,9 @@ EXP K3(kfkAssignOffsets){
   rd_kafka_t *rk;
   rd_kafka_topic_partition_list_t *t_partition;
   rd_kafka_resp_err_t err;
-  if(!checkType("is!", x,y,z))
+  if(!check_qtype("is!", x,y,z))
     return KNULL;
-  if(!checkType("IJ",kK(z)[0],kK(z)[1]))
+  if(!check_qtype("IJ",kK(z)[0],kK(z)[1]))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;
@@ -727,9 +714,9 @@ EXP K3(kfkAssignOffsets){
 EXP K4(kfkCommitOffsets){
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
-  if(!checkType("is!b", x, y, z, r))
+  if(!check_qtype("is!b", x, y, z, r))
     return KNULL;
-  if(!checkType("IJ",kK(z)[0],kK(z)[1]))
+  if(!check_qtype("IJ",kK(z)[0],kK(z)[1]))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;  
@@ -745,11 +732,11 @@ EXP K3(kfkCommittedOffsets){
   K r;
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
-  if(!checkType("is!", x, y, z))
+  if(!check_qtype("is!", x, y, z))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;
-  if(!checkType("IJ",kK(z)[0],kK(z)[1]))
+  if(!check_qtype("IJ",kK(z)[0],kK(z)[1]))
     return KNULL;
   t_partition = rd_kafka_topic_partition_list_new(z->n);
   plistoffsetdict(y->s,z,t_partition);
@@ -765,9 +752,9 @@ EXP K4(kfkoffsetForTime){
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
   I qr=0;
-  if(!checkType("is![hij]", x, y, z, r))
+  if(!check_qtype("is![hij]", x, y, z, r))
     return KNULL;
-  if(!checkType("IJ",kK(z)[0],kK(z)[1]))
+  if(!check_qtype("IJ",kK(z)[0],kK(z)[1]))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;
@@ -789,9 +776,9 @@ EXP K3(kfkPositionOffsets){
   K r;
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
-  if(!checkType("is!", x, y, z))
+  if(!check_qtype("is!", x, y, z))
     return KNULL;
-  if(!checkType("IJ",kK(z)[0],kK(z)[1]))
+  if(!check_qtype("IJ",kK(z)[0],kK(z)[1]))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;
@@ -809,7 +796,7 @@ EXP K1(kfkSubscription){
   rd_kafka_topic_partition_list_t *t;
   rd_kafka_t *rk;
   rd_kafka_resp_err_t err;
-  if (!checkType("i", x))
+  if (!check_qtype("i", x))
     return KNULL;
   if (!(rk = clientIndex(x)))
     return KNULL;
@@ -822,7 +809,7 @@ EXP K1(kfkSubscription){
 
 /**
  * @brief Build dictionary from message pointer returned from `rd_kafka_consume*()` family of functions
- *  for the given consumer (client) handle.
+ *  for the given client handle.
  * @param handle: Client handle
  * @param msg: Message pointer returned from `rd_kafka_consume*()` family of functions.
  * @return
@@ -889,49 +876,6 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
             (S) 0);
 }
 
-J pollClient(rd_kafka_t *rk, J timeout, J maxcnt) {
-  if(rd_kafka_type(rk) == RD_KAFKA_PRODUCER)
-    return rd_kafka_poll(rk, timeout);
-  K r;
-  J n= 0;
-  rd_kafka_message_t *msg;
-  while((msg= rd_kafka_consumer_poll(rk, timeout))) {
-    r= decode_message(rk,msg);
-    printr0(k(0, ".kfk.consumecb", r, KNULL));
-    rd_kafka_message_destroy(msg);
-    ++n;
-    /* as n is never 0 in next call, when maxcnt is 0 and MAX_MESSAGES_PER_POLL is 0, doesnt return early */
-    /* maxcnt has priority over MAX_MESSAGES_PER_POLL */
-    if ((maxcnt==n) || (MAX_MESSAGES_PER_POLL==n && maxcnt==0)) 
-    {
-      char data = 'Z';
-      send(spair[1], &data, 1, 0);
-      return n;
-    }
-  }
-  return n;
-}
-
-EXP K1(kfkMaxMsgsPerPoll){
-  if(!checkType("j", x))
-    return KNULL;
-  MAX_MESSAGES_PER_POLL=x->j;
-  return kj(MAX_MESSAGES_PER_POLL);
-}
-
-// for manual poll of the feed.
-EXP K3(kfkPoll){
-  J n= 0;
-  rd_kafka_t *rk;
-  if(!checkType("ijj", x, y, z))
-    return KNULL;
-  if(!(rk= clientIndex(x)))
-    return KNULL;
-  n=pollClient(rk,y->j,z->j);
-  return kj(n);
-}
-
-
 //%% Callback Functions %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
@@ -944,14 +888,17 @@ static I printr0(K response){
     // null object (success). Nothing to do.
     return 0;
   }
-  //else if(KR == response->t){
-  else{
-    // non-null response (execution error)
+  else if(KR == response->t){
+    // execution error)
     // print error message
     fprintf(stderr, "%s\n", response->s);
-    r0(response);
-    return 0;
-  }    
+  }
+  else{
+    // Not sure what case is this.
+    // nothing to do.
+  }
+  r0(response);
+  return 0;
 }
 
 /**
@@ -1031,6 +978,74 @@ static V throttle_cb(rd_kafka_t *handle, const char *brokername, int32_t brokeri
   printr0(k(0,(S) ".kfk.throttle_cb", ki(indexClient(handle)), kp((S) brokername), ki(brokerid), ki(throttle_time_ms), KNULL));
 }
 
+//%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Poll producer or consumer with timeout (and a limitation of the number of polling for consumer).
+ * @param hande: Client handle.
+ * @param timeout: The maximum amount of time (in milliseconds) that the call will block waiting for events.
+ * - 0: non-blocking
+ * - -1: wait indefinitely
+ * - others: wait for this period
+ * @param max_poll_cnt: The maximum number of polls, in turn the number of messages to get.
+ * @return
+ * - int: The number of messages retrieved.
+ */
+J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt) {
+  if(rd_kafka_type(handle) == RD_KAFKA_PRODUCER){
+    // Main poll for producer
+    return rd_kafka_poll(handle, timeout);
+  }
+  else{
+    // Polling for consumer
+    // Counter of the number of polling
+    J n= 0;
+    // Holder of message from polling
+    rd_kafka_message_t *message;
+    // Holder of q message converted from message
+    K q_message;
+
+    while((message= rd_kafka_consumer_poll(handle, timeout))){
+      // Poll and retrieve message while message is not empty
+      q_message= decode_message(handle, message);
+      // Call `.kfk.consume_cb` passing client index and message information dictionary
+      printr0(k(0, ".kfk.consume_cb", ki(indexClient(handle)), q_message, KNULL));
+      // Discard message which is not necessary any more
+      rd_kafka_message_destroy(message);
+
+      // Increment the poll counter
+      ++n;
+
+      // Argument `max_poll_cnt` has priority over MAXIMUM_NUMBER_OF_POLLING
+      if ((n == max_poll_cnt) || (n == MAXIMUM_NUMBER_OF_POLLING && max_poll_cnt==0)){
+        // The counter of polling reacched specified `max_poll_cnt` or globally set `MAX_MESSAGES_PER_POLL`.
+        char data = 'Z';
+        send(spair[1], &data, 1, 0);
+        // Return the number of mesasges
+        return n;
+      }
+    }
+    // Return the number of mesasges
+    return n;
+  }
+  
+}
+
+// for manual poll of the feed.
+EXP K3(kfkPoll){
+  J n= 0;
+  rd_kafka_t *rk;
+  if(!check_qtype("ijj", x, y, z))
+    return KNULL;
+  if(!(rk= clientIndex(x)))
+    return KNULL;
+  n=poll_client(rk,y->j,z->j);
+  return kj(n);
+}
+
+
+
+
 /* The following set of functions define interactions with the assign functionality with Kafka.
  * This provides more control to the user over where data can be consumed from.
  * Note the differences between Kafka Assign vs Subscribe functionality, summarised in part
@@ -1068,7 +1083,7 @@ EXP K2(kfkAssignTopPar){
   rd_kafka_t *rk;
   rd_kafka_topic_partition_list_t *t_partition;
   rd_kafka_resp_err_t err;
-  if(!checkType("i", x))
+  if(!check_qtype("i", x))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;
@@ -1090,7 +1105,7 @@ EXP K1(kfkAssignment){
   rd_kafka_topic_partition_list_t *t;
   rd_kafka_t *rk;
   rd_kafka_resp_err_t err;
-  if(!checkType("i", x))
+  if(!check_qtype("i", x))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;
@@ -1111,7 +1126,7 @@ EXP K2(kfkAssignmentAdd){
   rd_kafka_t *rk;
   rd_kafka_topic_partition_list_t *t;
   rd_kafka_resp_err_t err;
-  if(!checkType("i", x))
+  if(!check_qtype("i", x))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;
@@ -1135,7 +1150,7 @@ EXP K2(kfkAssignmentDel){
   rd_kafka_t *rk;
   rd_kafka_topic_partition_list_t *t;
   rd_kafka_resp_err_t err;
-  if(!checkType("i", x))
+  if(!check_qtype("i", x))
     return KNULL;
   if(!(rk= clientIndex(x)))
     return KNULL;
@@ -1162,7 +1177,7 @@ EXP K1(kfkOutQLen){
 EXP K2(kfkSetLoggerLevel){
   rd_kafka_t *rk;
   I qy=0;
-  if(!checkType("i[hij]",x,y))
+  if(!check_qtype("i[hij]",x,y))
     return KNULL;
   if(!(rk=clientIndex(x)))
     return KNULL;
@@ -1194,7 +1209,7 @@ EXP K kfkExportErr(K UNUSED(dummy)){
       jk(&y, ks((S)(errdescs[i].name ? errdescs[i].name : "")));
       jk(&z, kp((S)(errdescs[i].desc ? errdescs[i].desc : "")));
     }
-  return xT(xd("errid", x, "code", y, "desc", z));
+  return xT(build_dictionary("errid", x, "code", y, "desc", z));
 }
 
 // shared lib loading
@@ -1206,7 +1221,7 @@ EXP K kfkCallback(I d){
   // pass consumed to poll for possible batching
   for(i= 0; i < CLIENTS->n; i++){
     if(!(((S)0)==kS(CLIENTS)[i]))
-      pollClient((rd_kafka_t*)kS(CLIENTS)[i], 0, 0);
+      poll_client((rd_kafka_t*)kS(CLIENTS)[i], 0, 0);
   }
   return KNULL;
 }
@@ -1237,6 +1252,21 @@ static V detach(V){
   spair[1]= 0;
   validinit = 0;
 }
+
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                       Interface                       //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+//%% Private Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+
+
+
+
+//%% Public Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+// Initializer //---------------------/
 
 EXP K kfkInit(K UNUSED(x)){
   if(!(0==validinit))
@@ -1269,4 +1299,105 @@ EXP K kfkInit(K UNUSED(x)){
   validinit=1;
   atexit(detach);
   return 0;
+}
+
+
+// Client //--------------------------/
+
+/**
+ * @brief Create a client based on a given client type (producer or consumer) and a given configuration.
+ * @param client_type:
+ * - "p": Producer
+ * - "c": Consumer
+ * @param q_config: Dictionary containing a configuration.
+ * @return
+ * - error: If passing client type which is neither of "p" or "c". 
+ * - int: Client handle.
+ */
+EXP K kfkClient(K cient_type, K q_config){
+
+  // Buffer for error message
+  char error_message[512];
+
+  if(!check_qtype("c!", cient_type, q_config)){
+    // Argument type does not match char and dictionary
+    return KNULL;
+  }
+    
+  if('p' != cient_type->g && 'c' != cient_type->g){
+    // Neither of producer nor consumer
+    return krr("type: unknown client type");
+  }
+
+  // Set client type
+  rd_kafka_type_t type=('p' == cient_type->g)?RD_KAFKA_PRODUCER: RD_KAFKA_CONSUMER;
+  
+  rd_kafka_conf_t *conf=rd_kafka_conf_new();
+  if(!load_config(conf, q_config)){
+    // Null result. Error in loading the q configuration
+    return KNULL;
+  } 
+  
+  // Set callback functions
+  if(type == RD_KAFKA_PRODUCER){
+    // Set delivery report callback for producer
+    rd_kafka_conf_set_dr_msg_cb(conf, dr_msg_cb);
+  }
+  else{
+    // Set offset commit callback for consumer
+    rd_kafka_conf_set_offset_commit_cb(conf, offset_commit_cb);
+  }
+  rd_kafka_conf_set_stats_cb(conf, stats_cb);
+  rd_kafka_conf_set_log_cb(conf, log_cb);
+  rd_kafka_conf_set_throttle_cb(conf, throttle_cb);
+  rd_kafka_conf_set_error_cb(conf, error_cb);
+
+  // Set `log.queue` property true
+  if(RD_KAFKA_CONF_OK != rd_kafka_conf_set(conf, "log.queue", "true", error_message, sizeof(error_message))){
+    // Error in set `log.queue` property
+    return krr((S) error_message);
+  }
+
+  // Create handle from the configuration
+  rd_kafka_t *handle=rd_kafka_new(type, conf, error_message, sizeof(error_message));
+  if(!handle){
+    // Error in creating a client
+    return krr(error_message);
+  }
+
+  // Redirect logs to main queue
+  rd_kafka_set_log_queue(handle, NULL);
+
+  if(type == RD_KAFKA_CONSUMER){
+    // Redirect `rd_kafka_poll()` to `consumer_poll()`
+    rd_kafka_poll_set_consumer(handle);
+    // create a separate file-descriptor to which librdkafka will write payload (of size size) whenever a new element is enqueued on a previously empty queue.
+    // Consumer gets from consumer queue
+    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_consumer(handle), spair[1], "X", 1);
+  }
+  else{
+    // Producer gets from main queue
+    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_main(handle), spair[1], "X", 1);
+  }
+
+  // Store client hande as symbol
+  // IS THIS SAFE? Use `ss`? Why symbol rather than integer?
+  // This affects code on q side by dealing handles as symbol after casting input int
+  js(&CLIENTS, (S) handle);
+
+  // Return client handle as int
+  return ki(CLIENTS->n - 1);
+}
+
+// Utility //-------------------------/
+
+EXP K set_maximum_number_of_polling(K n){
+  if(!check_qtype("j", n)){
+    // Return error for non-long type
+    return krr("limit must be long type.");
+  }
+  // Set new upper limit
+  MAXIMUM_NUMBER_OF_POLLING=n->j;
+  // Return the new value
+  return kj(MAXIMUM_NUMBER_OF_POLLING);
 }
