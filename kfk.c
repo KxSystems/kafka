@@ -549,7 +549,7 @@ EXP K1(kfkUnsub){
 }
 
 // https://github.com/edenhill/librdkafka/wiki/Manually-setting-the-consumer-start-offset
-EXP K3(kfkAssignOffsets){
+EXP K3(kfkassignOffsets){
   rd_kafka_t *rk;
   rd_kafka_topic_partition_list_t *t_partition;
   rd_kafka_resp_err_t err;
@@ -559,7 +559,9 @@ EXP K3(kfkAssignOffsets){
     return KNL;
   if(!(rk= clientIndex(x)))
     return KNL;
-  t_partition = rd_kafka_topic_partition_list_new(z->n);
+  // retrieve the current assignment
+  if(KFK_OK != (err=rd_kafka_assignment(rk, &t_partition)))
+    return krr((S)rd_kafka_err2str(err));
   plistoffsetdict(y->s,z,t_partition);
   if(KFK_OK != (err=rd_kafka_assign(rk,t_partition)))
     return krr((S) rd_kafka_err2str(err));

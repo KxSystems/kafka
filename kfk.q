@@ -49,8 +49,8 @@ funcs:(
 	(`kfkPositionOffsets;3);
 	  // .kfk.CommittedOffsets[client_id:i;topic:s;partition_offsets:I!J]:partition_offsets
 	(`kfkCommittedOffsets;3);
-	  // .kfk.AssignOffsets[client_id:i;topic:s;partition_offsets:I!J]:()
-	(`kfkAssignOffsets;3);
+	  // .kfk.assignOffsets[client_id:i;topic:s;partition_offsets:I!J]:()
+	(`kfkassignOffsets;3);
           // .kfk.Threadcount[]:i
         (`kfkThreadCount;1);
           // .kfk.VersionSym[]:s
@@ -184,6 +184,22 @@ ClientMemberId:{[cid]
 
 
 // Assignment API logic
+
+// Run assignment of a topic to a particular partition making
+/* cid      = Integer denoting the client ID
+/* top      = Topic to be subscribed to as a symbol
+/* partoff  = Dictionary mapping integer partition to long offset location
+AssignOffsets:{[cid;top;partoff]
+  toppar:(count[partoff]#top)!key partoff;
+  tplist:distinct(,'/)(key;{"j"$value x})@\:toppar;
+  // Find locations where the current assigment needs to be overwritten
+  loc:where i.compAssign[cid;tplist];
+  if[count loc;
+    currentAssign:(!). flip tplist loc;
+    AssignDel[cid;currentAssign]
+    ];
+  assignOffsets[cid;top;partoff]
+  }
 
 // Assign a new topic-partition dictionary to be consumed by a designated clientid
 /* cid    = Integer denoting client ID
