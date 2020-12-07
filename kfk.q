@@ -188,7 +188,6 @@ ClientMemberId:{[cid]
 /* top      = Topic to be subscribed to as a symbol
 /* partoff  = Dictionary mapping integer partition to long offset location
 AssignOffsets:{[cid;top;partoff]
-  assignment:.kfk.Assignment[cid];
   toppar:(count[partoff]#top)!key partoff;
   tplist:distinct(,'/)(key;{"j"$value x})@\:toppar;
   // Find locations where the current assigment needs to be overwritten
