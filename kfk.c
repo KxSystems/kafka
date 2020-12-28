@@ -102,7 +102,7 @@ static J MAXIMUM_NUMBER_OF_POLLING = 0;
 static K S0;
 
 /**
- * @brief Client names expressed in symbol list
+ * @brief Client handles expressed in symbol list
  */
 static K CLIENTS;
 
@@ -119,8 +119,9 @@ static I validinit;
 
 //%% Pre-Declaration %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
-K decode_topic_partition_list(rd_kafka_topic_partition_list_t *t);
-K decode_message(const rd_kafka_t*rk,const rd_kafka_message_t *msg);
+//K decode_topic_partition_list(rd_kafka_topic_partition_list_t *t);
+//K decode_message(const rd_kafka_t*rk,const rd_kafka_message_t *msg);
+K delete_client(K client_idx);
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
@@ -193,10 +194,9 @@ static I check_qtype(const C* types, ...){
     obj= va_arg(args, K);
 
     if(!obj){
-      // Null K object
-      // Is this right error message?? Rather "extra type indicator" is better.
-      // strcpy(error_message, "incomplete type string ");
-      strcpy(error_message, "extra type indicator ");
+      // Null K object. Unexpected end of variables.
+      // Return 0 rather than error.
+      // This failure will be propagated to q as error by the caller of this function.
       break;
     };
 
@@ -215,7 +215,9 @@ static I check_qtype(const C* types, ...){
 
     // Break in case of type mismatch  
     if(!match){
-      strcat(strcpy(error_message, "type:expected "), start);
+      // strcat(strcpy(error_message, "type:expected "), start);
+      // Return 0 rather than error.
+      // This failure will be propagated to q as error by the caller of this function.
       break;
     };
 
@@ -224,9 +226,10 @@ static I check_qtype(const C* types, ...){
   }
   va_end(args);
 
-  // Return error if any
-  if(!match)
-    krr(error_message);
+  if(!match){
+    // Return 0.
+    return 0;
+  }
 
   return match;
 }
@@ -234,7 +237,7 @@ static I check_qtype(const C* types, ...){
 /**
  * @brief Convert millisecond timestamp to kdb+ nanosecond timestamp.
  * @param timestamp_millis: Timestamp expressed in milliseconds.
- * @return
+ * @return 
  * - long: kdb+ timestamp (nanoseconds)
  */
 static J millis_to_kdb_nanos(J timestamp_millis){return 1000000LL*(timestamp_millis - KDB_DAY_OFFSET * ONEDAY_MILLIS);}
@@ -242,26 +245,37 @@ static J millis_to_kdb_nanos(J timestamp_millis){return 1000000LL*(timestamp_mil
 //%% Index Conversion %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
- * @brief Retrieve client name from a given index.
- * @param index: Index of client.
- * @return
- * - symbol: client name if index is valid
- * - error: error message if index is not valid
+ * @brief Retrieve client handle from a given index.
+ * @param client_idx: Index of client.
+ * @return 
+ * - symbol: client handle if index is valid
+ * - null: error message if index is not valid
  */
-rd_kafka_t *clientIndex(K index){
-  return (rd_kafka_t *) ((((UI) index->i < CLIENTS->n) && kS(CLIENTS)[index->i]) ? kS(CLIENTS)[index->i] :(S) krr("unknown client"));
+rd_kafka_t *index_to_handle(K client_idx){
+  if(((UI) client_idx->i < CLIENTS->n) && kS(CLIENTS)[client_idx->i]){
+    // Valid client index.
+    // Return client handle
+    return (rd_kafka_t *) kS(CLIENTS)[client_idx->i];
+  }
+  else{
+    // Index out of range or unregistered client index.
+    // Return error.
+    char error_message[32];
+    sprintf(error_message, "unknown client: %di", client_idx->i);
+    return (rd_kafka_t *) krr(error_message);
+  }
 }
 
 /**
  * @brief Retrieve index from a given client handle.
  * @param handle: Client handle.
- * @return
+ * @return 
  * - int: Index of the given client in `CLIENTS`.
  * - null int: if the client handle is not a registered one.
  */
-I indexClient(const rd_kafka_t *handle){
+I handle_to_index(const rd_kafka_t *handle){
   for (int i = 0; i < CLIENTS->n; ++i){
-    // Handle is stored as symbol in `CLIENTS` (see `kfkClient`)
+    // Handle is stored as symbol in `CLIENTS` (see `new_client`)
     // Re-cast as handle
     if(handle==(rd_kafka_t *)kS(CLIENTS)[i])
       return i;
@@ -274,22 +288,31 @@ I indexClient(const rd_kafka_t *handle){
 /**
  * @brief Retrieve topic object by topic index
  * @param index: Index of topic
- * @return
+ * @return 
  * - symbol: Topic
  * - error if index is out of range or topic for the index is null
  */
-rd_kafka_topic_t *topicIndex(K index){
-  return (rd_kafka_topic_t *) ((((UI) index->i < TOPICS->n) && kS(TOPICS)[index->i])? kS(TOPICS)[index->i]: (S) krr("unknown topic"));
+rd_kafka_topic_t *index_to_topic_handle(K topic_idx){
+  if(((UI) topic_idx->i < TOPICS->n) && kS(TOPICS)[topic_idx->i]){
+    // Valid topic index.
+    // Return topic object.
+    return (rd_kafka_topic_t *) kS(TOPICS)[topic_idx->i];
+  }else{
+    // Index out of range or unregistered topic index.
+    // Return error.
+    char error_message[32];
+    sprintf(error_message, "unknown topic: %di", topic_idx->i);
+    return (rd_kafka_topic_t *) krr(error_message);
+  }
 }
 
-
-//%% Client %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+//%% Configuration Utility Functions %%//vvvvvvvvvvvvvvvvv/
 
 /**
  * @brief Set configuration in q dictionary on kafka configuration object.
  * @param conf: Destination kafka configuration object.
- * @param q_config: Source q configuration object.
- * @return
+ * @param q_config: Source q configuration dictionary (symbol -> symbol).
+ * @return 
  * - error (nullptr): Failure
  * - empty list: Success
  */
@@ -308,8 +331,8 @@ static K load_config(rd_kafka_conf_t *conf, K q_config){
 /**
  * @brief Set topic configuration in q dictionary on kafka topic configuration object.
  * @param tpc_conf: Destination kafka topic configuration object
- * @param q_tpc_config: Source q topic configuration object.
- * @return
+ * @param q_tpc_config: Source q topic configuration dictionary (symbol -> symbol).
+ * @return 
  * - error (nullptr): Failure
  * - empty list: Success
  */
@@ -324,145 +347,7 @@ static K load_topic_config(rd_kafka_topic_conf_t *tpc_conf, K q_tpc_config){
   return knk(0);
 }
 
-
-EXP K1(kfkdeleteClient){
-  rd_kafka_t *rk;
-  if(!check_qtype("i", x))
-    return KNULL;
-  if(!(rk= clientIndex(x)))
-    return KNULL;
-  rd_kafka_consumer_close(rk);
-  rd_kafka_destroy(rk);
-  kS(CLIENTS)[x->i]= (S) 0;
-  return KNULL;
-}
-
-EXP K1(kfkClientName){
-  rd_kafka_t *rk;
-  if(!check_qtype("i", x))
-    return KNULL;
-  if(!(rk= clientIndex(x)))
-    return KNULL;
-  return ks((S) rd_kafka_name(rk));
-}
-
-EXP K1(kfkmemberID){
-  rd_kafka_t *rk;
-  if(!check_qtype("i", x))
-    return KNULL;
-  if(!(rk= clientIndex(x)))
-    return KNULL;
-  return ks(rd_kafka_memberid(rk));
-}
-
-// topic api
-EXP K3(kfkgenerateTopic){
-  rd_kafka_topic_t *rkt;
-  rd_kafka_t *rk;
-  rd_kafka_topic_conf_t *rd_topic_conf;
-  if(!check_qtype("is!",x ,y ,z))
-    return KNULL;
-  if(!(rk= clientIndex(x)))
-    return KNULL;
-  rd_topic_conf= rd_kafka_topic_conf_new();
-  load_topic_config(rd_topic_conf, z);
-  rkt= rd_kafka_topic_new(rk, y->s, rd_topic_conf);
-  js(&TOPICS, (S) rkt);
-  return ki(TOPICS->n - 1);
-}
-
-EXP K1(kfkTopicDel){
-  rd_kafka_topic_t *rkt;
-  if(!check_qtype("i", x))
-    return KNULL;
-  if(!(rkt= topicIndex(x)))
-    return KNULL;
-  rd_kafka_topic_destroy(rkt);
-  kS(TOPICS)[x->i]= (S) 0;
-  return KNULL;
-}
-
-EXP K1(kfkTopicName){
-  rd_kafka_topic_t *rkt;
-  if(!check_qtype("i", x))
-    return KNULL;
-  if(!(rkt= topicIndex(x)))
-    return KNULL;
-  return ks((S) rd_kafka_topic_name(rkt));
-}
-
-//%% Metadata %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-// rd_kafka_metadata_broker: `id`host`port!(id;host;port)
-K decodeMetaBroker(rd_kafka_metadata_broker_t *x){
-  return build_dictionary("id", ki(x->id), "host", ks(x->host), "port", ki(x->port));
-}
-
-// rd_kafka_metadata_partition: `id`err`leader`replicas`isrs!(int;err;int;int
-// list;int list)
-K decodeMetaPart(rd_kafka_metadata_partition_t *p){
-  K x= ktn(KI, p->replica_cnt);
-  J i;
-  for(i= 0; i < xn; ++i)
-    kI(x)[i]= p->replicas[i];
-  K y= ktn(KI, p->isr_cnt);
-  for(i= 0; i < y->n; ++i)
-    kI(y)[i]= p->isrs[i];
-  return build_dictionary(
-            "id", ki(p->id),
-            "err", ks((S) rd_kafka_err2str(p->err)),
-            "leader", ki(p->leader),
-            "replicas", x,
-            "isrs", y
-         );
-}
-
-// rd_kafka_metadata_topic: `topic`partitions`err!(string;partition list;err)
-K decodeMetaTopic(rd_kafka_metadata_topic_t *t){
-  K x= ktn(0, 0);
-  J i;
-  for(i= 0; i < t->partition_cnt; ++i)
-    jk(&x, decodeMetaPart(&t->partitions[i]));
-  return build_dictionary(
-            "topic", ks(t->topic), 
-            "err", ks((S) rd_kafka_err2str(t->err)),
-            "partitions", x
-         );
-}
-
-// rd_kafka_metadata: `brokers`topics`orig_broker_id`orig_broker_name!(broker
-// list;topic list;int;string)
-K decodeMeta(const rd_kafka_metadata_t *meta) {
-  K x= ktn(0, 0);
-  J i;
-  for(i= 0; i < meta->broker_cnt; ++i)
-    jk(&x, decodeMetaBroker(&meta->brokers[i]));
-  K y= ktn(0, 0);
-  for(i= 0; i < meta->topic_cnt; ++i)
-    jk(&y, decodeMetaTopic(&meta->topics[i]));
-  return build_dictionary(
-            "orig_broker_id", ki(meta->orig_broker_id),
-            "orig_broker_name",ks(meta->orig_broker_name),
-            "brokers", x,
-            "topics", y
-         );
-}
-
-EXP K1(kfkMetadata){
-  const struct rd_kafka_metadata *meta;
-  K r;
-  rd_kafka_t *rk;
-  if(!check_qtype("i", x))
-    return KNULL;
-  if(!(rk= clientIndex(x)))
-    return KNULL;
-  rd_kafka_resp_err_t err= rd_kafka_metadata(rk, 1, NULL, &meta, 5000);
-  if(KFK_OK != err)
-    return krr((S) rd_kafka_err2str(err));
-  r= decodeMeta(meta);
-  rd_kafka_metadata_destroy(meta);
-  return r;
-}
+//%% Topic-partition Utility Functions %%//vvvvvvvvvvvvvvv/
 
 K decode_topic_partition(rd_kafka_topic_partition_t *topic_partition){
   // build dictionary
@@ -477,7 +362,7 @@ K decode_topic_partition(rd_kafka_topic_partition_t *topic_partition){
 /**
  * @brief Build a list of topic-partition information dictionaries
  * @param topic_partition_list: Pointer to topic-partition list
- * @return
+ * @return 
  * compound list: A list of topic-partition information dictionaries
  */
 K decode_topic_partition_list(rd_kafka_topic_partition_list_t *topic_partition_list){
@@ -493,92 +378,172 @@ K decode_topic_partition_list(rd_kafka_topic_partition_list_t *topic_partition_l
   return list;
 }
 
-
-static V plistoffsetdict(S topic,K partitions,rd_kafka_topic_partition_list_t *t_partition){
-  K dk=kK(partitions)[0],dv=kK(partitions)[1];
-  I*p;J*o,i;
-  p=kI(dk);o=kJ(dv);
-  for(i= 0; i < dk->n; ++i){
-    rd_kafka_topic_partition_list_add(t_partition, topic, p[i]);
-    rd_kafka_topic_partition_list_set_offset(t_partition, topic, p[i],o[i]);
+/**
+ * @brief Add pairs of specific topic and given partitions for the topic to a given topic-partition list and set given offsets on sepcified partitions.
+ * @param topic: Topic of partitions to which offsets are set.
+ * @param partition_to_offset: q dictionary (map) from partition to offset (i -> j).
+ * @param topic_partitions: A list of pairs of topic and partition.
+ */
+static void extend_topic_partition_list_and_set_offset_for_topic(S topic, K partition_to_offset, rd_kafka_topic_partition_list_t *topic_partitions){
+  J n=kK(partition_to_offset)[0]->n;
+  I *partitions=kI(kK(partition_to_offset)[0]);
+  J *offsets=kJ(kK(partition_to_offset)[1]);
+  for(J i=0; i < n; ++i){
+    // Add a new pair of topic and partition to topic-partition list
+    rd_kafka_topic_partition_list_add(topic_partitions, topic, partitions[i]);
+    // Set offset on the pair of topic and partition
+    rd_kafka_topic_partition_list_set_offset(topic_partitions, topic, partitions[i], offsets[i]);
   }
 }
 
-EXP K2(kfkFlush){
-  rd_kafka_t *rk;
-  I qy=0;
-  if(!check_qtype("i[hij]",x,y))
-    return KNULL;
-  if(!(rk= clientIndex(x)))
-    return KNULL;
-  SW(y->t){
-    CS(-KH,qy=y->h);
-    CS(-KI,qy=y->i);
-    CS(-KJ,qy=y->j);
-  }
-  rd_kafka_resp_err_t err= rd_kafka_flush(rk,qy);
-  if(KFK_OK != err)
-    return krr((S) rd_kafka_err2str(err));
-  return KNULL;
- }
+/**
+ * @brief Add a list of pairs of topic and partition to a topic-partition list.
+ * @param topic_to_part: Dictionary mapping from topic to partition (s -> i).
+ */
+static void extend_topic_partition_list(K topic_to_part, rd_kafka_topic_partition_list_t *t_partition){
 
-#if (RD_KAFKA_VERSION >= 0x000b04ff)
-
-EXP K kfkPubWithHeaders(K clientIdx,K topicIdx,K partition,K val,K key,K hdrs){
-  rd_kafka_t *rk;
-  rd_kafka_topic_t *rkt;
-  if(!check_qtype("iii[CG][CG]!", clientIdx, topicIdx, partition, val, key, hdrs))
-    return KNULL;
-  if(!(rk= clientIndex(clientIdx)))
-    return KNULL;
-  if(!(rkt= topicIndex(topicIdx)))
-    return KNULL;
-  K hdrNames = (kK(hdrs)[0]);
-  K hdrValues = (kK(hdrs)[1]);
-  if (hdrNames->t != KS && hdrValues->t != 0)
-    return krr((S)"Incorrect header type");
-  int idx=0;
-  for (idx=0;idx<hdrValues->n;++idx)
-  {
-    K hdrval = kK(hdrValues)[idx];
-    if (hdrval->t != KG && hdrval->t != KC)
-      return krr((S)"Incorrect header value type");
-  }
-  rd_kafka_headers_t* msghdrs = rd_kafka_headers_new((int)hdrNames->n);
-  for (idx=0;idx<hdrNames->n;++idx)
-  {
-    K hdrval = kK(hdrValues)[idx];
-    if (hdrval->t == KG || hdrval->t == KC)
-      rd_kafka_header_add(msghdrs,kS(hdrNames)[idx],-1,hdrval->G0,hdrval->n);
-  }
-  rd_kafka_resp_err_t err = rd_kafka_producev(
-                        rk,
-                        RD_KAFKA_V_RKT(rkt),
-                        RD_KAFKA_V_PARTITION(partition->i),
-                        RD_KAFKA_V_MSGFLAGS(RD_KAFKA_MSG_F_COPY),
-                        RD_KAFKA_V_VALUE(kG(val), val->n),
-                        RD_KAFKA_V_KEY(kG(key), key->n),
-                        RD_KAFKA_V_HEADERS(msghdrs),
-                        RD_KAFKA_V_END);
-  if (err)
-    return krr((S) rd_kafka_err2str(err));
-  return KNULL;
+  // Length of keys
+  J n=kK(topic_to_part)[0]->n;
+  S *topics=kS(kK(topic_to_part)[0]);
+  J *partitions=kJ(kK(topic_to_part)[1]);
+  for(J i = 0; i < n; i++){
+    // Add a pair of topic and partition to the given list
+    rd_kafka_topic_partition_list_add(t_partition, topics[i], partitions[i]);
+  } 
 }
 
-#else
-EXP K kfkPubWithHeaders(K UNUSED(clientIdx),K UNUSED(topicIdx),K UNUSED(partition),K UNUSED(val),K UNUSED(key),K UNUSED(hdrs)) {
-  return krr("PubWithHeaders unsupported - please update to librdkafka >= 0.11.4");
+/**
+ * @brief Delete given pairs of topic and partition from the given topic-partitions.
+ * @param topic_to_part: q dictionary mapping from topic to partition (s -> i).
+ * @param topic_partitions: list of topic-partitons.
+ */
+static void delete_elems_from_topic_partition_list(K topic_to_part, rd_kafka_topic_partition_list_t *topic_partitions){
+  // Length of keys
+  J n=kK(topic_to_part)[0]->n;
+  S* topics= kS(kK(topic_to_part)[0]);
+  J* partitions=kJ(kK(topic_to_part)[1]);
+  for(J i = 0; i < n; i++){
+    // Delete a pair of topic and partition from the given list
+    rd_kafka_topic_partition_list_del(topic_partitions, topics[i], partitions[i]);
+  }
 }
-#endif
 
-//%% Producer %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+//%% Metadata %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Get broker's information from kafka broker object.
+ * @param broker: A pointer pointing to kafka broker.
+ * @return 
+ * - dictionary: Dictionary containing broker information of ID, host and port.
+ *   - id: symbol | Broker ID
+ *   - host symbol | Broker host
+ *   - port: int | Broker port
+ */
+K decode_metadata_broker(rd_kafka_metadata_broker_t *broker){
+  return build_dictionary("id", ki(broker->id), "host", ks(broker->host), "port", ki(broker->port));
+}
+
+/**
+ * @brief Get information of a given partition.
+ * @param partition: A pointer to a kafka partition.
+ * @return 
+ * - dictionary: Dictionary containing partiotion information of ID, error code, leader, replicas and in-sync-replicas. 
+ *   - id: int | Partition ID
+ *   - err: symbol | Error message
+ *   - leader: int | leader
+ *   - replicas: list of int | Replicas
+ *   - isrs: list of int | In-sync-replicas
+ */
+K decode_metadata_partition(rd_kafka_metadata_partition_t *partition){
+
+  // Container of replicas
+  K replicas= ktn(KI, partition->replica_cnt);
+  for(J i= 0; i < replicas->n; ++i){
+    // Contain replica ID
+    kI(replicas)[i] = partition->replicas[i];
+  }
+    
+  // Conatiner of in-sync-replicas
+  K in_sync_replicas = ktn(KI, partition->isr_cnt);
+  for(J i= 0; i < partition->isr_cnt; ++i){
+    // Contain In-symc replica ID 
+    kI(in_sync_replicas)[i]= partition->isrs[i];
+  }
+    
+  return build_dictionary(
+            "id", ki(partition->id),
+            "err", ks((S) rd_kafka_err2str(partition->err)),
+            "leader", ki(partition->leader),
+            "replicas", replicas,
+            "isrs", in_sync_replicas
+         );
+}
+
+/**
+ * @brief Get information of a given topic.
+ * @param topic: A topic.
+ * @return 
+ * - dictionary: Dictionary containing information of topic name, error and partitions.
+ *   - topic: symbol | Topic name
+ *   - err: symbol | Error message
+ *   - partitions: list of dictionary | Information of partitions
+ */
+K decode_metadata_topic(rd_kafka_metadata_topic_t *topic){
+  // Container of topic information
+  K partitions= ktn(0, 0);
+  for(J i= 0; i < topic->partition_cnt; ++i){
+    // Contain information of partitions
+    jk(&partitions, decode_metadata_partition(&topic->partitions[i]));
+  }
+    
+  return build_dictionary(
+            "topic", ks(topic->topic), 
+            "err", ks((S) rd_kafka_err2str(topic->err)),
+            "partitions", partitions
+         );
+}
+
+/**
+ * @brief Get information of broker and topic.
+ * @param meta: A pointer to a kafka meta data.
+ * @return 
+ * - dictionary: Information of original broker, brokers and topics.
+ *   - orig_broker_id: int | Broker originating this meta data
+ *   - orig_broker_name | symbol | Name of originating broker
+ *   - brokers: list of dictionary | Information of brokers
+ *   - topics: list of dictionary | Infomation of topics
+ */
+K decode_metadata(const rd_kafka_metadata_t *meta) {
+  // Container of broker information
+  K brokers= ktn(0, 0);
+  for(J i= 0; i < meta->broker_cnt; ++i){
+    //Contain information of brokers
+    jk(&brokers, decode_metadata_broker(&meta->brokers[i]));
+  }
+    
+  K topics= ktn(0, 0);
+  for(J i= 0; i < meta->topic_cnt; ++i){
+    // Contain information of topics
+    jk(&topics, decode_metadata_topic(&meta->topics[i]));
+  }
+
+  return build_dictionary(
+            "orig_broker_id", ki(meta->orig_broker_id),
+            "orig_broker_name",ks(meta->orig_broker_name),
+            "brokers", brokers,
+            "topics", topics
+         );
+}
+
+
 
 // producer api
 EXP K4(kfkPub){
   rd_kafka_topic_t *rkt;
   if(!check_qtype("ii[CG][CG]", x, y, z, r))
     return KNULL;
-  if(!(rkt= topicIndex(x)))
+  if(!(rkt= index_to_topic_handle(x)))
     return KNULL;
   if(rd_kafka_produce(rkt, y->i, RD_KAFKA_MSG_F_COPY, kG(z), z->n, kG(r), r->n, NULL))
     return krr((S) rd_kafka_err2str(rd_kafka_last_error()));
@@ -590,7 +555,7 @@ EXP K4(kfkPub){
  * @param y Partition to use for all message (int) or partition per message (list of ints)
  * @param z Payload for all messages (mixed list containing either bytes or string).
  * @param r Key. Empty string to use auto key for all messages, or key per message (mixed list containing either bytes or string)
- * @returns Integer list with a status for each send message (zero indicates success) 
+ * @return  Integer list with a status for each send message (zero indicates success) 
  *          reference: https://github.com/edenhill/librdkafka/blob/master/src/rdkafka.h (rd_kafka_resp_err_t)
  */
 
@@ -613,7 +578,7 @@ EXP K4(kfkBatchPub){
     if ((r->t ==0) && ((K*)r->G0)[i]->t != KG && ((K*)r->G0)[i]->t !=KC)
       return krr((S)"incorrect type for key");
   }
-  if(!(rkt= topicIndex(x)))
+  if(!(rkt= index_to_topic_handle(x)))
     return KNULL;
   int defaultPartition = RD_KAFKA_PARTITION_UA;
   int msgFlags = RD_KAFKA_MSG_F_COPY;
@@ -661,14 +626,14 @@ EXP K3(kfkSub){
   I*p;
   if(!check_qtype("is[I!]", x, y, z))
     return KNULL;
-  if(!(rk= clientIndex(x)))
+  if(!(rk= index_to_handle(x)))
     return KNULL;
   if(KFK_OK != (err = rd_kafka_subscription(rk, &t_partition)))
     return krr((S)rd_kafka_err2str(err));
   if(z->t == XD){
     if(!check_qtype("IJ", kK(z)[0], kK(z)[1]))
       return KNULL;
-    plistoffsetdict(y->s,z,t_partition);
+    extend_topic_partition_list_and_set_offset_for_topic(y->s,z,t_partition);
   }
   else
     for(p=kI(z), i= 0; i < z->n; ++i)
@@ -684,7 +649,7 @@ EXP K1(kfkUnsub){
   rd_kafka_resp_err_t err;
   if(!check_qtype("i", x))
     return KNULL;
-  if(!(rk= clientIndex(x)))
+  if(!(rk= index_to_handle(x)))
     return KNULL;
   err= rd_kafka_unsubscribe(rk);
   if(KFK_OK != err)
@@ -693,58 +658,147 @@ EXP K1(kfkUnsub){
 }
 
 // https://github.com/edenhill/librdkafka/wiki/Manually-setting-the-consumer-start-offset
-EXP K3(kfkAssignOffsets){
-  rd_kafka_t *rk;
-  rd_kafka_topic_partition_list_t *t_partition;
-  rd_kafka_resp_err_t err;
-  if(!check_qtype("is!", x,y,z))
-    return KNULL;
-  if(!check_qtype("IJ",kK(z)[0],kK(z)[1]))
-    return KNULL;
-  if(!(rk= clientIndex(x)))
-    return KNULL;
-  t_partition = rd_kafka_topic_partition_list_new(z->n);
-  plistoffsetdict(y->s,z,t_partition);
-  if(KFK_OK != (err=rd_kafka_assign(rk,t_partition)))
-    return krr((S) rd_kafka_err2str(err));
-  rd_kafka_topic_partition_list_destroy(t_partition);
-  return knk(0);
+
+/**
+ * @brief Set new offsets on partitions of a given topic for a given client.
+ * @param consumer_idx: Index of client (consumer) in `CLIENTS`.
+ * @param topic: Topic of partitions to which assign offsets.
+ * @param new_part_to_offset: q dictionary (map) from partition to offsets (int -> long).
+ */
+EXP K assign_new_offsets_to_topic_partition(K consumer_idx, K topic, K new_part_to_offset){
+  
+  if(!check_qtype("is!", consumer_idx, topic, new_part_to_offset)){
+    // Argument types do not match required types
+    return krr("consumer index, topic and new offset must be (int; symbol; dictionary) type.");
+  }
+
+  if(!check_qtype("IJ", kK(new_part_to_offset)[0], kK(new_part_to_offset)[1])){
+    // Partitions are not int or offsets are not long
+    return krr("partitions, offsets must be (int; long) type.");
+  }
+
+  rd_kafka_t *handle = index_to_handle(consumer_idx);
+  if(!handle){
+    // Null pointer (`krr`). Error happened in `index_to_cient`.
+    return (K) handle;
+  }
+
+  // Create a new topic-partition list.
+  rd_kafka_topic_partition_list_t *new_topic_partitions = rd_kafka_topic_partition_list_new(new_part_to_offset->n);
+  
+  // Extend the new topic-partitions with the pair of given topic and partitions for the topic and set offsets to specified partitions.
+  extend_topic_partition_list_and_set_offset_for_topic(topic->s, new_part_to_offset, new_topic_partitions);
+  
+  // Assign the new topic-partitions to the concumer (client)
+  rd_kafka_resp_err_t error = rd_kafka_assign(handle, new_topic_partitions);
+  if(KFK_OK != error){
+    // Error happened in assign. Return error.
+    return krr((S) rd_kafka_err2str(error));
+  }
+  
+  // Discard allocated topic-partition list which is no longer necessary
+  rd_kafka_topic_partition_list_destroy(new_topic_partitions);
+
+  return KNULL;
 }
 
-EXP K4(kfkCommitOffsets){
-  rd_kafka_resp_err_t err;
-  rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
-  if(!check_qtype("is!b", x, y, z, r))
-    return KNULL;
-  if(!check_qtype("IJ",kK(z)[0],kK(z)[1]))
-    return KNULL;
-  if(!(rk= clientIndex(x)))
-    return KNULL;  
-  t_partition = rd_kafka_topic_partition_list_new(z->n);
-  plistoffsetdict(y->s,z,t_partition);
-  if(KFK_OK != (err= rd_kafka_commit(rk, t_partition,r->g)))
-    return krr((S) rd_kafka_err2str(err));
-  rd_kafka_topic_partition_list_destroy(t_partition);
-  return knk(0);
+/**
+ * @brief Commit new offsets on partitions of a given topic for a given client.
+ * @param consumer_idx: Index of client (consumer) in `CLIENTS`.
+ * @param topic: Topic of partitions to which assign offsets.
+ * @param new_part_to_offset: q dictionary (map) from partition to offsets (int -> long).
+ * @param is_async: True to process asynchronusly. If `is_async` is false this operation will
+ *  block until the broker offset commit is done.
+ */
+EXP K commit_new_offsets_to_topic_partition(K consumer_idx, K topic, K new_part_to_offset, K is_async){
+
+  if(!check_qtype("is!b", consumer_idx, topic, new_part_to_offset, is_async)){
+    // Argument types do not match required types
+    return krr("consumer index, topic, new offset and is_async must be (int; symbol; dictionary; bool) type.");
+  }
+  
+  if(!check_qtype("IJ", kK(new_part_to_offset)[0], kK(new_part_to_offset)[1])){
+    // Partitions are not int or offsets are not long
+    return krr("partitions, offsets must be (int; long) type.");
+  }
+  
+  rd_kafka_t *handle = index_to_handle(consumer_idx);
+  if(!handle){
+    // Null pointer (`krr`). Error happened in `index_to_cient`.
+    return (K) handle;
+  }
+
+  // Create a new topic-partition list.
+  rd_kafka_topic_partition_list_t *new_topic_partitions =  rd_kafka_topic_partition_list_new(new_part_to_offset->n);
+  
+  // Extend the new topic-partitions with the pair of given topic and partitions for the topic and set offsets to specified partitions.
+  extend_topic_partition_list_and_set_offset_for_topic(topic->s, new_part_to_offset, new_topic_partitions);
+  
+  // Commit the new topic-partitions
+  rd_kafka_resp_err_t error=rd_kafka_commit(handle, new_topic_partitions, is_async->g);
+  if(KFK_OK != error){
+    // Error happened in commit. Return error.
+    return krr((S) rd_kafka_err2str(error));
+  }
+  
+  // Discard allocated topic-partition list which is no longer necessary
+  rd_kafka_topic_partition_list_destroy(new_topic_partitions);
+
+  return KNULL;
 }
 
-EXP K3(kfkCommittedOffsets){
-  K r;
-  rd_kafka_resp_err_t err;
-  rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
-  if(!check_qtype("is!", x, y, z))
-    return KNULL;
-  if(!(rk= clientIndex(x)))
-    return KNULL;
-  if(!check_qtype("IJ",kK(z)[0],kK(z)[1]))
-    return KNULL;
-  t_partition = rd_kafka_topic_partition_list_new(z->n);
-  plistoffsetdict(y->s,z,t_partition);
-  if(KFK_OK != (err= rd_kafka_committed(rk, t_partition,5000)))
-    return krr((S) rd_kafka_err2str(err));
-  r=decode_topic_partition_list(t_partition);
-  rd_kafka_topic_partition_list_destroy(t_partition);
-  return r;
+/**
+ * @brief Get latest commited offset for a given topic and partitions for a client (consumer).
+ * @param cousumer_idx: Index of client (consumer) in `CLIENTS`.
+ * @param topic: Topic of partitions to which assign offsets.
+ * @param partitions: List of partitions.
+ * @return 
+ * - list of dictionary: List of dictionary of partition and offset
+ */
+EXP K get_committed_offsets_for_topic_partition(K consumer_idx, K topic, K partitions){
+  
+  if(!check_qtype("isJ", consumer_idx, topic, partitions)){
+    // Argument types do not match required types
+    return krr("consumer index, topic and new offset must be (int; symbol; list of long) type.");
+  }
+  
+  rd_kafka_t *handle = index_to_handle(consumer_idx);
+  if(!handle){
+    // Null pointer (`krr`). Error happened in `index_to_cient`.
+    return (K) handle;
+  }
+
+  // The number of partitions
+  J n=partitions->n;
+  // Create a new topic-partition list.
+  rd_kafka_topic_partition_list_t *new_topic_partitions = rd_kafka_topic_partition_list_new(n);
+
+  // Build holder of sffset in form of dictionary
+  K topics=ktn(KS, n);
+  for(J i=0; i < n; i++){
+    kS(topics)[i]=ss(topic->s);
+  }
+  K topic_to_par=xD(topics, partitions);
+  // Extend the new topic-partitions with the pair of given topic and partitions for the topic and set offsets to specified partitions.
+  extend_topic_partition_list(topic_to_par, new_topic_partitions);
+  // Discard K objects which are no longer necessary
+  r0(topics);
+  r0(topic_to_par);
+  
+  // Get committed offset and take them into `new_topic_partitions` with timeout in 5 seconds
+  rd_kafka_resp_err_t error = rd_kafka_committed(handle, new_topic_partitions, 5000);
+  if(KFK_OK != error){
+    // Error hapened in getting committed offsets. Return error.
+    return krr((S) rd_kafka_err2str(error));
+  }
+  
+  // Convert to list of q dictionary
+  K committed=decode_topic_partition_list(new_topic_partitions);
+
+  // Discard allocated topic-partition list which is no longer necessary
+  rd_kafka_topic_partition_list_destroy(new_topic_partitions);
+
+  return committed;
 }
 
 EXP K4(kfkoffsetForTime){
@@ -756,7 +810,7 @@ EXP K4(kfkoffsetForTime){
     return KNULL;
   if(!check_qtype("IJ",kK(z)[0],kK(z)[1]))
     return KNULL;
-  if(!(rk= clientIndex(x)))
+  if(!(rk= index_to_handle(x)))
     return KNULL;
   SW(r->t){
     CS(-KH, qr=r->h);
@@ -764,7 +818,7 @@ EXP K4(kfkoffsetForTime){
     CS(-KJ, qr=r->j);
   }
   t_partition = rd_kafka_topic_partition_list_new(z->n);
-  plistoffsetdict(y->s,z,t_partition);
+  extend_topic_partition_list_and_set_offset_for_topic(y->s,z,t_partition);
   if(KFK_OK != (err= rd_kafka_offsets_for_times(rk, t_partition, qr)))
     return krr((S) rd_kafka_err2str(err));
   t=decode_topic_partition_list(t_partition);
@@ -780,10 +834,10 @@ EXP K3(kfkPositionOffsets){
     return KNULL;
   if(!check_qtype("IJ",kK(z)[0],kK(z)[1]))
     return KNULL;
-  if(!(rk= clientIndex(x)))
+  if(!(rk= index_to_handle(x)))
     return KNULL;
   t_partition = rd_kafka_topic_partition_list_new(z->n);
-  plistoffsetdict(y->s,z,t_partition); 
+  extend_topic_partition_list_and_set_offset_for_topic(y->s,z,t_partition); 
   if(KFK_OK != (err= rd_kafka_position(rk, t_partition)))
     return krr((S) rd_kafka_err2str(err));
   r=decode_topic_partition_list(t_partition);
@@ -798,7 +852,7 @@ EXP K1(kfkSubscription){
   rd_kafka_resp_err_t err;
   if (!check_qtype("i", x))
     return KNULL;
-  if (!(rk = clientIndex(x)))
+  if (!(rk = index_to_handle(x)))
     return KNULL;
   if (KFK_OK != (err= rd_kafka_subscription(rk, &t)))
     return krr((S)rd_kafka_err2str(err));
@@ -812,7 +866,7 @@ EXP K1(kfkSubscription){
  *  for the given client handle.
  * @param handle: Client handle
  * @param msg: Message pointer returned from `rd_kafka_consume*()` family of functions.
- * @return
+ * @return 
  * - dictionary: Information contained in the message.
  */
 K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
@@ -866,7 +920,7 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
   return build_dictionary_n(9,
             "mtype", msg->err? ks((S) rd_kafka_err2name(msg->err)): r1(S0), 
             "topic", msg->rkt? ks((S) rd_kafka_topic_name(msg->rkt)): r1(S0),
-            "client", ki(indexClient(handle)),
+            "client", ki(handle_to_index(handle)),
             "partition", ki(msg->partition),
             "offset", kj(msg->offset),
             "msgtime", msgtime,
@@ -932,7 +986,7 @@ static void log_cb(const rd_kafka_t *UNUSED(handle), int level, const char *fac,
  */
 static void offset_commit_cb(rd_kafka_t *handle, rd_kafka_resp_err_t error_code, rd_kafka_topic_partition_list_t *offsets, V *UNUSED(opaque)){
   // Pass client (consumer) index, error message and a list of topic-partition information dictionaries
-  printr0(k(0, (S) ".kfk.offset_commit_cb", ki(indexClient(handle)), kp((S) rd_kafka_err2str(error_code)), decode_topic_partition_list(offsets), KNULL));
+  printr0(k(0, (S) ".kfk.offset_commit_cb", ki(handle_to_index(handle)), kp((S) rd_kafka_err2str(error_code)), decode_topic_partition_list(offsets), KNULL));
 }
 
 /**
@@ -946,7 +1000,7 @@ static void offset_commit_cb(rd_kafka_t *handle, rd_kafka_resp_err_t error_code,
  */
 static V dr_msg_cb(rd_kafka_t *handle, const rd_kafka_message_t *msg, V *UNUSED(opaque)){
   // Pass client (producer) index and dictionary of delivery report information
-  printr0(k(0, (S) ".kfk.dr_msg_cb", ki(indexClient(handle)), decode_message(handle, msg), KNULL));
+  printr0(k(0, (S) ".kfk.dr_msg_cb", ki(handle_to_index(handle)), decode_message(handle, msg), KNULL));
 }
 
 /**
@@ -960,7 +1014,7 @@ static V dr_msg_cb(rd_kafka_t *handle, const rd_kafka_message_t *msg, V *UNUSED(
  */
 static V error_cb(rd_kafka_t *handle, int error_code, const char *reason, V *UNUSED(opaque)){
   // Pass client index, error code and reson for the error.
-  printr0(k(0, (S) ".kfk.error_cb", ki(indexClient(handle)), ki(error_code), kp((S)reason), KNULL));
+  printr0(k(0, (S) ".kfk.error_cb", ki(handle_to_index(handle)), ki(error_code), kp((S)reason), KNULL));
 }
 
 /**
@@ -975,21 +1029,21 @@ static V error_cb(rd_kafka_t *handle, int error_code, const char *reason, V *UNU
  */
 static V throttle_cb(rd_kafka_t *handle, const char *brokername, int32_t brokerid, int throttle_time_ms, V *UNUSED(opaque)){
   // Pass client index, brker name, broker ID and throttle time
-  printr0(k(0,(S) ".kfk.throttle_cb", ki(indexClient(handle)), kp((S) brokername), ki(brokerid), ki(throttle_time_ms), KNULL));
+  printr0(k(0,(S) ".kfk.throttle_cb", ki(handle_to_index(handle)), kp((S) brokername), ki(brokerid), ki(throttle_time_ms), KNULL));
 }
 
 //%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
  * @brief Poll producer or consumer with timeout (and a limitation of the number of polling for consumer).
- * @param hande: Client handle.
+ * @param handle: Client handle.
  * @param timeout: The maximum amount of time (in milliseconds) that the call will block waiting for events.
  * - 0: non-blocking
  * - -1: wait indefinitely
  * - others: wait for this period
  * @param max_poll_cnt: The maximum number of polls, in turn the number of messages to get.
- * @return
- * - int: The number of messages retrieved.
+ * @return 
+ * - int: The number of messages retrieved (poll count).
  */
 J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt) {
   if(rd_kafka_type(handle) == RD_KAFKA_PRODUCER){
@@ -1009,7 +1063,7 @@ J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt) {
       // Poll and retrieve message while message is not empty
       q_message= decode_message(handle, message);
       // Call `.kfk.consume_cb` passing client index and message information dictionary
-      printr0(k(0, ".kfk.consume_cb", ki(indexClient(handle)), q_message, KNULL));
+      printr0(k(0, ".kfk.consume_cb", ki(handle_to_index(handle)), q_message, KNULL));
       // Discard message which is not necessary any more
       rd_kafka_message_destroy(message);
 
@@ -1031,144 +1085,12 @@ J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt) {
   
 }
 
-// for manual poll of the feed.
-EXP K3(kfkPoll){
-  J n= 0;
-  rd_kafka_t *rk;
-  if(!check_qtype("ijj", x, y, z))
-    return KNULL;
-  if(!(rk= clientIndex(x)))
-    return KNULL;
-  n=poll_client(rk,y->j,z->j);
-  return kj(n);
-}
-
-
-
-
-/* The following set of functions define interactions with the assign functionality with Kafka.
- * This provides more control to the user over where data can be consumed from.
- * Note the differences between Kafka Assign vs Subscribe functionality, summarised in part
- * https://github.com/confluentinc/confluent-kafka-dotnet/issues/278#issuecomment-318858243
-*/
-
-/** Define functionality needed for the addition and deletion of topic-partition 
- ** pairs to the current assignment
- * @param dict topic!associated-partitions --> S!J
-*/
-
-static V ptlistadd(K dict, rd_kafka_topic_partition_list_t *t_partition){
-  K dk=kK(dict)[0],dv=kK(dict)[1];
-  S*p;J*o,i;
-  p=kS(dk);o=kJ(dv);
-  for(i = 0; i < dk->n; i++)
-    rd_kafka_topic_partition_list_add(t_partition,p[i],o[i]);
-}
-
-static V ptlistdel(K dict,rd_kafka_topic_partition_list_t *t_partition){
-  K dk=kK(dict)[0],dv=kK(dict)[1];
-  S*p;J*o,i;
-  p=kS(dk);o=kJ(dv);
-  for(i = 0; i < dk->n; i++)
-    rd_kafka_topic_partition_list_del(t_partition,p[i],o[i]);
-}
-
-/** Assign the partitions from which to consume data for specified topics
- * @param x Client Index (previously created)
- * @param y Dictionary mapping individual topics to associated partitions. S!J
- * @returns Null value on correct execution
-*/
-
-EXP K2(kfkAssignTopPar){
-  rd_kafka_t *rk;
-  rd_kafka_topic_partition_list_t *t_partition;
-  rd_kafka_resp_err_t err;
-  if(!check_qtype("i", x))
-    return KNULL;
-  if(!(rk= clientIndex(x)))
-    return KNULL;
-  t_partition = rd_kafka_topic_partition_list_new(y->n);
-  // topic-partition assignment
-  ptlistadd(y,t_partition);
-  if(KFK_OK != (err=rd_kafka_assign(rk,t_partition)))
-    return krr((S) rd_kafka_err2str(err));
-  rd_kafka_topic_partition_list_destroy(t_partition);
-  return KNULL;
-}
-
-/** Return the current consumption assignment for a specified client
- * @param x Client Index (previously created) 
- * @returns List of dictionaries defining information about the current assignment
-*/
-EXP K1(kfkAssignment){
-  K r;
-  rd_kafka_topic_partition_list_t *t;
-  rd_kafka_t *rk;
-  rd_kafka_resp_err_t err;
-  if(!check_qtype("i", x))
-    return KNULL;
-  if(!(rk= clientIndex(x)))
-    return KNULL;
-  if(KFK_OK != (err=rd_kafka_assignment(rk, &t)))
-    return krr((S)rd_kafka_err2str(err));
-  r = decode_topic_partition_list(t);
-  rd_kafka_topic_partition_list_destroy(t);
-  return r;
-}
-
-/** Add to the current assignment for a client with new topic-partition pair
- * @param x Client Index (previously created)
- * @param y Dictionary mapping individual topics to associated partitions. S!J
- * @returns Null value on correct execution
-*/
-
-EXP K2(kfkAssignmentAdd){
-  rd_kafka_t *rk;
-  rd_kafka_topic_partition_list_t *t;
-  rd_kafka_resp_err_t err;
-  if(!check_qtype("i", x))
-    return KNULL;
-  if(!(rk= clientIndex(x)))
-    return KNULL;
-  // retrieve the current assignment
-  if(KFK_OK != (err=rd_kafka_assignment(rk, &t)))
-    return krr((S)rd_kafka_err2str(err));
-  ptlistadd(y,t);
-  if(KFK_OK != (err=rd_kafka_assign(rk,t)))
-    return krr((S) rd_kafka_err2str(err));
-  rd_kafka_topic_partition_list_destroy(t);
-  return 0;
-}
-
-/** Delete a topic-partition mapped dictionary from the current assignment for a client
- * @param x Client Index (previously created)
- * @param y Dictionary mapping individual topics to associated partitions. S!J
- * @returns Null value on correct execution
-*/
-
-EXP K2(kfkAssignmentDel){
-  rd_kafka_t *rk;
-  rd_kafka_topic_partition_list_t *t;
-  rd_kafka_resp_err_t err;
-  if(!check_qtype("i", x))
-    return KNULL;
-  if(!(rk= clientIndex(x)))
-    return KNULL;
-  // retrieve the current assignment
-  if(KFK_OK != (err=rd_kafka_assignment(rk, &t)))
-    return krr((S)rd_kafka_err2str(err));
-  ptlistdel(y,t);
-  if(KFK_OK != (err=rd_kafka_assign(rk,t)))
-    return krr((S) rd_kafka_err2str(err));
-  rd_kafka_topic_partition_list_destroy(t);
-  return 0;
-}
 
 
 // other
 EXP K1(kfkOutQLen){
   rd_kafka_t *rk;
-  if(!(rk= clientIndex(x)))
+  if(!(rk= index_to_handle(x)))
     return KNULL;
   return ki(rd_kafka_outq_len(rk));
 }
@@ -1179,7 +1101,7 @@ EXP K2(kfkSetLoggerLevel){
   I qy=0;
   if(!check_qtype("i[hij]",x,y))
     return KNULL;
-  if(!(rk=clientIndex(x)))
+  if(!(rk=index_to_handle(x)))
     return KNULL;
   SW(y->t){
     CS(-KH,qy=y->h);
@@ -1231,13 +1153,13 @@ static V detach(V){
   if(TOPICS){
     for(i= 0; i < TOPICS->n; i++)
       if(!(((S)0) == kS(TOPICS)[i]))
-        kfkTopicDel(ki(i));
+        delete_topic(ki(i));
     r0(TOPICS);
   }
   if(CLIENTS){
     for(i= 0; i < CLIENTS->n; i++){
       if(!(((S)0) == kS(CLIENTS)[i]))
-        kfkdeleteClient(ki(i));
+        delete_client(ki(i));
     }
     rd_kafka_wait_destroyed(1000); /* wait for cleanup*/
     r0(CLIENTS);
@@ -1253,20 +1175,11 @@ static V detach(V){
   validinit = 0;
 }
 
-
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-//                       Interface                       //
+//                      Interface                        //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-//%% Private Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-
-
-
-
-//%% Public Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-// Initializer //---------------------/
+//%% Initializer %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 EXP K kfkInit(K UNUSED(x)){
   if(!(0==validinit))
@@ -1301,8 +1214,7 @@ EXP K kfkInit(K UNUSED(x)){
   return 0;
 }
 
-
-// Client //--------------------------/
+//%% Client %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
  * @brief Create a client based on a given client type (producer or consumer) and a given configuration.
@@ -1310,33 +1222,35 @@ EXP K kfkInit(K UNUSED(x)){
  * - "p": Producer
  * - "c": Consumer
  * @param q_config: Dictionary containing a configuration.
- * @return
+ * @return 
  * - error: If passing client type which is neither of "p" or "c". 
- * - int: Client handle.
+ * - int: Client index.
  */
-EXP K kfkClient(K cient_type, K q_config){
+EXP K new_client(K client_type, K q_config){
 
   // Buffer for error message
   char error_message[512];
 
-  if(!check_qtype("c!", cient_type, q_config)){
+  if(!check_qtype("c!", client_type, q_config)){
     // Argument type does not match char and dictionary
-    return KNULL;
+    return krr("client type and config must be (char; dictionary) type.");
   }
     
-  if('p' != cient_type->g && 'c' != cient_type->g){
+  if('p' != client_type->g && 'c' != client_type->g){
     // Neither of producer nor consumer
-    return krr("type: unknown client type");
+    char wrongtype[2]={client_type->g, '\0'};
+    return krr(strcat("type: unknown client type: ", wrongtype));
   }
 
   // Set client type
-  rd_kafka_type_t type=('p' == cient_type->g)?RD_KAFKA_PRODUCER: RD_KAFKA_CONSUMER;
+  rd_kafka_type_t type=('p' == client_type->g)? RD_KAFKA_PRODUCER: RD_KAFKA_CONSUMER;
   
   rd_kafka_conf_t *conf=rd_kafka_conf_new();
-  if(!load_config(conf, q_config)){
-    // Null result. Error in loading the q configuration
-    return KNULL;
-  } 
+  K res=load_config(conf, q_config);
+  if(!res){
+    // Null result. Error in loading the q configuration.
+    return (K) res;
+  }
   
   // Set callback functions
   if(type == RD_KAFKA_PRODUCER){
@@ -1381,16 +1295,137 @@ EXP K kfkClient(K cient_type, K q_config){
   }
 
   // Store client hande as symbol
-  // IS THIS SAFE? Use `ss`? Why symbol rather than integer?
-  // This affects code on q side by dealing handles as symbol after casting input int
+  // IS THIS SAFE? Use `ss`?
+  // Why symbol rather than integer?
+  // Must reuse 0 hole instead of appending tpo the tail
   js(&CLIENTS, (S) handle);
 
-  // Return client handle as int
+  // Return client index as int
   return ki(CLIENTS->n - 1);
 }
 
-// Utility //-------------------------/
+/**
+ * @brief Destroy client handle and remove from `CLIENTS`.
+ * @param client_idx: Index of client in `CLIENTS`.
+ */
+EXP K delete_client(K client_idx){
+  
+  if(!check_qtype("i", client_idx)){
+    // argument type is not int
+    return krr("client index must be int type.");
+  }
+  rd_kafka_t *handle=index_to_handle(client_idx);
+  if(!handle){
+    // Null pointer (`krr`). Error happened in `index_to_cient`.
+    return (K) handle;
+  }
 
+  if(rd_kafka_type(handle) == RD_KAFKA_CONSUMER){
+    // For consumer, close first.
+    rd_kafka_consumer_close(handle);
+  }
+  // Destroy cient handle
+  rd_kafka_destroy(handle);
+
+  // Fill hole with 0
+  // This hole must be resused.
+  kS(CLIENTS)[client_idx->i]= (S) 0;
+
+  return KNULL;
+}
+
+/**
+ * @brief Get a name of client from client index.
+ * @param client_index: Index of client in `CLIENTS`.
+ * @return 
+ * - symbol: Handle name of the client denoted by the given index.
+ */
+EXP K get_client_name(K client_index){
+  
+  if(!check_qtype("i", client_index)){
+    // client_index is not int
+    return krr("client index must be int type.");
+  }
+  
+  // Get cient hande from index
+  rd_kafka_t *handle = index_to_handle(client_index);
+  if(!handle){
+    // Null pointer (`krr`). Error in `index_to_client()`.
+    return (K) handle;
+  }
+
+  //Return handle name
+  return ks((S) rd_kafka_name(handle));
+  
+}
+
+/**
+ * @brief Get the broker-assigned group member ID of the client (consumer).
+ * @param consumer_idx: Index of client (consumer) in `CLIENTS`.
+ * @return 
+ * - symbol: Broker-assigned group member ID.
+ */
+EXP K get_consumer_group_member_id(K consumer_idx){
+  
+  if(!check_qtype("i", consumer_idx)){
+    // client_index is not int
+    return krr("client index must be int type.");
+  }
+
+  rd_kafka_t *handle=index_to_handle(consumer_idx);
+  if(!handle){
+    // Null pointer (`krr`). Error in `index_to_client()`.
+    return (K) handle;
+  }
+  
+  if(rd_kafka_type(handle) == RD_KAFKA_CONSUMER){
+    // Return the consumer's broker-assigned group member ID.
+    return ks(rd_kafka_memberid(handle));
+  }
+  else{
+    // Producer is not supported. Return error.
+    return krr("nyi - producer memberID is not feasible.");
+  }
+}
+
+
+//%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Poll client manually.
+ * @param client_idx: Client index in `CLIENTS`.
+ * @param timeout: The maximum amount of time (in milliseconds) that the call will block waiting for events.
+ * - 0: non-blocking
+ * - -1: wait indefinitely
+ * - others: wait for this period
+ * @param max_poll_cnt: The maximum number of polls, in turn the number of messages to get.
+ * @return 
+ * - long: The number of messages retrieved (poll count).
+ */
+EXP K manual_poll(K client_idx, K timeout, K max_poll_cnt){
+  
+  if(!check_qtype("ijj", client_idx, timeout, max_poll_cnt)){
+    // The argument types do not match (int; long; long)
+    return krr("cient index, timeout and maximum poll count must be (int; long; long) type.");
+  }
+  
+  rd_kafka_t *handle=index_to_handle(client_idx);
+  if(!handle){
+    // Null pointer from `krr`. Error happened in `index_to_handle`.
+    // Return the error.
+    return (K) handle;
+  }
+    
+  // Poll producer or consumer
+  J n=poll_client(handle, timeout->j, max_poll_cnt->j);
+  // Return the number of messages (poll count)
+  return kj(n);
+}
+
+/**
+ * @brief Set a new number on `MAXIMUM_NUMBER_OF_POLLING`.
+ * @param n: The maximum number of polling at execution of `poll_client()` or `manual_poll()`.
+ */
 EXP K set_maximum_number_of_polling(K n){
   if(!check_qtype("j", n)){
     // Return error for non-long type
@@ -1401,3 +1436,422 @@ EXP K set_maximum_number_of_polling(K n){
   // Return the new value
   return kj(MAXIMUM_NUMBER_OF_POLLING);
 }
+
+//%% Assign %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/* 
+ * The following set of functions define interactions with the assign functionality with Kafka.
+ * This provides more control to the user over where data can be consumed from.
+ * Note the differences between Kafka Assign vs Subscribe functionality, summarised in part
+ * https://github.com/confluentinc/confluent-kafka-dotnet/issues/278#issuecomment-318858243
+ */
+
+/**
+ * @brief Assign a new map from topic to partition for consumption of message to a client.
+ *  Client will consume from the specified partition for the specified topic.
+ * @param consumer_idx: Index of client in `CLIENTS`.
+ * @param topic_to_partiton: Dictionary mapping from topic to partition.
+ * @note
+ * This function will replace existing mapping.
+ */
+EXP K assign_new_topic_partition(K consumer_idx, K topic_to_partiton){
+  
+  if(!check_qtype("i", consumer_idx)){
+    // consumer_idx is not int.
+    return krr("consumer index must be int type.");
+  }
+  
+  rd_kafka_t *handle = index_to_handle(consumer_idx);
+  if(!handle){
+    // Null pointer (`krr`). Error happened in `index_to_cient`.
+    return (K) handle;
+  }
+
+  // Create a new topic-partition map.
+  rd_kafka_topic_partition_list_t * new_topic_partitions = rd_kafka_topic_partition_list_new(topic_to_partiton->n);
+  // Extend the new map with the given pairs of topics and partitions
+  extend_topic_partition_list(topic_to_partiton, new_topic_partitions);
+
+  // Assign the new topic-partiton map. 
+  rd_kafka_resp_err_t error=rd_kafka_assign(handle, new_topic_partitions);
+  if(KFK_OK != error){
+    // Error happened in assign. Return error.
+    return krr((S) rd_kafka_err2str(error));
+  }
+  
+  // Destroy the allocated map no longer necessary
+  rd_kafka_topic_partition_list_destroy(new_topic_partitions);
+
+  return KNULL;
+}
+
+/** 
+ * @brief Return the current consumption assignment for a specified client
+ * @param consumer_idx: Index of client (consumer) in `CLIENTS`.
+ * @return 
+ * - list of dictionaries: List of information of topic-partitions.
+ */
+EXP K get_current_assignment(K consumer_idx){
+
+  if(!check_qtype("i", consumer_idx)){
+    // consumer_idx is not int.
+    return krr("consumer index must be int type.");
+  }
+
+  rd_kafka_t *handle = index_to_handle(consumer_idx);
+  if(!handle){
+    // Null pointer (`krr`). Error happened in `index_to_cient`.
+    return (K) handle;
+  }
+
+  // Holder of current topic-partitions
+  rd_kafka_topic_partition_list_t *topic_partitions;
+  // Get current assignment information into `topic_partitions`
+  rd_kafka_resp_err_t error=rd_kafka_assignment(handle, &topic_partitions);
+  if(KFK_OK != error){
+    // Error happened in getting information. Return error.
+    return krr((S)rd_kafka_err2str(error));
+  }
+  // Convert into q dictionary
+  K current_assignment = decode_topic_partition_list(topic_partitions);
+
+  // Destroy the allocated map no longer necessary
+  rd_kafka_topic_partition_list_destroy(topic_partitions);
+
+  return current_assignment;
+}
+
+/**
+ * @brief Add pairs of topic and partition to the current assignment for a given lient.
+ * @param consumer_idx: Index of cient (consumer) in `CLIENTS`.
+ * @param topic_to_part: Dictionary mapping from topic to partition to add (s -> i).
+ */
+EXP K add_topic_partion(K consumer_idx, K topic_to_part){
+
+  rd_kafka_resp_err_t err;
+  if(!check_qtype("i", consumer_idx)){
+    // consumer_idx is not int.
+    return krr("consumer index must be int type.");
+  }
+
+  rd_kafka_t *handle = index_to_handle(consumer_idx);
+  if(!handle){
+    // Null pointer (`krr`). Error happened in `index_to_cient`.
+    return (K) handle;
+  }
+
+  // Holder of current topic-partitions
+  rd_kafka_topic_partition_list_t *topic_partitions;
+  // Get current assignment information into `topic_partitions`
+  rd_kafka_resp_err_t error=rd_kafka_assignment(handle, &topic_partitions);
+  if(KFK_OK !=error){
+    // Error happened in getting information. Return error.
+    return krr((S)rd_kafka_err2str(error));
+  }
+
+  // Add new pairs of topic and partition to current list
+  extend_topic_partition_list(topic_to_part, topic_partitions);
+
+  // Assign the new topic-partiton map. 
+  error=rd_kafka_assign(handle, topic_partitions);
+  if(KFK_OK != error){
+    // Error happened in assign. Return error.
+    return krr((S) rd_kafka_err2str(error));
+  }
+
+  // Destroy the allocated map no longer necessary
+  rd_kafka_topic_partition_list_destroy(topic_partitions);
+
+  return KNULL;
+}
+
+/**
+ * @brief Delete pairs of topic and partition from the current assignment for a client.
+ * @param consumer_idx: Index of cient (consumer) in `CLIENTS`.
+ * @param topic_to_part: Dictionary mapping from topic to partition to delete (s -> i).
+ */
+EXP K delete_topic_partition(K consumer_idx, K topic_to_part){
+
+  if(!check_qtype("i", consumer_idx)){
+    // consumer_idx is not int.
+    return krr("consumer index must be int type.");
+  }
+
+  rd_kafka_t *handle = index_to_handle(consumer_idx);
+  if(!handle){
+    // Null pointer (`krr`). Error happened in `index_to_handle`.
+    return (K) handle;
+  }
+
+  // Holder of current topic-partitions
+  rd_kafka_topic_partition_list_t *topic_partitions;
+  // Get current assignment information into `topic_partitions`
+  rd_kafka_resp_err_t error=rd_kafka_assignment(handle, &topic_partitions);
+  if(KFK_OK !=error){
+    // Error happened in getting information. Return error.
+    return krr((S)rd_kafka_err2str(error));
+  }
+
+  // Delete given pairs of topic and partition from current list
+  delete_elems_from_topic_partition_list(topic_to_part, topic_partitions);
+
+  // Assign the new topic-partiton map. 
+  error=rd_kafka_assign(handle, topic_partitions);
+  if(KFK_OK != error){
+    // Error happened in assign. Return error.
+    return krr((S) rd_kafka_err2str(error));
+  }
+
+  // Destroy the allocated map no longer necessary
+  rd_kafka_topic_partition_list_destroy(topic_partitions);
+
+  return KNULL;
+}
+
+//%% Topic %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Create a new topic.
+ * @param client_idx: index of client in `CLIENTS`.
+ * @param topic: New topic to create.
+ * @param q_config: q dictionary storing configuration of the new topic (symbol -> symbol).
+ * @return 
+ * - int: Topic handle assigned by kafka.
+ */
+EXP new_topic(K client_idx, K topic, K q_config){
+
+  if(!check_qtype("is!", client_idx, topic, q_config)){
+    // Argument types do not match expected types
+    return krr("client index, topic and configuration must be (int; symbol; dictionary)");
+  }
+
+  rd_kafka_t *handle=index_to_handle(client_idx);
+  if(!handle){
+    // Null pointer (`krr`). Error in `index_to_handle()`.
+    return (K) handle;
+  }
+
+  // Holder of kafka configuration object
+  rd_kafka_topic_conf_t *config= rd_kafka_topic_conf_new();
+  // Load configuration from q configuration object to the holder
+  load_topic_config(config, q_config);
+
+  rd_kafka_topic_t *new_topic = rd_kafka_topic_new(handle, topic->s, config);
+
+  // Store new topic handle at the tail of `TOPICS`
+  // Why symbol rather than int?
+  js(&TOPICS, (S) new_topic);
+
+  // Return topic handle as int
+  return ki(TOPICS->n - 1);
+}
+
+/**
+ * @brief Delete the given topic.
+ * @param topic_idx: Index of topic in `TOPICS`.
+ */
+EXP K delete_topic(K topic_idx){
+  
+  if(!check_qtype("i", topic_idx)){
+    // topic index is not int
+    return krr("topic index must be int type.");
+  }
+
+  rd_kafka_topic_t *topic_handle=index_to_topic_handle(topic_idx);
+  if(!topic_handle){
+    // Nul pointer (`krr`). Error happened in `index_to_topic_handle()`.
+    return (K) topic_handle;
+  }
+
+  // Delete topic
+  rd_kafka_topic_destroy(topic_handle);
+
+  // Fill the hole with 0.
+  // This hole must be resused.
+  kS(TOPICS)[topic_idx->i]= (S) 0;
+
+  return KNULL;
+}
+
+/**
+ * @brief Get a name of topic from topic index.
+ * @param topic_idx: Index of topic in `TOPICS`.
+ * @return 
+ * - symbol: Topic name.
+ */
+EXP K get_topic_name(K topic_idx){
+  rd_kafka_topic_t *rkt;
+  if(!check_qtype("i", topic_idx)){
+    // topic index is not int
+    return krr("topic index must be int type.");
+  }
+
+  rd_kafka_topic_t *topic_handle=index_to_topic_handle(topic_idx);
+  if(!topic_handle){
+    // Null pointer `krr`. Error happened in `index_to_topic_handle()`.
+    return (K) topic_handle;
+  }
+  
+  // Return topic name from the handle
+  return ks((S) rd_kafka_topic_name(topic_handle));
+}
+
+//%% Configuration %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Get configuration of topic and broker for a given client index.
+ * @param client_idx: Index of client in `CLIENTS`.
+ * @return 
+ * - dictionary: Informaition of originating broker, brokers and topics.
+ *   - orig_broker_id: int | Broker originating this meta data
+ *   - orig_broker_name | symbol | Name of originating broker
+ *   - brokers: list of dictionary | Information of brokers
+ *   - topics: list of dictionary | Infomation of topics
+ */
+EXP K get_broker_topic_config(K client_idx){
+  const struct rd_kafka_metadata *meta;
+
+  if(!check_qtype("i", client_idx)){
+    // index must be int
+    return krr((S) "client index must be int type.");
+  }
+    
+  rd_kafka_t *handle=index_to_handle(client_idx);
+  if(!handle){
+    // Null pointer `krr`. Error in `index_to_handle()`.
+    return handle;
+  }
+    
+  rd_kafka_resp_err_t error= rd_kafka_metadata(handle, 1, NULL, &meta, 5000);
+  if(KFK_OK != error){
+    // Error in getting metadata
+    return krr((S) rd_kafka_err2str(error));
+  }
+  
+  // Store configuration
+  K config= decode_metadata(meta);
+  // Destroy metadata pointer no longer necessary
+  rd_kafka_metadata_destroy(meta);
+  return config;
+}
+
+//%% Producer %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Flush a handle of a producer.
+ * @param producer_idx: Index of a client (producer) in `CLIENTS`.
+ * @param q_timeout: Timeout (milliseconds) for waiting for flush.
+ */
+EXP K flush_producer_handle(K producer_idx, K q_timeout){
+  
+  if(!check_qtype("i[hij]", producer_idx, q_timeout)){
+    // Error in type check.
+    return krr((S) "producer_idx and q_timeout must be (int; short|int|long) type.");
+  }
+
+  rd_kafka_t *handle=index_to_handle(producer_idx);
+  if(!handle){
+    // Null pointer (`krr`). Error in `index_to_handle()`.
+    return (K) handle;
+  }
+
+  I timeout=0;
+  switch(q_timeout->t){
+    case -KH:
+      timeout=q_timeout->h;
+      break;
+    case -KI:
+      timeout=q_timeout->i;
+      break;
+    default:
+      timeout=q_timeout->j;
+      break;
+  }
+
+  // Flush the handle of the producer
+  rd_kafka_resp_err_t err= rd_kafka_flush(handle, timeout);
+  if(KFK_OK != err){
+    // Timeout
+    return krr((S) rd_kafka_err2str(err));
+  }
+    
+  return KNULL;
+ }
+
+// Support only if rdkafka version >= 0.11.4
+#if (RD_KAFKA_VERSION >= 0x000b04ff)
+
+/**
+ * @brief Publish message with custom headers.
+ * @param producer_idx: Index of client (producer) in `CLIENTS`.
+ * @param topic_idx: Index of topic in `TOPICS`.
+ * @param partition: Topic partition.
+ * @param payload: Payload to be sent.
+ * @param key: Message key.
+ * @param headers: Message headers expressed in a map between header keys to header values (symbol -> string).
+ */
+EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, K key, K headers){
+  
+  if(!check_qtype("iii[CG][CG]!", producer_idx, topic_idx, partition, payload, key, headers)){
+    // Error in check type.
+    return krr((S) "producer_idx, topic_idx, partition, payload, key and headers must be (int; int; int; string; string; dictionary) type.");
+  }
+    
+  rd_kafka_t *handle=index_to_handle(producer_idx);
+  if(!handle){
+    // Null pointer (`krr`). Error in `index_to_handle()`.
+    return (K) handle;
+  }
+    
+  rd_kafka_topic_t *topic_handle=index_to_topic_handle(topic_idx);
+  if(!topic_handle){
+    // Null pointer (`krr`). Error in `index_to_topic_handle()`.
+    return (K) topic_handle;
+  }
+    
+  K hdr_keys = (kK(headers)[0]);
+  K hdr_values = (kK(headers)[1]);
+  // Type check of headers
+  if (hdr_keys->t != KS || hdr_values->t != 0){
+    // headers contain wrong type
+    return krr((S) "header keys and header values must be (list of symbol; compound list) type.");
+  }
+  for(int idx=0; idx < hdr_values->n; ++idx){
+    K hdrval = kK(hdr_values)[idx];
+    if (hdrval->t != KG && hdrval->t != KC){
+      // Header value is not string
+      return krr((S) "header value must be string type.");
+    }
+  }
+
+  rd_kafka_headers_t* message_headers = rd_kafka_headers_new((int) hdr_keys->n);
+  for (int idx=0; idx < hdr_keys->n; ++idx){
+    K hdrval = kK(hdr_values)[idx];
+    if (hdrval->t == KG || hdrval->t == KC){
+      // Add a pair of header key and value to headers
+      rd_kafka_header_add(message_headers, kS(hdr_keys)[idx], -1, kG(hdrval), hdrval->n);
+    }
+  }
+
+  rd_kafka_resp_err_t err = rd_kafka_producev(
+                        handle,
+                        RD_KAFKA_V_RKT(topic_handle),
+                        RD_KAFKA_V_PARTITION(partition->i),
+                        RD_KAFKA_V_MSGFLAGS(RD_KAFKA_MSG_F_COPY),
+                        RD_KAFKA_V_VALUE(kG(payload), payload->n),
+                        RD_KAFKA_V_KEY(kG(key), key->n),
+                        RD_KAFKA_V_HEADERS(message_headers),
+                        RD_KAFKA_V_END);
+  if(err!=KFK_OK){
+    // Error in sending message
+    return krr((S) rd_kafka_err2str(err));
+  }
+    
+  return KNULL;
+}
+
+#else
+EXP K publish_with_headers(K UNUSED(client_idx),K UNUSED(topic_idx),K UNUSED(partition),K UNUSED(value),K UNUSED(key),K UNUSED(headers)) {
+  return krr(".kafka.PublishWithHeaders is not supported for current rdkafka version. please update to librdkafka >= 0.11.4");
+}
+#endif

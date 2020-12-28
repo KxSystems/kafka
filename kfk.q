@@ -25,26 +25,8 @@
 SHARED_FUNCTIONS_:(
 	// .kfk.init[]:i
 	(`kfkInit;1);
-	// .kfk.Client[client_type:c;conf:S!S]:i
-	(`kfkClient;2);
-	// .kfk.deleteClient[client_id:i]:_
-	(`kfkdeleteClient;1);
-	// .kfk.ClientName[client_id:i]:s
-	(`kfkClientName;1);
-	// .kfk.memberId[client_id:i]:s
-	(`kfkmemberID;1);
-	// .kfk.generateTopic[client_id:i;topicname:s;conf:S!S]:i
-	(`kfkgenerateTopic;3);
-	// .kfk.TopicDel[topic_id:i]:_
-	(`kfkTopicDel;1);
-	// .kfk.TopicName[topic_id:i]:s
-	(`kfkTopicName;1);
-	// .kfk.Metadata[client_id:i]:S!()
-	(`kfkMetadata;1);
 	// .kfk.Pub[topic_id:i;partid:i;data;key]:_
 	(`kfkPub;4);
-	// .kfk.PubWithHeaders[client_id:i;topic_id:i;partid:i;data;key;headers]:_
-	(`kfkPubWithHeaders;6);
 	// .kfk.BatchPub[topic_id:i;partid:i;data;key]:_
 	(`kfkBatchPub;4);
 	// .kfk.OutQLen[client_id:i]:i
@@ -55,34 +37,16 @@ SHARED_FUNCTIONS_:(
 	(`kfkUnsub;1);
 	// .kfk.Subscription[client_id:i]
 	(`kfkSubscription;1);
-	// .kfk.Poll[client_id:i;timeout;max_messages]
-	(`kfkPoll;3);
-	// .kfk.Flush[producer_id:i;timeout_ms:i]:()
-	(`kfkFlush;2);
 	// .kfk.ExportErr[]:T
 	(`kfkExportErr;1);
-	// .kfk.CommitOffsets[client_id;topic:s;partition_offsets:I!J;async:b]:()
-	(`kfkCommitOffsets;4);
 	// .kfk.PositionOffsets[client_id:i;topic:s;partition_offsets:I!J]:partition_offsets
 	(`kfkPositionOffsets;3);
-	// .kfk.CommittedOffsets[client_id:i;topic:s;partition_offsets:I!J]:partition_offsets
-	(`kfkCommittedOffsets;3);
-	// .kfk.AssignOffsets[client_id:i;topic:s;partition_offsets:I!J]:()
-	(`kfkAssignOffsets;3);
   // .kfk.Threadcount[]:i
   (`kfkThreadCount;1);
   // .kfk.VersionSym[]:s
   (`kfkVersionSym;1);
   // .kfk.SetLoggerLevel[client_id:i;int_level:i]:()
   (`kfkSetLoggerLevel;2);
-  // .kfk.Assignment[client_id:i]:T
-  (`kfkAssignment;1);
-  // .kfk.AssignTopPar[client_id:i;topic_partition:S!J]:()
-  (`kfkAssignTopPar;2);
-  // .kfk.AssignmentAdd[client_id:i;topic_partition:S!J]:()
-  (`kfkAssignmentAdd;2);
-  // .kfk.AssignmentDel[client_id:i;topic_partition:S!J]:()
-  (`kfkAssignmentDel;2);
   // .kfk.OffsetsForTimes[client_id:i;topic:s;partition_offsets:I!J;timeout_ms]:partition_offsets
   (`kfkoffsetForTime;4)
  );
@@ -363,36 +327,315 @@ default_consume_cb:{[msg]}
 * - dictionary
 \
 consume_cb:{[client_idx; message]
-  show message; 
-  show CONSUME_TOPIC_CALLBACK_PER_CLIENT[client_idx; message `topic];
   // Call registered callback function for the topic in the message if any; otherwise call default callback function.
   $[null registered_consume_cb:CONSUME_TOPIC_CALLBACK_PER_CLIENT[client_idx; message `topic]; default_consume_cb; registered_consume_cb] message
  };
 
+//%% Client %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/
+* @brief Create a client based on a given client type (producer or consumer) and a given configuration.
+* @param client_type:
+* - "p": Producer
+* - "c": Consumer
+* @type
+* - char
+* @param q_config: Dictionary containing a configuration.
+* @type
+* - dictionary
+*   @key symbol
+*   @value symbol
+* @return
+* - error: If passing client type which is neither of "p" or "c". 
+* - int: Client index.
+\
+newClient:LIBPATH_ (`new_client; 2);
+
+/
+* @brief Destroy client handle and remove from `CLIENTS`.
+* @param client_idx: Index of client in `CLIENTS`.
+* @type
+* - int
+\
+deleteClient:LIBPATH_	(`delete_client;1);
+
+//%% Topic %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/
+* @brief Create a new topic.
+* @param client_idx: index of client in `CLIENTS`.
+* @type
+* - int
+* @param topic: New topic to create.
+* @type
+* - symbol
+* @param q_config: Dictionary storing configuration of the new topic.
+* @type
+* - dictionary
+*   @key symbol: Key of the configuration.
+*   @value symbol: Value of the configuration.
+* @return
+* - int: Topic handle assigned by kafka.
+* @note
+* Replacement of `.kfk.generateTopic`
+\
+newTopic:LIBPATH_ (`kfkgenerateTopic; 3);
+
+/
+* @brief Delete the given topic.
+* @param topic_idx: Index of topic in `TOPICS`.
+* @type
+* - int
+* @note
+* Replacement of `.kfk.TopicDel`
+\
+deleteTopic:LIBPATH_ (`delete_topic; 1);
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-//                    Pubic Interface                    //
+//                    Public Interface                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 /
 * @brief Return current version of librdkafka.
 * @return
 * - int: Version of librdkafka.
+* @note
+* Replacement of `.kfk.Version`
 \
-version:LIBPATH_	(`kfkVersion; 1);
+version:LIBPATH_ (`kfkVersion; 1);
 
 // Table with all errors return by kafka with codes and description
 Errors:ExportErr[];
 
+
+//%% Client %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/
+* @brief Get a name of client from client index.
+* @param client_index: Index of client in `CLIENTS`.
+* @type
+* - int
+* @return
+* - symbol: handle name of the client denoted by the given index.
+* @note
+* Replacement of `.kfk.ClientName`
+\
+getClientName:LIBPATH_ (`get_client_name; 1);
+
+/
+* @brief Get the broker-assigned group member ID of the client (consumer).
+* @param consumer_idx: Index of client (consumer) in `CLIENTS`.
+* @type
+* - int
+* @return
+* - symbol: Broker-assigned group member ID of the consumer.
+* @note
+* Replacement of `.kfk.ClientMemberId`
+\
+getConsumerGroupMemberID:LIBPATH_ 	(`get_consumer_group_member_id; 1);
+
+
+//%% Topic %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/
+* @brief Get a name of topic from topic index.
+* @param topic_idx: Index of topic in `TOPICS`.
+* @type
+* - int
+* @return
+* - symbol: Topic name.
+* @note
+* Replacement of `.kfk.TopicName`
+\
+getTopicName:(`get_topic_name; 1);
+
+//%% Assign %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/
+@brief Assign a new map from topic to partition for consumption of message to a client.
+*  Client will consume from the specified partition for the specified topic.
+* @param consumer_idx: Index of client (consumer) in `CLIENTS`.
+* @type
+* - int
+* @param topic_to_partiton: Dictionary mapping from topic to partition.
+* @type
+* - dictionary
+*   @key symbol: Topic name.
+*   @value long: Partition ID.
+* @note
+* - This function will replace existing mapping.
+* - Replacement of `.kfk.assignTopPar`
+\
+assignNewTopicPartition:LIBPATH_ (`assign_new_topic_partition; 1);
+
+/
+* @brief Add pairs of topic and partition to the current assignment for a given lient.
+* @param consumer_idx: Index of cient (consumer) in `CLIENTS`.
+* @type
+* - int
+* @param topic_to_part: Dictionary mapping from topic to partition to add.
+* @type
+* - dictionary
+*   @key symbol: Topic name.
+*   @value long: Partition ID.
+* @note
+* Replacement of `.kfk.AssignmentAdd`.
+\
+addTopicPartition:LIBPATH_ (`add_topic_partion; 2);
+
+/
+* @brief Delete pairs of topic and partition from the current assignment for a client.
+* @param consumer_idx: Index of cient (consumer) in `CLIENTS`.
+* @type
+* - int
+* @param topic_to_part: Dictionary mapping from topic to partition to delete.
+* @type
+* - dictionary
+*   @key symbol: Topic name.
+*   @value long: Partition ID.
+* @note
+* Replacement of `.kfk.AssignmentDel`.
+\
+deleteTopicPartition:LIBPATH_ (`delete_topic_partition; 2);
+
+/
+* @brief Set offsets on partitions of a given topic for a given client.
+* @param consumer_idx: Index of client (consumer) in `CLIENTS`.
+* @type
+* - int
+* @param topic: Topic of partitions to which assign offsets.
+* @type
+* - symbol
+* @param new_part_to_offset: Map from partition to offsets.
+* @type
+* - dictionary
+*   @key int: partition
+*   @value long: offset
+* @note
+* - This function will replace existing mapping.
+* - Replacement of `.kfk.AssignOffset`
+\
+assignNewOffsetsToTopicPartition:LIBPATH_	(`assign_new_offsets_to_topic_partition; 3);
+
+/
+* @brief Commit new offsets on partitions of a given topic for a given client.
+* @param consumer_idx: Index of client (consumer) in `CLIENTS`.
+* @type
+* - int
+* @param topic: Topic of partitions to which assign offsets.
+* @type
+* - symbol
+* @param new_part_to_offset: Map from partition to offsets.
+* @type
+* - dictionary
+*   @key int: partition
+*   @value long: offset
+* @param is_async: True to process asynchronusly. If `is_async` is false this operation will
+* @type
+* - bool
+*  block until the broker offset commit is done.
+* @note
+* - This function will replace existing mapping.
+* - Replacement of `.kfk.CommitOffset`
+\
+commitNewOffsetsToTopicPartition:LIBPATH_ (`kfkCommitOffsets; 4);
+
+/
+* @brief Return the current consumption assignment for a specified client
+* @param consumer_idx: Indexc of client (consumer).
+* @type
+* - int
+* @return
+* - list of dictionaries: List of information of topic-partitions.
+* @note
+* Replacement of `.kfk.Assignment`
+\
+getCurrentAssignment:LIBPATH_ (`get_current_assignment; 1);
+
+/
+* @brief Get latest commited offset for a given topic and partitions for a client (consumer).
+* @param cousumer_idx: Index of client (consumer) in `CLIENTS`.
+* @type
+* - int
+* @param topic: Topic of partitions to which assign offsets.
+* @type
+* - symbol
+* @param partitions: List of partitions.
+* @type
+* - list of long
+* @return
+* - list of dictionary: List of dictionary of partition and offset
+* @note
+* Replacement of `.kfk.CommittedOffsets`
+\
+getCommittedOffsetsForTopicPartition:LIBPATH_ (`get_committed_offsets_for_topic_partition; 3);
+
+
+//%% Configuration %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/
+* @brief Get configuration of topic and broker for a given client index.
+* @param client_idx: Index of client in `CLIENT`.
+* @type
+* - int
+* @return 
+* - dictionary: Informaition of originating broker, brokers and topics.
+*   @key orig_broker_id: int | Broker originating this meta data
+*   @key orig_broker_name | symbol | Name of originating broker
+*   @key brokers: list of dictionary | Information of brokers
+*   @key topics: list of dictionary | Infomation of topics
+* @note
+* Replacement of `.kfk.Metadata`
+\
+getBrokerTopicConfig:LIBPATH_ (`get_broker_topic_config; 1);
+
+//%% Producer %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/
+* @brief Flush a handle of a producer.
+* @param producer_idx: Index of a client (producer) in `CLIENT`.
+* @type
+* - int
+* @param q_timeout: Timeout (milliseconds) for waiting for flush.
+* @type
+* - short
+* - int
+* - long
+* @note
+* Replacement of `.kfk.Flush`
+\
+flushProducerHandle:LIBPATH_ (`flush_producer_handle; 2);
+
+/
+* @brief Publish message with custom headers.
+* @param producer_idx: {int} Index of client (producer) in `CLIENTS`.
+* @param topic_idx: int} Index of topic in `TOPICS`.
+* @param partition: {int} Topic partition.
+* @param payload: {string} Payload to be sent.
+* @param key: {string} Message key.
+* @param headers: Message headers expressed in a map between header keys to header values.
+* @type
+* - dictionary
+*   @key symbol
+*   @value string
+* @note
+* Replacement of `.kfk.PubWithHeaders`.
+\
+publishWithHeaders:LIBPATH_	(`publish_with_headers; 6);
+
+
+
 // projection function for handling int/long lists of partitions for offset functions
-osetp:{[cf;x;y;z]cf[x;y;$[99h=type z;z;("i"$z,())!count[z]#0]]}
+osetp:{[cf;x;y;z]
+  cf[x;y;$[99h=type z;z;("i"$z,())!count[z]#0]]
+  };
+
 // Allow Offset functionality to take topics as a list in z argument
-CommittedOffsets:osetp[CommittedOffsets;;]
 PositionOffsets :osetp[PositionOffsets;;]
 
 // Producer client code
 Producer:{
-  client:Client[x;y];
+  client:newClient[x;y];
   .kfk.ClientTopicMap,:enlist[client]!enlist ();
   .kfk.ClientTypeMap ,:enlist[client]!enlist[`Producer];
   client}[PRODUCER]
@@ -400,26 +643,22 @@ Producer:{
 // Consumer client code
 Consumer:{
   if[not `group.id in key y;'"Consumers are required to define a `group.id within the config"];
-  client:Client[x;y];
+  client:newClient[x;y];
   .kfk.ClientTopicMap,:enlist[client]!enlist ();
   .kfk.ClientTypeMap ,:enlist[client]!enlist[`Consumer];
   client}[CONSUMER]
 
 // Addition of topics and mapping
 Topic:{[cid;tname;conf]
-  topic:generateTopic[cid;tname;conf];
+  topic:newTopic[cid;tname;conf];
   .kfk.ClientTopicMap[cid],:topic;
   topic
   }
 
 ClientDel:{[cid]
-  @[TopicDel;;()]each ClientTopicMap[cid];
+  @[deleteTopic;;()]each ClientTopicMap[cid];
   deleteClient[cid]
   }
-
-
-
-
 
 
 /
@@ -444,14 +683,6 @@ Subscribe:{[client_idx;topic;partition;callback]
  };
 
 
-// Retrieve the client member id associated with an assigned consumer
-/* cid    = Integer denoting client ID
-ClientMemberId:{[cid]
-  if[`Producer~ClientTypeMap[cid];'".kfk.ClientMemberID cannot be called on Producer clients"];
-  memberID[cid]
-  }
-
-
 // Assignment API logic
 
 // Assign a new topic-partition dictionary to be consumed by a designated clientid
@@ -462,7 +693,7 @@ Assign:{[cid;toppar]
   // Create a distinct set of topic-partition pairs to assign,
   // non distinct entries cause a segfault
   toppar:(!). flip distinct(,'/)(key;value)@\:toppar;
-  AssignTopPar[cid;toppar]
+  .kfk.assignNewTopicPartition[cid;toppar]
   }
 
 // Assign additional topic-partition pairs which could be consumed from
@@ -501,7 +732,7 @@ OffsetsForTimes:{[cid;top;partoff;tout]
 
 
 
-
+//%% Callback %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /
 * @brief Register error calback function for a client.
@@ -530,9 +761,39 @@ registerThrottleCallback:{[client_idx;callback]
   if[not null callback; THROTTLE_CALLBACK_PER_CLIENT[client_idx]:callback];
  };
 
+//%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
-	// .kfk.MaxMsgsPerPoll[max_messages]
-setMaxNumPolling:LIBPATH_ (`set_maximum_number_of_polling; 1);
+/
+* @brief Poll client manually.
+* @param client_idx: Client index in `CLIENTS`.
+* @type
+* - int
+* @param timeout: The maximum amount of time (in milliseconds) that the call will block waiting for events.
+* - 0: non-blocking
+* - -1: wait indefinitely
+* - others: wait for this period
+* @type
+* - long
+* @param max_poll_cnt: The maximum number of polls, in turn the number of messages to get.
+* @type
+* - long
+* @return
+* - long: The number of messages retrieved (poll count).
+* @note
+* Replacement of `.kfk.Poll`
+\
+manualPoll:LIBPATH_ (`manual_poll; 3);
+
+/
+* @brief Set maximum number of polling at execution of `.kfk.poll` function. This number coincides with
+*  the number of maximum number of messages to retrieve at the execution of `.kfk.poll` function.
+* @param n: The maximum number of polling at execution of `.kfk.manual_poll` function.
+* @type
+* - long
+* @return
+* - long: The number set.
+\
+setMaximumNumberOfPolling:LIBPATH_ (`set_maximum_number_of_polling; 1);
 
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//

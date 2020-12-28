@@ -1,5 +1,6 @@
 language: c
-dist: trusty
+compiler: gcc
+dist: xenial
 os:
 - linux
 
