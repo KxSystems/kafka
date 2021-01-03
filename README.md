@@ -64,15 +64,17 @@ sudo apt-get install gcc-multilib
 ```bash
 git clone https://github.com/edenhill/librdkafka.git
 cd librdkafka
+mkdir install
+export KAFKA_INSTALL_DIR=$(pwd)/install
 make clean  # to make sure nothing left from previous build or if upgrading/rebuilding
 # If using OpenSSL, remove --disable-ssl from configure command below
 # On macOS with OpenSSL you might need to set `export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2k` before proceeding
 
 
 # 32 bit
-./configure --prefix=$HOME --disable-sasl --disable-lz4 --disable-ssl --mbits=32
+./configure --prefix=${KAFKA_INSTALL_DIR} --disable-sasl --disable-lz4 --disable-ssl --mbits=32
 # 64 bits
-./configure --prefix=$HOME --disable-sasl --disable-lz4 --disable-ssl --mbits=64
+./configure --prefix=${KAFKA_INSTALL_DIR} --disable-sasl --disable-lz4 --disable-ssl --mbits=64
 
 make
 make install

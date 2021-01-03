@@ -395,7 +395,7 @@ assignNewTopicPartition_impl:LIBPATH_ (`assign_new_topic_partition; 1);
 * @note
 * Replacement of `.kfk.AssignmentAdd`.
 \
-addTopicPartition_impl:LIBPATH_ (`add_topic_partion; 2);
+addTopicPartition_impl:LIBPATH_ (`add_topic_partition; 2);
 
 /
 * @brief Delete pairs of topic and partition from the current assignment for a client.

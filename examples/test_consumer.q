@@ -1,4 +1,4 @@
-\l ../q/kfk.q
+\l ../q/kafka.q
 
 kfk_cfg:(!) . flip(
     (`metadata.broker.list;`localhost:9092);
@@ -6,7 +6,7 @@ kfk_cfg:(!) . flip(
     (`fetch.wait.max.ms;`10);
     (`statistics.interval.ms;`10000)
     );
-consumer:.kfk.newConsumer[kfk_cfg];
+consumer:.kafka.newConsumer[kfk_cfg];
 
 // Topics to subscribe to
 topic1:`test1; topic2:`test2;
@@ -28,12 +28,12 @@ topic_cb2:{[msg]
  };
 
 // Subscribe to topic1 and topic2 with different callbacks from a single client
-.kfk.subscribe[consumer;topic1;enlist .kfk.PARTITION_UA];
-.kfk.subscribe[consumer;topic2;enlist .kfk.PARTITION_UA];
+.kafka.subscribe[consumer;topic1;enlist .kafka.PARTITION_UA];
+.kafka.subscribe[consumer;topic2;enlist .kafka.PARTITION_UA];
 
-.kfk.registerConsumeTopicCallback[consumer; topic1; topic_cb1];
-.kfk.registerConsumeTopicCallback[consumer; topic2; topic_cb2];
+.kafka.registerConsumeTopicCallback[consumer; topic1; topic_cb1];
+.kafka.registerConsumeTopicCallback[consumer; topic2; topic_cb2];
 
-client_meta:.kfk.getBrokerTopicConfig[consumer];
+client_meta:.kafka.getBrokerTopicConfig[consumer];
 
 show client_meta`topics;
