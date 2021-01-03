@@ -1,4 +1,4 @@
-\l ../kfk.q
+\l ../q/kfk.q
 
 kfk_cfg:(!) . flip(
     (`metadata.broker.list;`localhost:9092);
@@ -6,7 +6,7 @@ kfk_cfg:(!) . flip(
     (`fetch.wait.max.ms;`10);
     (`statistics.interval.ms;`10000)
     );
-client:.kfk.Consumer[kfk_cfg];
+consumer:.kfk.newConsumer[kfk_cfg];
 
 // Topics to subscribe to
 topic1:`test1; topic2:`test2;
@@ -14,20 +14,26 @@ topic1:`test1; topic2:`test2;
 // Define datasets and topic callbacks for individual
 // topic subscriptions `topic1 and `topic2
 data1:();
-topcb1:{[msg]
+topic_cb1:{[msg]
   msg[`data]:"c"$msg[`data];
   msg[`rcvtime]:.z.p;
-  data1,::enlist msg;}
+  data1,::enlist msg;
+ };
 
 data2:();
-topcb2:{[msg]
+topic_cb2:{[msg]
   msg[`data]:"c"$msg[`data];
   msg[`rcvtime]:.z.t;
-  data2,::enlist msg;}
+  data2,::enlist msg;
+ };
 
 // Subscribe to topic1 and topic2 with different callbacks from a single client
-.kfk.Subscribe[client;topic1;enlist .kfk.PARTITION_UA;topcb1]
-.kfk.Subscribe[client;topic2;enlist .kfk.PARTITION_UA;topcb2]
+.kfk.subscribe[consumer;topic1;enlist .kfk.PARTITION_UA];
+.kfk.subscribe[consumer;topic2;enlist .kfk.PARTITION_UA];
 
-client_meta:.kfk.Metadata[client];
+.kfk.registerConsumeTopicCallback[consumer; topic1; topic_cb1];
+.kfk.registerConsumeTopicCallback[consumer; topic2; topic_cb2];
+
+client_meta:.kfk.getBrokerTopicConfig[consumer];
+
 show client_meta`topics;

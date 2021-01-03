@@ -1,4 +1,4 @@
-\l ../kfk.q
+\l ../q/kfk.q
 
 kfk_cfg:(!) . flip(
     (`metadata.broker.list;`localhost:9092);
