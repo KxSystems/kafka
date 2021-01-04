@@ -45,11 +45,14 @@ ONE_DAY_MILLIS:86400000;
 // that should be partitioned using the configured or default partitioner.
 PARTITION_UA:-1i;
 
-// taken from librdkafka.h
-OFFSET.BEGINNING:		-2  /**< Start consuming from beginning of kafka partition queue: oldest msg */
-OFFSET.END:     		-1  /**< Start consuming from end of kafka partition queue: next msg */
-OFFSET.STORED:	 -1000  /**< Start consuming from offset retrieved from offset store */
-OFFSET.INVALID:	 -1001  /**< Invalid offset */
+// Start consuming from beginning of kafka partition queue: oldest msg
+OFFSET_BEGINNING:		-2
+// Start consuming from end of kafka partition queue: next msg
+OFFSET_END:     		-1
+// Start consuming from offset retrieved from offset store
+OFFSET_STORED:	 -1000
+// Invalid offset
+OFFSET_INVALID:	 -1001
 
 /
 * @brief Mapping between client and the topics
@@ -79,7 +82,6 @@ ERROR_CALLBACK_PER_CLIENT:enlist[0Ni]!enlist (::);
 \
 THROTTLE_CALLBACK_PER_CLIENT:enlist[0Ni]!enlist (::);
 
-
 /
 * @brief Dictionary of consume_callback functions for each topic per client index.
 * @key
@@ -91,10 +93,9 @@ THROTTLE_CALLBACK_PER_CLIENT:enlist[0Ni]!enlist (::);
 \
 CONSUME_TOPIC_CALLBACK_PER_CONSUMER:enlist[0Ni]!enlist ()!();
 
-PRODUCER:"p";
-CONSUMER:"c";
-
-// table with kafka statistics
+/
+* @brief Kafka statistics table;
+\
 STATISTICS:();
 
 
@@ -104,15 +105,19 @@ STATISTICS:();
 
 //%% Utility %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
-// Utility function to check current assignment against proposed additions/deletions,
+/
+* @brief Utility function to check current assignment against proposed additions/deletions,
 // return unique toppar pairs as a dictionary to avoid segfaults from duplicate 
-/* client_idx: Index of client in `CLIENTS`.
-/* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
-/* addDel = Boolean denoting addition/deletion functionality
+* @param client_idx {int}: Index of client in `CLIENTS`.
+* @param toppar {dictionary}: Mapping the name of a topic to an associated partition.
+* - key {symbol}: Topic
+* - value {int}: topic partition
+* @param add_or_delete {symbol}: `add` or `delete` denoting to what kind of function this check is conducted, i.e. `.kafka.addTopicPartition` or `.kafka.deleteTopicPartition`.
+\
 assignCheck:{[client_idx;topic_to_partition;add_or_delete]
   // Generate the partition provided used to compare to current assignment
   topic_partition_list:distinct flip (key; value) @\: topic_to_partition;
-  // Mark locations where user is attempting to delete from an non existent assignment
+  // Mark locations where user is attempting to delete from a non-existent assignment, or user is trying to add already existing one
   location:topic_partition_list where $[`add ~ add_or_delete; ::; not] topic_partition_list in .kafka.getCurrentAssignment[client_idx][::; `topic`partition];
   if[count location;
     show location;
@@ -172,120 +177,80 @@ log_cb:{[level;fac;buf] show -3!(level; fac; buf);};
 /
 * @brief Callback function set by `rd_kafka_conf_set_offset_commit_cb` and triggered by `rd_kafka_consumer_poll()`
 *  for use with consumer groups. Deligated by C function `offset_commit_cb`.
-* @param cid: client (consumer) index
-* @type
-* - int
-* @param err: error message
-* @type
-* - string
-* @param offsets: A list of topic-partition information dictionaries
-* @type
-* - list of dictionaries
+* @param consumer_idx {int}: client (consumer) index
+* @param err {string}: error message
+* @param offsets {list of dictionary}: A list of topic-partition information dictionaries
 \
-offset_commit_cb:{[cid;err;offsets]
+offset_commit_cb:{[consumer_idx;err;offsets]
   // Nothing to do
  };
 
 // PRODUCER: delivery callback (rd_kafka_conf_set_dr_msg_cb )
 /
 * @brief Callback function for delivery report set by `rd_kafka_conf_set_dr_msg_cb`.
-* @param cid: Index of client (consumer).
-* @type
-* - int
-* @param msg: Information conatined in delivery report.
-* @type
-* - dictionary
+* @param consumer_idx {int}: Index of client (consumer).
+* @param message {dictionary}: Information conatined in delivery report.
 \
-dr_msg_cb:{[cid;msg]
+dr_msg_cb:{[consumer_idx;message]
   // Nothing to do
  };
 
 /
 * @brief Default callback function for error or warning called inside `.kfk.error_cb`
-* @param cid: Index of client.
-* @type
-* - int
-* @param error_code: Error code.
-* @type
-* - int
-* @param reason: Reason for the error.
-* @type
-* - string
+* @param client_idx {int}: Index of client.
+* @param error_code {int}: Error code.
+* @param reason {string}: Reason for the error.
 \
-default_error_cb:{[cid;error_code;reason]
+default_error_cb:{[client_idx;error_code;reason]
   // Nothing to do
  };
 
 /
 * @brief Callback function for error or warning. Deligated by C function `error_cb`.
-* @param cid: Index of client.
-* @type
-* - int
-* @param error_code: Error code.
-* @type
-* - int
-* @param reason: Reason for the error.
-* @type
-* - string
+* @param client_idx {int}: Index of client.
+* @param error_code {int}: Error code.
+* @param reason {string}: Reason for the error.
 \
-error_cb:{[cid;error_code;reason]
+error_cb:{[client_idx;error_code;reason]
   // Call registered callback function if any; otherwise call default callback function
-  $[null registered_error_cb:ERROR_CALLBACK_PER_CLIENT cid; default_error_cb; registered_error_cb] . (cid; error_code; reason)
+  $[null registered_error_cb:ERROR_CALLBACK_PER_CLIENT client_idx; default_error_cb; registered_error_cb] . (client_idx; error_code; reason)
  };
 
 /
 * @brief Default callback function for throttle events to request producing and consuming. Called inside `.kfk.throttle_cb`.
-* @param handle: Index of client.
-* @type
-* - int
-* @param brokername: Name of broker.
-* @type
-* - string
-* @param brokerid: ID of broker.
-* @type
-* - int
-* @param throttle_time_ms: Broker throttle time in milliseconds.
-* @type
-* - int
+* @param client_idx {int}: Index of client in `CLIENTS`.
+* @param broker_name {string}: Name of broker.
+* @param broker_id {int}: ID of broker.
+* @param throttle_time_ms {int}: Broker throttle time in milliseconds.
 \
-default_throttle_cb:{[client_id;broker_name;broker_id;throttle_time]
+default_throttle_cb:{[client_idx;broker_name;broker_id;throttle_time]
   // Nothing to do
  };
 
 /
 * @brief Callback function for throttle events to request producing and consuming. Deligated by C function `throttle_cb`.
-* @param handle: Index of client.
-* @type
-* - int
-* @param brokername: Name of broker.
-* @type
-* - string
-* @param brokerid: ID of broker.
-* @type
-* - int
-* @param throttle_time_ms: Broker throttle time in milliseconds.
-* @type
-* - int
+* @param client_idx {int}: Index of client in `CLIENTS`.
+* @param broker_name {string}: Name of broker.
+* @param broker_id {int}: ID of broker.
+* @param throttle_time_ms {int}: Broker throttle time in milliseconds.
 \
-throttle_cb:{[client_id;broker_name;broker_id;throttle_time]
+throttle_cb:{[client_idx;broker_name;broker_id;throttle_time]
   // Call registered callback function if any; otherwise call default callback function
-  $[null registered_throttle_cb:THROTTLE_CALLBACK_PER_CLIENT client_id; default_throttle_cb; registered_throttle_cb] . (client_id; broker_name; broker_id; throttle_time)
+  $[null registered_throttle_cb:THROTTLE_CALLBACK_PER_CLIENT client_idx; default_throttle_cb; registered_throttle_cb] . (client_idx; broker_name; broker_id; throttle_time)
  };
 
 /
 * @brief Default callback for consuming messages called inside `.kfk.consume_cb`.
 * @param message: Dictionary containing a message returned by `rd_kafka_consumer_poll()`.
 \
-default_consume_topic_cb:{[msg]}
+default_consume_topic_cb:{[message]
+  // Nothing to do
+ };
 
 /
 * @brief Callback function for consuming messages triggered by `rd_kafka_consumer_poll()`. Deligated by C function `poll_client`.
-* @param consumer_idx: Index of client (consumer) in `CLIENTS`.
-* @type
-* - int
-* @param message: Dictionary containing a message returned by `rd_kafka_consumer_poll()`.
-* @type
-* - dictionary
+* @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
+* @param message {dictionary}: Dictionary containing a message returned by `rd_kafka_consumer_poll()`.
 \
 consume_topic_cb:{[consumer_idx; message]
   // Call registered callback function for the topic in the message if any; otherwise call default callback function.
@@ -415,8 +380,6 @@ deleteTopicPartition_impl:LIBPATH_ (`delete_topic_partition; 2);
 * @param part_to_offset: Map from partition to offset. Offsets are dummy appended by q function `.kafka.setOffsetsToEnd`.
 * @return 
 * - list of dictionary: List of topic partition information incuding the reset offsets.
-* @note
-* Replacement of `.kfk.PositionOffsets`.
 \
 setOffsetsToEnd_impl:LIBPATH_ (`set_offsets_to_end; 3);
 
