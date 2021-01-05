@@ -29,13 +29,29 @@ target_include_directories(${MY_LIBRARY_NAME} PRIVATE
 )
 
 # Find dependency
+option(ENABLE_SSL "Enable OpenSSL support" ON)
+if(ENABLE_SSL)
+    find_library(OPENSSL_LIBRARY
+        REQUIRED
+        NAMES ssl libssl
+        HINTS $ENV{OPENSSL_ROOT_DIR}/lib
+    )
+endif()
+
 find_library(KAFKA_LIBRARY
     REQUIRED
-    NAMES rdkafka librdkafka
+    NAMES librdkafka rdkafka
     HINTS $ENV{KAFKA_INSTALL_DIR}/lib
 )
 
 if(MSVC)
+    # Windows use installed zlib
+    find_library(ZLIB_LIBRARY
+        REQUIRED
+        NAMES zlib libz
+        HINTS $ENV{ZLIB_INSTALL_DIR}/lib
+    )
+    # q library
     file(DOWNLOAD "https://github.com/KxSystems/kdb/raw/master/w64/q.lib" "${CMAKE_BINARY_DIR}/q.lib" )
     set(Q_LIBRARY "${CMAKE_BINARY_DIR}/q.lib")
 endif()
@@ -44,15 +60,12 @@ endif()
 target_compile_options(${MY_LIBRARY_NAME} PRIVATE
     # kdb+ version
     -DKXVER=3
-    -lz
-    -lpthread
-    -lssl
 
     # -lrt for Linux??
 
     # Compiler option
-    $<$<C_COMPILER_ID:Windows>:${CMAKE_C_FLAGS} /W3 /D WIN32_LEAN_AND_MEAN /D _CRT_SECURE_NO_WARNINGS>
-    $<$<NOT:$<C_COMPILER_ID:Windows>>:${CMAKE_C_FLAGS} -fPIC -Wno-strict-aliasing>
+    $<$<C_COMPILER_ID:MSVC>:${CMAKE_C_FLAGS} /W3 /D WIN32_LEAN_AND_MEAN>
+    $<$<NOT:$<C_COMPILER_ID:MSVC>>:${CMAKE_C_FLAGS} -fPIC -Wno-strict-aliasing>
 
     # Config option
     $<$<CONFIG:Release>:-O3 -DNDEBUG>
@@ -63,7 +76,7 @@ target_compile_options(${MY_LIBRARY_NAME} PRIVATE
 # ex.) kafkakdb.so for linux
 # Suffix must be `.so` for Mac
 if(APPLE)
-  set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
+    set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
 endif()
 
 set_target_properties(${MY_LIBRARY_NAME} PROPERTIES SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
@@ -76,9 +89,11 @@ endif()
 
 # Link library
 target_link_libraries(${MY_LIBRARY_NAME} PRIVATE
-        ${Q_LIBRARY}
-        ${KAFKA_LIBRARY}
-    )
+    ${Q_LIBRARY}
+    ${KAFKA_LIBRARY}
+    ${ZLIB_LIBRARY}
+    ${OPENSSL_LIBRARY}
+)
 
 ##%% Installation %%##vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 

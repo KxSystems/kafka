@@ -105,12 +105,46 @@ $make install
 
 1. For 32-bit build changing `-mbits=64` to `-mbits=32`.
 2. If using OpenSSL, remove `--disable-ssl` from configure command below
-3. On macOS with OpenSSL you might need to set `export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2k` before proceeding
+3. On macOS with OpenSSL you might need to set `export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.1.1i` before proceeding
 
 
 #### Windows
 
-For Windows easiest way might be to using CMake. As written in the [document](https://github.com/edenhill/librdkafka/tree/master/packaging/cmake) of the repository, CMake build is still experimental but with CMake this installation guide becomes much simpler.
+In order to build `kafkakdb` you need to install two libraries:
+- `zlib`
+- `rdkafka`
+
+##### 1. Install zlib
+
+Download zlib from the official homepage (https://www.zlib.net/) and build with CMake. The environmental variable `ZLIB_INSTALL_DIR` set here is used to build kdb+ interface.
+
+```bat
+
+> curl -L https://www.zlib.net/zlib1211.zip -o zlib1211.zip
+> 7z x zlib1211.zip
+> ren zlib-1.2.11 zlib
+> cd zlib
+zlib> mkdir build
+zlib> mkdir install
+zlib> set ZLIB_INSTALL_DIR=%cd%\install
+zlib> cd build
+build> cmake --config Release -DCMAKE_INSTALL_PREFIX=%ZLIB_INSTALL_DIR% ..
+build> cmake --build . --config Release --target install
+
+```
+
+Create a symlink to the `zlib.dll` under `%QHOME%\w64`.
+
+```bat
+
+build> cd %QHOME%\w64
+w64> MKLINK zlib.dll %KAFKA_INSTALL_DIR%\bin\zib.dll
+
+```
+
+##### 2. Install rdkafka
+
+For Windows easiest way to install `rdkafka` might be to using CMake. As written in the [document](https://github.com/edenhill/librdkafka/tree/master/packaging/cmake) of the repository, CMake build is still experimental but with CMake this installation guide becomes much simpler.
 
 Clone the source repository and build with CMake. The environmental variable `KAFKA_INSTALL_DIR` set here is used to build the kdb+ interface.
 
@@ -122,12 +156,23 @@ librdkafka> mkdir install
 librdkafka> set KAFKA_INSTALL_DIR=%cd%\install
 librdkafka> mkdir build
 librdkafka> cd build
-build> cmake --config Release -DCMAKE_INSTALL_PREFIX=../install .. -DRDKAFKA_BUILD_TESTS:BOOL=OFF -DRDKAFKA_BUILD_EXAMPLES:BOOL=OFF -DWITH_SASL:BOOL=OFF -DENABLE_LZ4_EXT:BOOL=OFF -DWITH_BUNDLED_SSL:BOOL=OFF
+build> cmake --config Release -DCMAKE_INSTALL_PREFIX=%KAFKA_INSTALL_DIR% .. -DRDKAFKA_BUILD_TESTS:BOOL=OFF -DRDKAFKA_BUILD_EXAMPLES:BOOL=OFF -DWITH_SASL:BOOL=OFF -DENABLE_LZ4_EXT:BOOL=OFF -DWITH_BUNDLED_SSL:BOOL=OFF
 build> cmake --build . --config Release --target install
 
 ```
 
 **Note:** If you use SSL, remove the flag `-DWITH_BUNDLED_SSL:BOOL=OFF`.
+
+**Mess Up for Successful Install:** 🤷🤷🤷
+
+Somehow `librdkafka.lib` is required even when `edkafka.lib` was successfully found by CMake though name `librdkafka.lib` does not exist in the generated project file... We need to rename the `rdkafka.lib` to `librdkafka.lib`.
+
+```bat
+
+build> cd ..\install\lib
+lib> rename rdkafka.lib librdkafka.lib
+
+```
 
 Create a symlink to the `rdkafka.dll` under `%QHOME%\w64`.
 
@@ -140,6 +185,8 @@ w64> MKLINK rdkafka.dll %KAFKA_INSTALL_DIR%\bin\rdkafka.dll
 
 ### Install kafkakdb
 
+To use OpenSSL set `OPENSSL_ROOT_DIR` to the install directory of OpenSSL.
+
 #### Linux/MacOSX
 
 ```bash
@@ -147,12 +194,14 @@ w64> MKLINK rdkafka.dll %KAFKA_INSTALL_DIR%\bin\rdkafka.dll
 ]$ git clone https://github.com/KxSystems/kafka.git
 ]$ cd kafka
 ]$ mkdir build && cd build
-build]$ cmake ..
+build]$ cmake .. -DENABLE_SSL:BOOL=OFF
 build]$ cmake --build . --target install
 
 ```
 
-**Note:** `cmake --build . --target install` as used in the Linux/MacOS builds installs the required share object and q files to the `QHOME/[ml]64` and `QHOME` directories respectively. If you do not wish to install these files directly, you can execute `cmake --build .` instead of `cmake --build . --target install` and move the files from their build location at `build/kafkakdb`.
+**Notes:**
+1. `cmake --build . --target install` as used in the Linux/MacOS builds installs the required share object and q files to the `QHOME/[ml]64` and `QHOME` directories respectively. If you do not wish to install these files directly, you can execute `cmake --build .` instead of `cmake --build . --target install` and move the files from their build location at `build/kafkakdb`.
+2. If you use TLS remove the flag `-DENABLE_SSL:BOOL=OFF`.
 
 #### Windows
 
@@ -161,7 +210,7 @@ build]$ cmake --build . --target install
 > git clone https://github.com/KxSystems/kafka.git
 > cd kafka
 > mkdir build && cd build
-build> cmake --config Release ..
+build> cmake --config Release .. -DENABLE_SSL:BOOL=OFF
 build> cmake --build . --config Release --target install
 
 ```
@@ -170,6 +219,7 @@ build> cmake --build . --config Release --target install
 
 1. `cmake --build . --config Release --target install` installs the required share object and q files to the `QHOME\w64` and `QHOME` directories respectively. If you do not wish to install these files directly, you can execute `cmake --build . --config Release` instead of `cmake --build . --config Release --target install` and move the files from their build location at `build/kafkakdb`.
 2. You can use flag `cmake -G "Visual Studio 16 2019" -A Win32` if building 32-bit version.
+3. If you use TLS remove the flag `-DENABLE_SSL:BOOL=OFF`.
 
 ## Quick Start
 

@@ -17,12 +17,12 @@
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "librdkafka.lib")
 #define EXP __declspec(dllexport)
-inline static SOCKET spair[2];
+SOCKET spair[2];
 #else
 #include <unistd.h>
 #define EXP
 #define SOCKET_ERROR -1
-inline static I spair[2];
+I spair[2];
 #endif
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -60,12 +60,12 @@ typedef unsigned int UI;
 /**
  * @brief Offset between UNIX epoch (1970.01.01) and kdb+ epoch (2000.01.01) in day.
  */
-inline static const J KDB_DAY_OFFSET=10957;
+extern const J KDB_DAY_OFFSET;
 
 /**
  * @brief Milliseconds in a day
  */
-inline static const J ONEDAY_MILLIS=86400000;
+extern const J ONEDAY_MILLIS;
 
 /**
  * @brief Type indicators sorted in ascending order by underlying integer values.
@@ -82,17 +82,17 @@ static const C QTYPE_INDICATORS[256]= " tvunzdmpscfejihg xb*BX GHIJEFCSPMDZNUVT 
 /**
  * @brief WHAT IS THIS??
  */
-inline static K S0;
+K S0;
 
 /**
  * @brief Client handles expressed in symbol list
  */
-inline static K CLIENTS;
+K CLIENTS;
 
 /**
  * @brief Topic names expressed in symbol list
  */
-inline static K TOPICS;
+K TOPICS;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //

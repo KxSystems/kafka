@@ -5,6 +5,22 @@
 #include "kafkakdb_utility.h"
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                    Global Variables                   //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+//%% Utility %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Offset between UNIX epoch (1970.01.01) and kdb+ epoch (2000.01.01) in day.
+ */
+const J KDB_DAY_OFFSET = 10957;
+
+/**
+ * @brief Milliseconds in a day
+ */
+const J ONEDAY_MILLIS = 86400000;
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
