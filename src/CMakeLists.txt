@@ -15,7 +15,6 @@ add_library(${MY_LIBRARY_NAME} SHARED
     kafkakdb_consumer.c
     kafkakdb_info.c
     kafkakdb_init.c
-    kafkakdb_poll.c
     kafkakdb_producer.c
     kafkakdb_topic.c
     kafkakdb_utility.c
@@ -54,6 +53,10 @@ if(MSVC)
     # q library
     file(DOWNLOAD "https://github.com/KxSystems/kdb/raw/master/w64/q.lib" "${CMAKE_BINARY_DIR}/q.lib" )
     set(Q_LIBRARY "${CMAKE_BINARY_DIR}/q.lib")
+else()
+    # Linux and Mac
+    # zlib is instaled by default
+    set(ZLIB_LIBRARY "libz.so")
 endif()
 
 # Compile option

@@ -1,4 +1,4 @@
-# `kfk` – Kafka for kdb+
+# kdb+ interface for kafka broker
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/kxsystems/kafka)](https://github.com/kxsystems/kafka/releases) [![Travis (.org) branch](https://img.shields.io/travis/kxsystems/kafka/master)](https://travis-ci.org/kxsystems/kafka/branches)
 
@@ -97,7 +97,7 @@ Execute `configure` passing the `${KAFKA_INSTALL_DIR}` as a target install direc
 
 $ ./configure --prefix=${KAFKA_INSTALL_DIR} --disable-sasl --disable-lz4 --disable-ssl --mbits=64
 $ make
-$make install
+$ make install
 
 ```
 
@@ -105,7 +105,7 @@ $make install
 
 1. For 32-bit build changing `-mbits=64` to `-mbits=32`.
 2. If using OpenSSL, remove `--disable-ssl` from configure command below
-3. On macOS with OpenSSL you might need to set `export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.1.1i` before proceeding
+3. On macOS with OpenSSL you might need to set `export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl` before proceeding
 
 
 #### Windows
