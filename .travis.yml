@@ -64,8 +64,8 @@ before_install:
       cd ..;
     elif [[ $BUILD == "True" && ( $TRAVIS_OS_NAME == "linux" || $TRAVIS_OS_NAME == "osx" ) ]]; then
       cd build;
-      cmake ..;
-      cmake --build . -- target install;
+      cmake .. -DENABLE_SSL:BOOL=OFF;
+      cmake --build . --target install;
       cd ..;
     fi
 

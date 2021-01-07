@@ -14,9 +14,9 @@ if [[ $TRAVIS_OS_NAME == windows ]]; then
     mkdir librdkafka/install/lib
     mkdir librdkafka/install/include
     mkdir librdkafka/install/bin
-    cp -r librdkafka.redist.1.5.3/build/native/lib/win/x64/win-x64-Release/v120/ librdkafka/install/lib/
-    cp -r librdkafka.redist.1.5.3/build/native/include librdkafka/install/include/
-    cp -r librdkafka.redist.1.5.3/runtimes/win-x64/native librdkafka/install/bin/
+    cp -r librdkafka.redist.1.5.3/build/native/lib/win/x64/win-x64-Release/v120/* librdkafka/install/lib/
+    cp -r librdkafka.redist.1.5.3/build/native/include/librdkafka librdkafka/install/include/
+    cp -r librdkafka.redist.1.5.3/runtimes/win-x64/native/* librdkafka/install/bin/
 else
     # Linux and MacOSX
     wget https://github.com/edenhill/librdkafka/archive/v1.6.0-ARM64-PRE10.tar.gz
