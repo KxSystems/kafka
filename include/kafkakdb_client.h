@@ -18,6 +18,15 @@
  */
 static const I KR;
 
+//%% Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Maximum number of polling at execution of `poll_client`. Set `0` by default.
+ * @note
+ * In order to make this parameter effective, pass `0` for `max_poll_cnt` in `poll_client`.
+ */
+static J MAXIMUM_NUMBER_OF_POLLING;
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -118,6 +127,8 @@ static V throttle_cb(rd_kafka_t* handle, const char* brokername, int32_t brokeri
 //                      Interface                        //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
+//%% Create/Delete %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
 /**
  * @brief Create a client based on a given client type (producer or consumer) and a given configuration.
  * @param client_type:
@@ -136,6 +147,35 @@ EXP K new_client(K client_type, K q_config);
  */
 EXP K delete_client(K client_idx);
 
+//%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Poll client manually.
+ * @param client_idx: Client index in `CLIENTS`.
+ * @param timeout: The maximum amount of time (in milliseconds) that the call will block waiting for events.
+ * - 0: non-blocking
+ * - -1: wait indefinitely
+ * - others: wait for this period
+ * @param max_poll_cnt: The maximum number of polls, in turn the number of messages to get.
+ * @return
+ * - long: The number of messages retrieved (poll count).
+ */
+EXP K manual_poll(K client_idx, K timeout, K max_poll_cnt);
+
+/**
+ * @brief Set a new number on `MAXIMUM_NUMBER_OF_POLLING`.
+ * @param n: The maximum number of polling at execution of `poll_client()` or `manual_poll()`.
+ */
+EXP K set_maximum_number_of_polling(K n);
+
+/**
+ * @brief Return the current out queue length for a given client.
+ * @param client_idx: Index of client in `CLIENTS`.
+ */
+EXP K get_out_queue_length(K client_idx);
+
+//%% Setting %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
 /**
  * @brief Get a name of client from client index.
  * @param client_index: Index of client in `CLIENTS`.
@@ -153,11 +193,6 @@ EXP K get_client_name(K client_index);
  */
 EXP K set_log_level(K client_idx, K level);
 
-/**
- * @brief Return the current out queue length for a given client.
- * @param client_idx: Index of client in `CLIENTS`.
- */
-EXP K get_out_queue_length(K client_idx);
 
 // __KAFKAKDB_CIENT_H__
 #endif
