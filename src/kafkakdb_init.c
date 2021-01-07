@@ -4,6 +4,7 @@
 
 #include <fcntl.h>
 #include "kafkakdb_utility.h"
+#include "kafkakdb_init.h"
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Global Variables                   //
@@ -22,7 +23,7 @@ static I CLEAN_STATE=1;
  * @brief Trigger callback of client.
  * @param socket: Socket to read.
  */
-EXP K trigger_callback(I socket){
+K trigger_callback(I socket){
 
   // Read buffer from socket
   char buf[1024];
@@ -43,10 +44,6 @@ EXP K trigger_callback(I socket){
 
   return KNULL;
 }
-
-// Pre-Declaration for detach
-K delete_client(K client_idx);
-K delete_topic(K topic_idx);
 
 /**
  * @brief Clean up internal state of interface.

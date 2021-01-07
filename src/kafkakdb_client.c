@@ -3,17 +3,19 @@
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 #include "kafkakdb_utility.h"
+#include "kafkakdb_client.h"
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Global Variables                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
 
 //%% Utility %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
  * @brief Error type of K object
  */
-static const I KR=-128;
+static const I KR = -128;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //

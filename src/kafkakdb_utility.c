@@ -20,6 +20,16 @@ const J KDB_DAY_OFFSET = 10957;
  */
 const J ONEDAY_MILLIS = 86400000;
 
+/**
+ * @brief Type indicators sorted in ascending order by underlying integer values.
+ * @note
+ * - By adding 20 to `arg->t`, the value matches the position in this letters. For example, 't' isnidcates time type whose
+ *  integer indicator is -19. Adding 20 to -19 equals 1 and `QTYPE_INDICATORS[1]` matches 't'. Additionally, '+' denotes table
+ *  and '!' denotes dictionary.
+ * - Don't erase spaces!! This is not a mistake!!
+ */
+static const C QTYPE_INDICATORS[256]= " tvunzdmpscfejihg xb*BX GHIJEFCSPMDZNUVT                                                                              +!";
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//

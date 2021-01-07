@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "socketpair.h"
-#include <librdkafka/rdkafka.h>
+#include <rdkafka.h>
 #include "k.h"
 
 //%% Socket Library %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
@@ -75,7 +75,7 @@ extern const J ONEDAY_MILLIS;
  *  and '!' denotes dictionary.
  * - Don't erase spaces!! This is not a mistake!!
  */
-static const C QTYPE_INDICATORS[256]= " tvunzdmpscfejihg xb*BX GHIJEFCSPMDZNUVT                                                                              +!";
+static const C QTYPE_INDICATORS[256];
 
 //%% Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 

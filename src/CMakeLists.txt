@@ -15,7 +15,6 @@ add_library(${MY_LIBRARY_NAME} SHARED
     kafkakdb_consumer.c
     kafkakdb_info.c
     kafkakdb_init.c
-    kafkakdb_poll.c
     kafkakdb_producer.c
     kafkakdb_topic.c
     kafkakdb_utility.c
@@ -25,7 +24,7 @@ add_library(${MY_LIBRARY_NAME} SHARED
 # Specify include directory
 target_include_directories(${MY_LIBRARY_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/include
-    $ENV{KAFKA_INSTALL_DIR}/include
+    $ENV{KAFKA_INSTALL_DIR}/include/librdkafka
 )
 
 # Find dependency
@@ -45,12 +44,6 @@ find_library(KAFKA_LIBRARY
 )
 
 if(MSVC)
-    # Windows use installed zlib
-    find_library(ZLIB_LIBRARY
-        REQUIRED
-        NAMES zlib libz
-        HINTS $ENV{ZLIB_INSTALL_DIR}/lib
-    )
     # q library
     file(DOWNLOAD "https://github.com/KxSystems/kdb/raw/master/w64/q.lib" "${CMAKE_BINARY_DIR}/q.lib" )
     set(Q_LIBRARY "${CMAKE_BINARY_DIR}/q.lib")
@@ -68,8 +61,8 @@ target_compile_options(${MY_LIBRARY_NAME} PRIVATE
     $<$<NOT:$<C_COMPILER_ID:MSVC>>:${CMAKE_C_FLAGS} -fPIC -Wno-strict-aliasing>
 
     # Config option
-    $<$<CONFIG:Release>:-O3 -DNDEBUG>
-    $<$<CONFIG:Debug>:-O0 -g>
+    $<$<AND:$<CONFIG:Release>,$<NOT:$<C_COMPILER_ID:MSVC>>>:-O3 -DNDEBUG>
+    $<$<AND:$<CONFIG:Release>,$<NOT:$<C_COMPILER_ID:MSVC>>>:-O0 -g>
 )
 
 # Shared library prefix and suffix
@@ -91,7 +84,6 @@ endif()
 target_link_libraries(${MY_LIBRARY_NAME} PRIVATE
     ${Q_LIBRARY}
     ${KAFKA_LIBRARY}
-    ${ZLIB_LIBRARY}
     ${OPENSSL_LIBRARY}
 )
 
