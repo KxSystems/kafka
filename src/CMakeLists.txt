@@ -47,10 +47,6 @@ if(MSVC)
     # q library
     file(DOWNLOAD "https://github.com/KxSystems/kdb/raw/master/w64/q.lib" "${CMAKE_BINARY_DIR}/q.lib" )
     set(Q_LIBRARY "${CMAKE_BINARY_DIR}/q.lib")
-else()
-    # Linux and Mac
-    # zlib is instaled by default
-    set(ZLIB_LIBRARY "libz.so")
 endif()
 
 # Compile option
@@ -65,8 +61,8 @@ target_compile_options(${MY_LIBRARY_NAME} PRIVATE
     $<$<NOT:$<C_COMPILER_ID:MSVC>>:${CMAKE_C_FLAGS} -fPIC -Wno-strict-aliasing>
 
     # Config option
-    $<$<CONFIG:Release>:-O3 -DNDEBUG>
-    $<$<CONFIG:Debug>:-O0 -g>
+    $<$<AND:$<CONFIG:Release>,$<NOT:$<C_COMPILER_ID:MSVC>>>:-O3 -DNDEBUG>
+    $<$<AND:$<CONFIG:Release>,$<NOT:$<C_COMPILER_ID:MSVC>>:-O0 -g>
 )
 
 # Shared library prefix and suffix
@@ -88,7 +84,6 @@ endif()
 target_link_libraries(${MY_LIBRARY_NAME} PRIVATE
     ${Q_LIBRARY}
     ${KAFKA_LIBRARY}
-    ${ZLIB_LIBRARY}
     ${OPENSSL_LIBRARY}
 )
 
