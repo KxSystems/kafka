@@ -1,4 +1,4 @@
-#ifndef __KAFKAKDB_PEODUCER_H__
+#ifndef __KAFKAKDB_PRODUCER_H__
 #define __KAFKAKDB_PRODUCER_H__
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -76,5 +76,5 @@ EXP K publish_batch(K UNUSED(topic_idx), K UNUSED(partitions), K UNUSED(payloads
 
 #endif
 
-// __KAFKAKDB_PEODUCER_H__
+// __KAFKAKDB_PRODUCER_H__
 #endif
