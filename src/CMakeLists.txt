@@ -24,7 +24,7 @@ add_library(${MY_LIBRARY_NAME} SHARED
 # Specify include directory
 target_include_directories(${MY_LIBRARY_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/include
-    $ENV{KAFKA_INSTALL_DIR}/include
+    $ENV{KAFKA_INSTALL_DIR}/include/librdkafka
 )
 
 # Find dependency
@@ -44,12 +44,6 @@ find_library(KAFKA_LIBRARY
 )
 
 if(MSVC)
-    # Windows use installed zlib
-    find_library(ZLIB_LIBRARY
-        REQUIRED
-        NAMES zlib libz
-        HINTS $ENV{ZLIB_INSTALL_DIR}/lib
-    )
     # q library
     file(DOWNLOAD "https://github.com/KxSystems/kdb/raw/master/w64/q.lib" "${CMAKE_BINARY_DIR}/q.lib" )
     set(Q_LIBRARY "${CMAKE_BINARY_DIR}/q.lib")

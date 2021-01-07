@@ -110,13 +110,44 @@ $ make install
 
 #### Windows
 
-In order to build `kafkakdb` you need to install two libraries:
-- `zlib`
-- `rdkafka`
+##### Install rdkafka
 
-##### 1. Install zlib
+In order to install rdkafka library there are two ways:
+1. Use NuGet
+2. Use CMake
 
-Download zlib from the official homepage (https://www.zlib.net/) and build with CMake. The environmental variable `ZLIB_INSTALL_DIR` set here is used to build kdb+ interface.
+As written in the [document](https://github.com/edenhill/librdkafka/tree/master/packaging/cmake) of the repository, CMake build is still experimental but with CMake this installation guide becomes much simpler. We give an instruction for CMake build as an alternative method of NuGet install.
+
+**1. Use NuGet**
+
+Install librdkafka and copy relevant directories to new directory `librdkafka`. The environmental variable `KAFKA_INSTALL_DIR` set here is used to build the kdb+ interface.
+
+```bat
+
+> curl -o ./nuget.exe -L https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
+> nuget.exe install librdkafka.redist -Version 1.5.3
+> mkdir librdkafka
+> set KAFKA_INSTALL_DIR=%cd%\librdkafka
+> xcopy librdkafka.redist.1.5.3\build\native\include\librdkafka librdkafka\include\
+> xcopy librdkafka.redist.1.5.3\build\native\lib\win\x64\win-x64-Release\v120 librdkafka\lib\
+> xcopy librdkafka.redist.1.5.3\runtimes\win-x64\native librdkafka\bin\
+
+```
+
+Create a symlink to the `librdkafka.dll`, `zlib.dll` and `libzstd.dll` under `%QHOME%\w64`.
+
+```bat
+
+> cd %QHOME%\w64
+w64> MKLINK librdkafka.dll %KAFKA_INSTALL_DIR%\bin\librdkafka.dll
+w64> MKLINK zlib.dll %KAFKA_INSTALL_DIR%\bin\zlib.dll
+w64> MKLINK libzstd.dll %KAFKA_INSTALL_DIR%\bin\libzstd.dll
+
+```
+
+**2. Use CMake**
+
+First we need to install zlib. Download zlib from the official homepage (https://www.zlib.net/) and build with CMake.
 
 ```bat
 
@@ -126,9 +157,8 @@ Download zlib from the official homepage (https://www.zlib.net/) and build with 
 > cd zlib
 zlib> mkdir build
 zlib> mkdir install
-zlib> set ZLIB_INSTALL_DIR=%cd%\install
 zlib> cd build
-build> cmake --config Release -DCMAKE_INSTALL_PREFIX=%ZLIB_INSTALL_DIR% ..
+build> cmake --config Release -DCMAKE_INSTALL_PREFIX=..\install ..
 build> cmake --build . --config Release --target install
 
 ```
@@ -138,13 +168,9 @@ Create a symlink to the `zlib.dll` under `%QHOME%\w64`.
 ```bat
 
 build> cd %QHOME%\w64
-w64> MKLINK zlib.dll %KAFKA_INSTALL_DIR%\bin\zib.dll
+w64> MKLINK zlib.dll %KAFKA_INSTALL_DIR%\bin\zlib.dll
 
 ```
-
-##### 2. Install rdkafka
-
-For Windows easiest way to install `rdkafka` might be to using CMake. As written in the [document](https://github.com/edenhill/librdkafka/tree/master/packaging/cmake) of the repository, CMake build is still experimental but with CMake this installation guide becomes much simpler.
 
 Clone the source repository and build with CMake. The environmental variable `KAFKA_INSTALL_DIR` set here is used to build the kdb+ interface.
 
@@ -165,7 +191,7 @@ build> cmake --build . --config Release --target install
 
 **Mess Up for Successful Install:** 🤷🤷🤷
 
-Somehow `librdkafka.lib` is required even when `edkafka.lib` was successfully found by CMake though name `librdkafka.lib` does not exist in the generated project file... We need to rename the `rdkafka.lib` to `librdkafka.lib`.
+Somehow `librdkafka.lib` is required even when `rdkafka.lib` was successfully found by CMake though name `librdkafka.lib` does not exist in the generated project file... We need to rename the `rdkafka.lib` to `librdkafka.lib`.
 
 ```bat
 

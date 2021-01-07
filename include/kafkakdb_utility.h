@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "socketpair.h"
-#include <librdkafka/rdkafka.h>
+#include <rdkafka.h>
 #include "k.h"
 
 //%% Socket Library %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
