@@ -62,7 +62,7 @@ target_compile_options(${MY_LIBRARY_NAME} PRIVATE
 
     # Config option
     $<$<AND:$<CONFIG:Release>,$<NOT:$<C_COMPILER_ID:MSVC>>>:-O3 -DNDEBUG>
-    $<$<AND:$<CONFIG:Release>,$<NOT:$<C_COMPILER_ID:MSVC>>:-O0 -g>
+    $<$<AND:$<CONFIG:Release>,$<NOT:$<C_COMPILER_ID:MSVC>>>:-O0 -g>
 )
 
 # Shared library prefix and suffix
