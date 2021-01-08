@@ -348,7 +348,7 @@ STATISTICS:();
   // Delete the client from client-topic map
   .kafka.CLIENT_TOPIC_MAP:client_idx _ .kafka.CLIENT_TOPIC_MAP;
 
-  // Get a topic with which no one is tied up and delete them frm kafka ecosystem
+  // Get a topic with which no one is tied up and delete them from kafka ecosystem
   garbage_topic:topics where not topics in .kafka.CLIENT_TOPIC_MAP;
   if[count garbage_topic; @[.kafka.deleteTopic; ; {[error] -2 error;}] each garbage_topic];
 
