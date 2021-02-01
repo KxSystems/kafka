@@ -155,7 +155,7 @@
 // @note
 // Replacement of `.kfk.AssignmentAdd`.
 .kafka.addTopicPartition:{[client_idx;topic_to_partition]
-  topic_to_partition:assignCheck[client_idx; topic_to_partition; `add];
+  topic_to_partition:.kafka.assignCheck[client_idx; topic_to_partition; `add];
   addTopicPartition_impl[client_idx; topic_to_partition];
  };
 
@@ -270,7 +270,7 @@
 // @brief Get latest commited offset for a given topic and partitions for a client (consumer).
 // @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
 // @param topic {symbol}: Topic of partitions to which assign offsets.
-// @param partitions {list of long}: Lust of partition.
+// @param partitions {list of long}: List of partition.
 // @return
 // - list of dictionary: List of dictionary of partition and offset
 // @note
