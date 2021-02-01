@@ -94,6 +94,20 @@
 // - list of dictionary: List of topic partition information incuding the reset offsets.
 .kafka.setOffsetsToEnd_impl:LIBPATH_ (`set_offsets_to_end; 3);
 
+// @kind function
+// @category Configuration
+// @brief Get latest commited offset for a given topic and partitions for a client (consumer).
+// @param cousumer_idx {int}: Index of client (consumer) in `CLIENTS`.
+// @param topic {symbol}: Topic of partitions to which assign offsets.
+// @param topic_to_part {dictionary}:
+//  - key {list of symbol}: reproduced topic.
+//  - value {list of long}: partition list.
+// @return
+// - list of dictionary: List of dictionary of partition and offset
+// @note
+// Replacement of `.kfk.CommittedOffsets`
+.kafka.getCommittedOffsetsForTopicPartition_impl:LIBPATH_ (`get_committed_offsets_for_topic_partition; 3);
+
 // @private
 // @kind function
 // @category Configuration
@@ -108,7 +122,7 @@
 // - long
 // @return 
 // - list of dictionary: List of topic partition information incuding the found offsets.
-.kafka.getEarliestOffsetsForTimes_impl:LIBPATH_ (`get_earliest_offsets_for_times; 3);
+.kafka.getEarliestOffsetsForTimes_impl:LIBPATH_ (`get_earliest_offsets_for_times; 4);
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Public Interface                   //
@@ -254,14 +268,16 @@
 // @kind function
 // @category Configuration
 // @brief Get latest commited offset for a given topic and partitions for a client (consumer).
-// @param cousumer_idx {int}: Index of client (consumer) in `CLIENTS`.
+// @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
 // @param topic {symbol}: Topic of partitions to which assign offsets.
-// @param partitions {list of long}: List of partitions.
+// @param partitions {list of long}: Lust of partition.
 // @return
 // - list of dictionary: List of dictionary of partition and offset
 // @note
 // Replacement of `.kfk.CommittedOffsets`
-.kafka.getCommittedOffsetsForTopicPartition:LIBPATH_ (`get_committed_offsets_for_topic_partition; 3);
+.kafka.getCommittedOffsetsForTopicPartition:{[consumer_idx;topic;partitions]
+  .kafka.getCommittedOffsetsForTopicPartition_impl[consumer_idx; topic; (count[partitions]#topic)!partitions]
+ };
 
 // @kind function
 // @category Configuration

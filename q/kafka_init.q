@@ -15,4 +15,4 @@
 // @brief Initialize internal state of interface.
 // @note
 // Replacement of `.kfk.Init`.
-.kafka.init:LIBPATH_	(`init; 1);
+.kafka.init:LIBPATH_ (`init; 1);

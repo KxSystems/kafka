@@ -25,22 +25,22 @@ LIBPATH_:`:kafkakdb 2:;
 // @kind variable
 // @category Configuration
 // @brief Start consuming from beginning of kafka partition queue: oldest message.
-.kafka.OFFSET_BEGINNING:		-2;
+.kafka.OFFSET_BEGINNING:-2;
 
 // @kind variable
 // @category Configuration
 // @brief Start consuming from end of kafka partition queue: next message.
-.kafka.OFFSET_END:     		-1;
+.kafka.OFFSET_END:-1;
 
 // @kind variable
 // @category Configuration
 // @brief Start consuming from offset retrieved from offset store.
-.kafka.OFFSET_STORED:	 -1000;
+.kafka.OFFSET_STORED:-1000;
 
 // @kind variable
 // @category Configuration
 // @brief Invalid offset.
-.kafka.OFFSET_INVALID:	 -1001;
+.kafka.OFFSET_INVALID:-1001;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                      Load Modules                     //

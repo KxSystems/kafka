@@ -264,13 +264,18 @@ EXP K commit_new_offsets_to_topic_partition(K consumer_idx, K topic, K new_part_
  * @return 
  * - list of dictionary: List of dictionary of partition and offset
  */
-EXP K get_committed_offsets_for_topic_partition(K consumer_idx, K topic, K partitions){
-  
-  if(!check_qtype("isJ", consumer_idx, topic, partitions)){
+EXP K get_committed_offsets_for_topic_partition(K consumer_idx, K topic, K topic_to_part){
+
+  if(!check_qtype("is!", consumer_idx, topic, topic_to_part)){
     // Argument types do not match required types
-    return krr("consumer index, topic and new offset must be (int; symbol; list of long) type.");
+    return krr("consumer index, topic and new offset must be (int; symbol; dictionary) type.");
   }
-  
+
+  if(!check_qtype("SJ", kK(topic_to_part)[0], kK(topic_to_part)[1])){
+    // Wring dictionary typ for partitions
+    return krr("key and value of new offset must be (symbol; long) type.");
+  }
+
   rd_kafka_t *handle = index_to_handle(consumer_idx);
   if(!handle){
     // Null pointer (`krr`). Error happened in `index_to_cient`.
@@ -278,21 +283,12 @@ EXP K get_committed_offsets_for_topic_partition(K consumer_idx, K topic, K parti
   }
 
   // The number of partitions
-  J n=partitions->n;
+  J n=kK(topic_to_part)[1]->n;
   // Create a new topic-partition list.
   rd_kafka_topic_partition_list_t *new_topic_partitions = rd_kafka_topic_partition_list_new(n);
-
-  // Build holder of sffset in form of dictionary
-  K topics=ktn(KS, n);
-  for(J i=0; i < n; i++){
-    kS(topics)[i]=ss(topic->s);
-  }
-  K topic_to_par=xD(topics, partitions);
+  
   // Extend the new topic-partitions with the pair of given topic and partitions for the topic and set offsets to specified partitions.
-  extend_topic_partition_list(topic_to_par, new_topic_partitions);
-  // Discard K objects which are no longer necessary
-  r0(topics);
-  r0(topic_to_par);
+  extend_topic_partition_list(topic_to_part, new_topic_partitions);
   
   // Get committed offset and take them into `new_topic_partitions` with timeout in 5 seconds
   rd_kafka_resp_err_t error = rd_kafka_committed(handle, new_topic_partitions, 5000);

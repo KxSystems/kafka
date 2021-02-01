@@ -157,7 +157,7 @@ I printr0(K response){
 static I stats_cb(rd_kafka_t *UNUSED(handle), S json, size_t json_len, V *UNUSED(opaque)){
   // Pass string statistics to q
   // Return 0 to indicate mem free to kafka
-  return printr0(k(0, (S) ".kfk.stats_cb", kpn(json, json_len), KNULL));
+  return printr0(k(0, (S) ".kafka.stats_cb", kpn(json, json_len), KNULL));
 }
 
 /**
@@ -167,7 +167,7 @@ static I stats_cb(rd_kafka_t *UNUSED(handle), S json, size_t json_len, V *UNUSED
  * @param buf: WHAT IS THIS??
  */
 static void log_cb(const rd_kafka_t *UNUSED(handle), int level, const char *fac, const char *buf){
-  printr0(k(0, (S) ".kfk.log_cb", ki(level), kp((S) fac), kp((S) buf), KNULL));
+  printr0(k(0, (S) ".kafka.log_cb", ki(level), kp((S) fac), kp((S) buf), KNULL));
 }
 
 /**
@@ -179,7 +179,7 @@ static void log_cb(const rd_kafka_t *UNUSED(handle), int level, const char *fac,
  */
 static void offset_commit_cb(rd_kafka_t *handle, rd_kafka_resp_err_t error_code, rd_kafka_topic_partition_list_t *offsets, V *UNUSED(opaque)){
   // Pass client (consumer) index, error message and a list of topic-partition information dictionaries
-  printr0(k(0, (S) ".kfk.offset_commit_cb", ki(handle_to_index(handle)), kp((S) rd_kafka_err2str(error_code)), decode_topic_partition_list(offsets), KNULL));
+  printr0(k(0, (S) ".kafka.offset_commit_cb", ki(handle_to_index(handle)), kp((S) rd_kafka_err2str(error_code)), decode_topic_partition_list(offsets), KNULL));
 }
 
 /**
@@ -193,7 +193,7 @@ static void offset_commit_cb(rd_kafka_t *handle, rd_kafka_resp_err_t error_code,
  */
 static V dr_msg_cb(rd_kafka_t *handle, const rd_kafka_message_t *msg, V *UNUSED(opaque)){
   // Pass client (producer) index and dictionary of delivery report information
-  printr0(k(0, (S) ".kfk.dr_msg_cb", ki(handle_to_index(handle)), decode_message(handle, msg), KNULL));
+  printr0(k(0, (S) ".kafka.dr_msg_cb", ki(handle_to_index(handle)), decode_message(handle, msg), KNULL));
 }
 
 /**
@@ -207,7 +207,7 @@ static V dr_msg_cb(rd_kafka_t *handle, const rd_kafka_message_t *msg, V *UNUSED(
  */
 static V error_cb(rd_kafka_t *handle, int error_code, const char *reason, V *UNUSED(opaque)){
   // Pass client index, error code and reson for the error.
-  printr0(k(0, (S) ".kfk.error_cb", ki(handle_to_index(handle)), ki(error_code), kp((S)reason), KNULL));
+  printr0(k(0, (S) ".kafka.error_cb", ki(handle_to_index(handle)), ki(error_code), kp((S)reason), KNULL));
 }
 
 /**
@@ -222,7 +222,7 @@ static V error_cb(rd_kafka_t *handle, int error_code, const char *reason, V *UNU
  */
 static V throttle_cb(rd_kafka_t *handle, const char *brokername, int32_t brokerid, int throttle_time_ms, V *UNUSED(opaque)){
   // Pass client index, brker name, broker ID and throttle time
-  printr0(k(0,(S) ".kfk.throttle_cb", ki(handle_to_index(handle)), kp((S) brokername), ki(brokerid), ki(throttle_time_ms), KNULL));
+  printr0(k(0,(S) ".kafka.throttle_cb", ki(handle_to_index(handle)), kp((S) brokername), ki(brokerid), ki(throttle_time_ms), KNULL));
 }
 
 //%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
@@ -256,7 +256,7 @@ J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt){
       // Poll and retrieve message while message is not empty
       q_message= decode_message(handle, message);
       // Call `.kfk.consume_topic_cb` passing client index and message information dictionary
-      printr0(k(0, ".kfk.consume_topic_cb", ki(handle_to_index(handle)), q_message, KNULL));
+      printr0(k(0, ".kafka.consume_topic_cb", ki(handle_to_index(handle)), q_message, KNULL));
       // Discard message which is not necessary any more
       rd_kafka_message_destroy(message);
 
@@ -389,9 +389,11 @@ EXP K delete_client(K client_idx){
     return (K) handle;
   }
 
+  /*
   while(rd_kafka_outq_len(handle)){
     // Spin wait until it is confirmed that there is no remained message to this client.
   }
+  */
 
   if(rd_kafka_type(handle) == RD_KAFKA_CONSUMER){
     // For consumer, close first.

@@ -57,7 +57,7 @@
 // @kind variable
 // @category Callback
 // @brief Kafka statistics table;
-STATISTICS:();
+.kafka.STATISTICS:();
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Private Functions                  //
@@ -99,7 +99,7 @@ STATISTICS:();
 // @param reason {string}: Reason for the error.
 .kafka.error_cb:{[client_idx;error_code;reason]
   // Call registered callback function if any; otherwise call default callback function
-  $[null registered_error_cb:ERROR_CALLBACK_PER_CLIENT client_idx;
+  $[() ~ registered_error_cb:.kafka.ERROR_CALLBACK_PER_CLIENT client_idx;
     .kafka.default_error_cb;
     registered_error_cb
   ] . (client_idx; error_code; reason)
@@ -115,7 +115,7 @@ STATISTICS:();
 // @param throttle_time_ms {int}: Broker throttle time in milliseconds.
 .kafka.throttle_cb:{[client_idx;broker_name;broker_id;throttle_time]
   // Call registered callback function if any; otherwise call default callback function
-  $[null registered_throttle_cb:THROTTLE_CALLBACK_PER_CLIENT client_idx;
+  $[() ~ registered_throttle_cb:.kafka.THROTTLE_CALLBACK_PER_CLIENT client_idx;
     .kafka.default_throttle_cb;
     registered_throttle_cb
   ] . (client_idx; broker_name; broker_id; throttle_time)
@@ -129,7 +129,7 @@ STATISTICS:();
 // @param message {dictionary}: Dictionary containing a message returned by `rd_kafka_consumer_poll()`.
 .kafka.consume_topic_cb:{[consumer_idx; message]
   // Call registered callback function for the topic in the message if any; otherwise call default callback function.
-  $[null registered_consume_topic_cb:CONSUME_TOPIC_CALLBACK_PER_CONSUMER[consumer_idx; message `topic];
+  $[() ~ registered_consume_topic_cb:.kafka.CONSUME_TOPIC_CALLBACK_PER_CONSUMER[consumer_idx; message `topic];
      .kafka.default_consume_topic_cb;
      registered_consume_topic_cb
   ] message
