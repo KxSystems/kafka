@@ -52,7 +52,7 @@ endif()
 # Compile option
 target_compile_options(${MY_LIBRARY_NAME} PRIVATE
     # kdb+ version
-    -DKXVER=3
+    -DKXVER=3 -std=c99
 
     # -lrt for Linux??
 
