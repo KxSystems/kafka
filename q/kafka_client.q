@@ -99,7 +99,7 @@
 // @param reason {string}: Reason for the error.
 .kafka.error_cb:{[client_idx;error_code;reason]
   // Call registered callback function if any; otherwise call default callback function
-  $[() ~ registered_error_cb:.kafka.ERROR_CALLBACK_PER_CLIENT client_idx;
+  $[(::) ~ registered_error_cb:.kafka.ERROR_CALLBACK_PER_CLIENT client_idx;
     .kafka.default_error_cb;
     registered_error_cb
   ] . (client_idx; error_code; reason)
@@ -115,7 +115,7 @@
 // @param throttle_time_ms {int}: Broker throttle time in milliseconds.
 .kafka.throttle_cb:{[client_idx;broker_name;broker_id;throttle_time]
   // Call registered callback function if any; otherwise call default callback function
-  $[() ~ registered_throttle_cb:.kafka.THROTTLE_CALLBACK_PER_CLIENT client_idx;
+  $[(::) ~ registered_throttle_cb:.kafka.THROTTLE_CALLBACK_PER_CLIENT client_idx;
     .kafka.default_throttle_cb;
     registered_throttle_cb
   ] . (client_idx; broker_name; broker_id; throttle_time)
@@ -129,7 +129,7 @@
 // @param message {dictionary}: Dictionary containing a message returned by `rd_kafka_consumer_poll()`.
 .kafka.consume_topic_cb:{[consumer_idx; message]
   // Call registered callback function for the topic in the message if any; otherwise call default callback function.
-  $[() ~ registered_consume_topic_cb:.kafka.CONSUME_TOPIC_CALLBACK_PER_CONSUMER[consumer_idx; message `topic];
+  $[(::) ~ registered_consume_topic_cb:.kafka.CONSUME_TOPIC_CALLBACK_PER_CONSUMER[consumer_idx; message `topic];
      .kafka.default_consume_topic_cb;
      registered_consume_topic_cb
   ] message
@@ -262,7 +262,7 @@
 
 // @kind function
 // @category Callback
-// @brief Register error callback function for a given client.
+// @brief Register throttle callback function for a given client.
 // @param client_idx {int}: Index of client in `CLIENTS`.
 // @param callback {function}: Callback function.
 // @note
@@ -304,8 +304,9 @@
 //  This number coincides with the number of maximum number of messages to retrieve.
 // @param n {long}: The maximum number of polling at execution of `.kafka.manualPoll` function.
 // @return
-// - long: The number set.
+// - long: The number set as upper limit of polling.
 // @note
+// - In order for this threshold to make effect, `max_poll_cnt` parameter for `manualPoll` must be 0.
 // Replacement of `.kfk.MaxMsgsPerPoll`.
 .kafka.setMaximumNumberOfPolling:LIBPATH_ (`set_maximum_number_of_polling; 1);
 
@@ -372,11 +373,7 @@
 // @category Setting
 // @brief Set log level for a given client.
 // @param client_idx {int}: Index of client in `CLIENTS`.
-// @param level {dynamic}: Severity levels in syslog.
-// @type
-// - short
-// - int
-// - long
+// @param level {number}: Severity levels in syslog.
 // @note 
 // - For level setting, see https://en.wikipedia.org/wiki/Syslog#Severity_level
 // - Replacement of `.kfk.SetLoggerLevel`.
@@ -391,4 +388,4 @@
 // @note
 // - Only for debug. This function is called inside `.kafka.deleteClient` and exit timing internally.
 // - Replacement of `.kfk.OutQLen`.
-getOutQueueLength:LIBPATH_ (`get_out_queue_length; 1);
+.kafka.getOutQueueLength:LIBPATH_ (`get_out_queue_length; 1);

@@ -108,6 +108,9 @@ K decode_metadata(const rd_kafka_metadata_t *meta) {
     jk(&topics, decode_metadata_topic(&meta->topics[i]));
   }
 
+  // Actually this is a table.
+  topics = k(0, "{[dicts] -1 _ dicts, (::)}", topics, KNULL);
+
   return build_dictionary(
             "orig_broker_id", ki(meta->orig_broker_id),
             "orig_broker_name",ks(meta->orig_broker_name),
@@ -271,7 +274,7 @@ EXP K get_committed_offsets_for_topic_partition(K consumer_idx, K topic, K topic
     return krr("consumer index, topic and new offset must be (int; symbol; dictionary) type.");
   }
 
-  if(!check_qtype("SJ", kK(topic_to_part)[0], kK(topic_to_part)[1])){
+  if(!check_qtype("SI", kK(topic_to_part)[0], kK(topic_to_part)[1])){
     // Wring dictionary typ for partitions
     return krr("key and value of new offset must be (symbol; long) type.");
   }

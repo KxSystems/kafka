@@ -242,6 +242,10 @@ K decode_topic_partition_list(rd_kafka_topic_partition_list_t *topic_partition_l
     // Contain topic-partition information dictionary
     kK(list)[i]= decode_topic_partition(&topic_partition_list->elems[i]);
   }
+
+  // Actually this is a table.
+  list=k(0, "{[dicts] -1 _ dicts, (::)}", list, KNULL);
+  
   return list;
 }
 

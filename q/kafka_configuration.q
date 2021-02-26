@@ -34,6 +34,7 @@
 // @return
 // - dictionary: Map from topic to partition which excluded overwrapping values from `topic_to_partition`.
 .kafka.assignCheck:{[client_idx;topic_to_partition;add_or_delete]
+  if[not 6h ~ type value topic_to_partition; '"topic-partion map must be (symbol; int) type."];
   // Generate the partition provided used to compare to current assignment
   topic_partition_list:distinct flip (key; value) @\: topic_to_partition;
   // Mark locations where user is attempting to delete from a non-existent assignment, or user is trying to add already existing one
@@ -101,7 +102,7 @@
 // @param topic {symbol}: Topic of partitions to which assign offsets.
 // @param topic_to_part {dictionary}:
 //  - key {list of symbol}: reproduced topic.
-//  - value {list of long}: partition list.
+//  - value {list of int}: partition list.
 // @return
 // - list of dictionary: List of dictionary of partition and offset
 // @note
@@ -156,7 +157,7 @@
 // Replacement of `.kfk.AssignmentAdd`.
 .kafka.addTopicPartition:{[client_idx;topic_to_partition]
   topic_to_partition:.kafka.assignCheck[client_idx; topic_to_partition; `add];
-  addTopicPartition_impl[client_idx; topic_to_partition];
+  .kafka.addTopicPartition_impl[client_idx; topic_to_partition];
  };
 
 // @kind function
@@ -169,8 +170,8 @@
 // @note
 // Replacement of `.kfk.AssignmentDel`.
 .kafka.deleteTopicPartition:{[client_idx;topic_to_partition]
-  topic_to_partition:assignCheck[client_idx; topic_to_partition; `delete];
-  deleteTopicPartition_impl[client_idx; topic_to_partition];
+  topic_to_partition:.kafka.assignCheck[client_idx; topic_to_partition; `delete];
+  .kafka.deleteTopicPartition_impl[client_idx; topic_to_partition];
  };
 
 // @kind function
@@ -183,12 +184,12 @@
 // - value long: offset
 // @note
 // - This function will replace existing mapping.
-// - Replacement of `.kfk.AssignOffset`
+// - Replacement of `.kfk.AssignOffsets`
 .kafka.assignNewOffsetsToTopicPartition:LIBPATH_	(`assign_new_offsets_to_topic_partition; 3);
 
 // @kind function
 // @category Configuration
-// @brief Commit new offsets on partitions of a given topic for a given client.
+// @brief Commit new offsets on broker for partitions of a given topic for a given client.
 // @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
 // @param topic {symbol}: Topic of partitions to which assign offsets.
 // @param new_part_to_offset {dictionary}: Map from partition to offsets.
@@ -207,11 +208,7 @@
 // @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
 // @param topic {symbol}: Topic.
 // @param part_to_offset {dictionary}: Map from partition to offset to use as start time.
-// @param timeout {dynamic}: Timeout (milliseconds) for querying.
-// @type
-// - short
-// - int
-// - long
+// @param timeout {number}: Timeout (milliseconds) for querying.
 // @return 
 // - list of dictionary: List of topic partition information incuding the found offsets.
 // @note
@@ -246,7 +243,7 @@
 // @param topic {symbol}: Topic.
 // @param partitions: Partitions whose offsets are set to the prevailing position.
 // @return 
-// - list of dictionary: List of topic partition information incuding the reset offsets.
+// - list of dictionary: List of topic partition information including the reset offsets.
 // @note
 // Replacement of `.kfk.PositionOffsets`.
 .kafka.setOffsetsToEnd:{[consumer_idx;topic;partitions]

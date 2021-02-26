@@ -251,11 +251,7 @@ EXP K publish_batch(K topic_idx, K partitions, K payloads, K keys){
     messages[i].len = payload->n;
     messages[i].key = kG(key);
     messages[i].key_len = key->n;
-
-    if (partitions->t == KI){
-      // Partition was specified to each message
-      messages[i].partition = kI(partitions)[i]; 
-    }
+    messages[i].partition = kI(partitions)[i]; 
 
   }
 

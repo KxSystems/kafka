@@ -38,11 +38,7 @@
 // @category Producer
 // @brief Flush a handle of a producer.
 // @param producer_idx {int}: Index of a client (producer) in `CLIENT`.
-// @param q_timeout {dynamic}: Timeout (milliseconds) for waiting for flush.
-// @type
-// - short
-// - int
-// - long
+// @param q_timeout {number}: Timeout (milliseconds) for waiting for flush.
 // @note
 // Replacement of `.kfk.Flush`
 .kafka.flushProducerHandle:LIBPATH_ (`flush_producer_handle; 2);
@@ -50,11 +46,11 @@
 // @kind function
 // @category Producer
 // @brief Publish message with custom headers.
-// @param producer_idx: {int} Index of client (producer) in `CLIENTS`.
-// @param topic_idx: int} Index of topic in `TOPICS`.
-// @param partition: {int} Topic partition.
-// @param payload: {string} Payload to be sent.
-// @param key: {string} Message key.
+// @param producer_idx {int}: Index of client (producer) in `CLIENTS`.
+// @param topic_idx {int}: Index of topic in `TOPICS`.
+// @param partition {int}: Topic partition.
+// @param payload {string}: Payload to be sent.
+// @param key {string}: Message key.
 // @param headers {dictionary}: Message headers expressed in a map between header keys to header values.
 // - key symbol
 // - value string
@@ -88,6 +84,7 @@
 // @note
 // Replacement of `.kfk.BatchPub`.
 .kafka.publishBatch:{[topic_idx;partitions;payloads;keys_]
+  if[0 > type partitions; partitions:count[payloads]#partitions];
   errors:.kafka.publishBatch_impl[topic_idx; partitions; payloads; keys_];
   if[count err_indices:where ` = errors; '"error in sending messages: ", -3! flip (err_indices; errors err_indices)];
  };

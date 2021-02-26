@@ -56,7 +56,7 @@
 // - symbol: Topic name.
 // @note
 // Replacement of `.kfk.TopicName`
-.kafka.getTopicName:(`get_topic_name; 1);
+.kafka.getTopicName:LIBPATH_ (`get_topic_name; 1);
 
 //%% Create/Delete %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
