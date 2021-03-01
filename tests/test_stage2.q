@@ -24,6 +24,10 @@ current_offset_2:last exec offset from .kafka.getCommittedOffsetsForTopicPartiti
 // Flush the handle
 .kafka.flushProducerHandle[producer; 1000];
 
+// Ensure time elapses for 60 seconds.
+.test.ASSERT_EQ[last exec offset from .kafka.getEarliestOffsetsForTimes[consumer; `topic1; enlist[1i]!enlist .z.p-0D00:01:00.000000000; 1000]; current_offset_1];
+.test.ASSERT_EQ[last exec offset from .kafka.getEarliestOffsetsForTimes[consumer; `topic2; enlist[1i]!enlist .z.p-0D00:01:00.000000000; 1000]; current_offset_2];
+
 .test.ASSERT_EQ[(last exec offset from .kafka.getCommittedOffsetsForTopicPartition[consumer; `topic1; enlist 1i]) - current_offset_1; 2]
 .test.ASSERT_EQ[(last exec offset from .kafka.getCommittedOffsetsForTopicPartition[consumer; `topic2; enlist 1i]) - current_offset_2; 1]
 

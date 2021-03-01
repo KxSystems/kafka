@@ -91,15 +91,31 @@ consumer_topic_config:.kafka.getBrokerTopicConfig[consumer];
 // Rebalancing will happen at the initial subscription.
 while[0 = count .kafka.getCurrentAssignment[consumer]; system "sleep 5"];
 
-// Get current assignment information
+// Expected assignment information
 current_assignment: flip `topic`partition`offset`metadata!(`topic1`topic1`topic2`topic2; 0 1 0 1i; 4#-1001; 4#enlist "");
 
 .test.ASSERT_EQ[.kafka.getCurrentAssignment[consumer]; current_assignment]
 
-// Get current subscription information
+// Expected subscription information
 current_subscription: flip `topic`partition`offset`metadata!(`topic1`topic2; 2#-1i; 2#-1001; 2#enlist "");
 
 .test.ASSERT_EQ[.kafka.getCurrentSubscription[consumer]; current_subscription]
+
+// Add topic-partition 2 for topic1.
+.kafka.addTopicPartition[consumer; enlist[`topic1]!enlist 2i];
+
+// Expected assignment information
+current_assignment: flip `topic`partition`offset`metadata!(`topic1`topic1`topic1`topic2`topic2; 0 1 2 0 1i; 5#-1001; 5#enlist "");
+
+.test.ASSERT_EQ[.kafka.getCurrentAssignment[consumer]; current_assignment]
+
+// Delete topic-partition 2 from topic1.
+.kafka.deleteTopicPartition[consumer; enlist[`topic1]!enlist 2i];
+
+// Expected assignment information
+current_assignment: flip `topic`partition`offset`metadata!(`topic1`topic1`topic2`topic2; 0 1 0 1i; 4#-1001; 4#enlist "");
+
+.test.ASSERT_EQ[.kafka.getCurrentAssignment[consumer]; current_assignment]
 
 // To be continued to test_stage_2.q
 // Once q) console appeared, execute test_stage2.q line by line...

@@ -71,7 +71,7 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
   K k_headers = NULL;
   if (hdrs==NULL){
     // Empty header. Empty dictionary
-    k_headers = xD(ktn(KS,0), ktn(KS,0));
+    k_headers = xD(ktn(KS, 0), ktn(KC, 0));
   }
   else{
     // Non-empty header

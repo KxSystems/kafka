@@ -93,7 +93,7 @@ EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, 
     K hdrval = kK(hdr_values)[idx];
     if (hdrval->t != KG && hdrval->t != KC){
       // Header value is not string
-      return krr((S) "header value must be string type.");
+      return krr((S) "header value must be string or byte list type.");
     }
   }
 
