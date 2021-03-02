@@ -72,8 +72,8 @@ producer: .kafka.newProducer[producer_configuration];
 topic1:.kafka.newTopic[producer; `topic1; ()!()];
 topic2:.kafka.newTopic[producer; `topic2; ()!()];
 
-.test.ASSERT_EQ[.kafka.getTopicName topic1; `topic1]
-.test.ASSERT_EQ[.kafka.getTopicName topic2; `topic2]
+.test.ASSERT_EQ["get topic name 1"; .kafka.getTopicName topic1; `topic1]
+.test.ASSERT_EQ["get topic name 2"; .kafka.getTopicName topic2; `topic2]
 
 // Register callback functions for the consumer
 .kafka.registerConsumeTopicCallback[consumer; `topic1; topic_callback1];
@@ -82,7 +82,7 @@ topic2:.kafka.newTopic[producer; `topic2; ()!()];
 // Get current visible topic configuration for the consumer
 consumer_topic_config:.kafka.getBrokerTopicConfig[consumer];
 
-.test.ASSERT_EQ[(asc exec topic from consumer_topic_config `topics) except `$"__consumer_offsets"; `topic1`topic2]
+.test.ASSERT_EQ["registered topic names"; (asc exec topic from consumer_topic_config `topics) except `$"__consumer_offsets"; `topic1`topic2]
 
 // Subscribe to topic1 and topic2.
 .kafka.subscribe[consumer; `topic1; enlist .kafka.PARTITION_UA];
@@ -94,12 +94,12 @@ while[0 = count .kafka.getCurrentAssignment[consumer]; system "sleep 5"];
 // Expected assignment information
 current_assignment: flip `topic`partition`offset`metadata!(`topic1`topic1`topic2`topic2; 0 1 0 1i; 4#-1001; 4#enlist "");
 
-.test.ASSERT_EQ[.kafka.getCurrentAssignment[consumer]; current_assignment]
+.test.ASSERT_EQ["initial assignment"; .kafka.getCurrentAssignment[consumer]; current_assignment]
 
 // Expected subscription information
 current_subscription: flip `topic`partition`offset`metadata!(`topic1`topic2; 2#-1i; 2#-1001; 2#enlist "");
 
-.test.ASSERT_EQ[.kafka.getCurrentSubscription[consumer]; current_subscription]
+.test.ASSERT_EQ["subscription config"; .kafka.getCurrentSubscription[consumer]; current_subscription]
 
 // Add topic-partition 2 for topic1.
 .kafka.addTopicPartition[consumer; enlist[`topic1]!enlist 2i];
@@ -107,7 +107,7 @@ current_subscription: flip `topic`partition`offset`metadata!(`topic1`topic2; 2#-
 // Expected assignment information
 current_assignment: flip `topic`partition`offset`metadata!(`topic1`topic1`topic1`topic2`topic2; 0 1 2 0 1i; 5#-1001; 5#enlist "");
 
-.test.ASSERT_EQ[.kafka.getCurrentAssignment[consumer]; current_assignment]
+.test.ASSERT_EQ["add partition 2 to topic1"; .kafka.getCurrentAssignment[consumer]; current_assignment]
 
 // Delete topic-partition 2 from topic1.
 .kafka.deleteTopicPartition[consumer; enlist[`topic1]!enlist 2i];
@@ -115,7 +115,7 @@ current_assignment: flip `topic`partition`offset`metadata!(`topic1`topic1`topic1
 // Expected assignment information
 current_assignment: flip `topic`partition`offset`metadata!(`topic1`topic1`topic2`topic2; 0 1 0 1i; 4#-1001; 4#enlist "");
 
-.test.ASSERT_EQ[.kafka.getCurrentAssignment[consumer]; current_assignment]
+.test.ASSERT_EQ["delete partition 2 from topic1"; .kafka.getCurrentAssignment[consumer]; current_assignment]
 
 // To be continued to test_stage_2.q
 // Once q) console appeared, execute test_stage2.q line by line...
