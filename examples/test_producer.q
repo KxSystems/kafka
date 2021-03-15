@@ -10,10 +10,11 @@ producer:.kafka.newProducer[kfk_cfg]
 topic1:.kafka.newTopic[producer;`test1;()!()]
 topic2:.kafka.newTopic[producer;`test2;()!()]
 
-.z.ts:{n+:1;topic:$[n mod 2;topic1;topic2];
-       .kafka.publish[topic;.kafka.PARTITION_UA;string x;""]}
-
-
+.z.ts:{
+  n+:1;topic:$[n mod 2;topic1;topic2];
+  .kafka.publish[topic;.kafka.PARTITION_UA;string x;""];
+  .kafka.publishWithHeaders[producer; topic; 1i; "locusts"; ""; `header1`header2!("firmament"; "divided")];
+  }
 
 -1 "Publishing on topics:", string[.kafka.getTopicName topic1], ", ", string[.kafka.getTopicName topic2];
 .kafka.publish[;.kafka.PARTITION_UA; string .z.p; ""] each (topic1; topic2);

@@ -7,35 +7,6 @@
 // Define kafka consumer interfaces.
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-//                    Private Interface                  //
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-
-//%% Consumer %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-// @private
-// @kind function
-// @category Consumer
-// @brief Subscribe to a given topic with its partitions (and offsets).
-// @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
-// @param topic {symbol}: Topic to subscribe.
-// @param partition_to_offset {dynamic}: Topic partitons (and corresponding offsets).
-// @type
-// - list of int: List of partitions.
-// - dictionary: Map from partition to offset 
-// @note
-// Replacement of `.kfk.Sub`.
-.kafka.subscribe_impl:LIBPATH_ (`subscribe; 3);
-
-// @private
-// @kind function
-// @category Consumer
-// @brief Make a given consumer unsubscribe.
-// @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
-// @note
-// Replacement of `.kfk.Unsub`.
-.kafka.unsubscribe_impl:LIBPATH_ (`unsubscribe; 1);
-
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Public Interface                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
@@ -74,11 +45,7 @@
 // - dictionary: Map from partition to offset 
 // @note
 // Replacement of `.kfk.Sub`.
-.kafka.subscribe:{[consumer_idx;topic;partition_to_offset]
-  // Add the topic to a client-topic map
-  .kafka.CLIENT_TOPIC_MAP[consumer_idx],: topic;
-  .kafka.subscribe_impl[consumer_idx;topic;partition_to_offset];
- }
+.kafka.subscribe:LIBPATH_ (`subscribe; 3);
 
 // @kind function
 // @category Consumer
@@ -86,8 +53,4 @@
 // @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
 // @note
 // Replacement of `.kfk.Unsub`.
-.kafka.unsubscribe:{[consumer_idx]
-  // Delete the consumer from client-topic map
-  .kafka.CLIENT_TOPIC_MAP:consumer_idx _ .kafka.CLIENT_TOPIC_MAP;
-  .kafka.unsubscribe_impl[consumer_idx];
- }
+.kafka.unsubscribe:LIBPATH_ (`unsubscribe; 1);

@@ -345,9 +345,13 @@
 .kafka.deleteClient:{[client_idx]
   $[`c ~ .kafka.CLIENT_TYPE_MAP client_idx;
     // Consumer has not unsubscribed.
-    if[client_idx in .kafka.CLIENT_TOPIC_MAP; .kafka.unsubscribe client_idx];
-    // Delete the producer from client-topic map
-    .kafka.CLIENT_TOPIC_MAP:client_idx _ .kafka.CLIENT_TOPIC_MAP;
+    if[not count .kafka.getCurrentSubscription client_idx; .kafka.unsubscribe client_idx];
+    [
+      // Get topics of this producer
+      topics: .kafka.PRODUCER_TOPIC_MAP client_idx;
+      // Delete the producer from client-topic map
+      .kafka.PRODUCER_TOPIC_MAP:client_idx _ .kafka.PRODUCER_TOPIC_MAP;
+    ]
   ];
 
   // Delete the client from client-type map

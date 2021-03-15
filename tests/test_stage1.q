@@ -43,21 +43,21 @@ producer_configuration: .[!] flip(
 consumer_table1: ();
 consumer_table2: ();
 
-topic_callback1:{[msg; consumer]
+topic_callback1:{[consumer;msg]
   msg[`rcvtime]:.z.p;
   msg[`data]:"c"$msg[`data];
   msg[`key]:"c"$msg[`key];
   msg[`headers]:"c"$msg[`headers];
-  consumer_table1,::enlist msg;
+  consumer_table1,:enlist msg;
   .kafka.commitNewOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b]
  };
 
-topic_callback2:{[msg; consumer]
+topic_callback2:{[consumer;msg]
   msg[`rcvtime]:.z.p;
   msg[`data]:"c"$msg[`data];
   msg[`key]:"c"$msg[`key];
   msg[`headers]:"c"$msg[`headers];
-  consumer_table2,::enlist msg;
+  consumer_table2,:enlist msg;
   .kafka.commitNewOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b]
  };
 
@@ -78,11 +78,11 @@ topic2:.kafka.newTopic[producer; `topic2; ()!()];
 .test.ASSERT_EQ["get topic name 1"; .kafka.getTopicName topic1; `topic1]
 .test.ASSERT_EQ["get topic name 2"; .kafka.getTopicName topic2; `topic2]
 
-.test.ASSERT_EQ["register topics"; .kafka.CLIENT_TOPIC_MAP; enlist[producer]!enlist `topic1`topic2]
+.test.ASSERT_EQ["register topics"; .kafka.PRODUCER_TOPIC_MAP; enlist[producer]!enlist (topic1; topic2)]
 
 // Register callback functions for the consumer
-.kafka.registerConsumeTopicCallback[consumer; `topic1; topic_callback1];
-.kafka.registerConsumeTopicCallback[consumer; `topic2; topic_callback2];
+.kafka.registerConsumeTopicCallback[consumer; `topic1; topic_callback1 consumer];
+.kafka.registerConsumeTopicCallback[consumer; `topic2; topic_callback2 consumer];
 
 // Get current visible topic configuration for the consumer
 consumer_topic_config:.kafka.getBrokerTopicConfig[consumer];
@@ -92,8 +92,6 @@ consumer_topic_config:.kafka.getBrokerTopicConfig[consumer];
 // Subscribe to topic1 and topic2.
 .kafka.subscribe[consumer; `topic1; enlist .kafka.PARTITION_UA];
 .kafka.subscribe[consumer; `topic2; enlist .kafka.PARTITION_UA];
-
-.test.ASSERT_EQ["subscribe to topics"; .kafka.CLIENT_TOPIC_MAP; (producer; consumer)!2#enlist `topic1`topic2]
 
 // Rebalancing will happen at the initial subscription.
 while[0 = count .kafka.getCurrentAssignment[consumer]; system "sleep 5"];

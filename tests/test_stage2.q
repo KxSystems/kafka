@@ -37,7 +37,7 @@ current_offset_2:last exec offset from .kafka.getCommittedOffsetsForTopicPartiti
 
 // Get current table sizes.
 current_num_rows_1: count consumer_table1;
-current_num_rows_1: count consumer_table2;
+current_num_rows_2: count consumer_table2;
 
 // Assign new offset
 .kafka.assignNewOffsetsToTopicPartition[consumer; `topic1; enlist[1i]!enlist 1];
@@ -81,4 +81,4 @@ current_offset_1:last exec offset from .kafka.getCommittedOffsetsForTopicPartiti
 .test.ASSERT_EQ["offset proceeds for topic 1 after publish with headers"; (last exec offset from .kafka.getCommittedOffsetsForTopicPartition[consumer; `topic1; enlist 1i]) - current_offset_1; 1]
 
 // Continue to test_stage3.q
-// ]$ q test_stage3.q
+// q)\l test_stage3.q

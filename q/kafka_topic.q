@@ -13,8 +13,8 @@
 // @private
 // @kind variable
 // @category Topic
-// @brief Mapping between client and the topics
-.kafka.CLIENT_TOPIC_MAP:(`int$())!();
+// @brief Mapping between producer and the topic indices.
+.kafka.PRODUCER_TOPIC_MAP:(`int$())!();
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Private Functions                  //
@@ -62,7 +62,7 @@
 
 // @kind function
 // @category Create/Delete
-// @brief Create a new topic and tie up with a given client by `.kafka.CLIENT_TOPIC_MAP`.
+// @brief Create a new topic and tie up with a given client by `.kafka.PRODUCER_TOPIC_MAP`.
 // @param producer_idx {int}: index of producer in `CLIENTS`.
 // @param topic {symbol}: New topic to create.
 // @param config dictionary}: Dictionary storing configuration of the new topic.
@@ -74,19 +74,24 @@
 // Replacement of `.kfk.Topic`
 .kafka.newTopic:{[producer_idx;topic;config]
   topic:.kafka.newTopic_impl[producer_idx; topic; config];
-  .kafka.CLIENT_TOPIC_MAP[producer_idx],: topic;
+  .kafka.PRODUCER_TOPIC_MAP[producer_idx],: topic;
   topic
  };
 
 // @private
 // @kind function
 // @category Topic
-// @brief Delete the given topic from kafka broker and delete the topic from the `.kafka.CLIENT_TOPIC_MAP`.
+// @brief Delete the given topic from kafka broker and delete the topic from the `.kafka.PRODUCER_TOPIC_MAP`.
 // @param topic_idx {int}: Index of topic in `TOPICS`.
 // @note
-// Replacement of `.kfk.TopicDel`
+// - Replacement of `.kfk.TopicDel`
+// - Assume that the topic is created by one producer.
 .kafka.deleteTopic:{[topic_idx]
-  // Guard if someone is subscribing to this topic.
-  if[any topic_idx in/: value .kafka.CLIENT_TOPIC_MAP; '"someone is still publishing/subscribing to this topic"];
+  if[count producer: first key[.kafka.PRODUCER_TOPIC_MAP] where topic_idx in/: value .kafka.PRODUCER_TOPIC_MAP;
+    // Identify which producer created the topic.
+    // If the producer is still alive, delete the topic from the producer.
+    .kafka.PRODUCER_TOPIC_MAP[producer]: .kafka.PRODUCER_TOPIC_MAP[producer] except topic_idx
+  ];
+  // Delete the topic from Kafka broker.
   .kafka.deleteTopic_impl[topic_idx];
  };
