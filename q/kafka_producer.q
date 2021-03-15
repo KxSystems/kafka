@@ -64,7 +64,7 @@
 // @param topic_idx {int}: Index of topic in `TOPICS`.
 // @param partition {int}: Topic partition.
 // @param payload {string}: Message to send.
-// @key {string}: Message key.
+// @param key {string}: Message key.
 // @note
 // Replacement of `.kfk.Pub`.
 .kafka.publish:LIBPATH_ (`publish; 4);

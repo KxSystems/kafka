@@ -169,7 +169,7 @@
 .kafka.newClient:{[client_type;config]
   if[(not `group.id in key config) and client_type="c"; '"consumer must define 'group.id' within the config"];
   client:.kafka.newClient_impl[client_type; config];
-  .kafka.CLIENT_TYPE_MAP,: enlist[client]!enlist[`Consumer];
+  .kafka.CLIENT_TYPE_MAP,: enlist[client]!enlist[`$client_type];
   client
  };
 
@@ -343,17 +343,17 @@
 // @note
 // Replacement of `.kfk.ClientDel`. 
 .kafka.deleteClient:{[client_idx]
-  // Get topics with which the client is tied up.
-  topics:.kafka.CLIENT_TOPIC_MAP[client_idx];
+  $[`c ~ .kafka.CLIENT_TYPE_MAP client_idx;
+    // Consumer has not unsubscribed.
+    if[client_idx in .kafka.CLIENT_TOPIC_MAP; .kafka.unsubscribe client_idx];
+    // Delete the producer from client-topic map
+    .kafka.CLIENT_TOPIC_MAP:client_idx _ .kafka.CLIENT_TOPIC_MAP;
+  ];
 
-  // Delete the client from client-topic map
-  .kafka.CLIENT_TOPIC_MAP:client_idx _ .kafka.CLIENT_TOPIC_MAP;
+  // Delete the client from client-type map
+  .kafka.CLIENT_TYPE_MAP _: client_idx;
 
-  // Get a topic with which no one is tied up and delete them from kafka ecosystem
-  garbage_topic:topics where not topics in .kafka.CLIENT_TOPIC_MAP;
-  if[count garbage_topic; @[.kafka.deleteTopic; ; {[error] -2 error;}] each garbage_topic];
-
-  // Delete the client frm kafka ecosystem
+  // Delete the client from kafka ecosystem.
   .kafka.deleteClient_impl[client_idx];
  };
 

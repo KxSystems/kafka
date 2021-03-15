@@ -63,7 +63,7 @@
 // @kind function
 // @category Create/Delete
 // @brief Create a new topic and tie up with a given client by `.kafka.CLIENT_TOPIC_MAP`.
-// @param client_idx {int}: index of client in `CLIENTS`.
+// @param producer_idx {int}: index of producer in `CLIENTS`.
 // @param topic {symbol}: New topic to create.
 // @param config dictionary}: Dictionary storing configuration of the new topic.
 // - key {symbol}: Key of the configuration.
@@ -72,8 +72,21 @@
 // - int: Topic handle assigned by kafka.
 // @note
 // Replacement of `.kfk.Topic`
-.kafka.newTopic:{[client_idx;topic;config]
-  topic:.kafka.newTopic_impl[client_idx; topic; config];
-  .kafka.CLIENT_TOPIC_MAP[client_idx],: topic;
+.kafka.newTopic:{[producer_idx;topic;config]
+  topic:.kafka.newTopic_impl[producer_idx; topic; config];
+  .kafka.CLIENT_TOPIC_MAP[producer_idx],: topic;
   topic
+ };
+
+// @private
+// @kind function
+// @category Topic
+// @brief Delete the given topic from kafka broker and delete the topic from the `.kafka.CLIENT_TOPIC_MAP`.
+// @param topic_idx {int}: Index of topic in `TOPICS`.
+// @note
+// Replacement of `.kfk.TopicDel`
+.kafka.deleteTopic:{[topic_idx]
+  // Guard if someone is subscribing to this topic.
+  if[any topic_idx in/: value .kafka.CLIENT_TOPIC_MAP; '"someone is still publishing/subscribing to this topic"];
+  .kafka.deleteTopic_impl[topic_idx];
  };

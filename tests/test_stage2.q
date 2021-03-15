@@ -80,4 +80,5 @@ current_offset_1:last exec offset from .kafka.getCommittedOffsetsForTopicPartiti
 
 .test.ASSERT_EQ["offset proceeds for topic 1 after publish with headers"; (last exec offset from .kafka.getCommittedOffsetsForTopicPartition[consumer; `topic1; enlist 1i]) - current_offset_1; 1]
 
-.test.DISPLAY_RESULT[];
+// Continue to test_stage3.q
+// ]$ q test_stage3.q

@@ -148,7 +148,7 @@
 
 // @kind function
 // @category Configuration
-// @brief Add pairs of topic and partition to the current assignment for a given lient.
+// @brief Add pairs of topic and partition to the current assignment for a given client.
 // @param consumer_idx {int}: Index of cient (consumer) in `CLIENTS`.
 // @param topic_to_part {dictionary}: Dictionary mapping from topic to partition to add.
 // - key {symbol}: Topic name.

@@ -29,7 +29,8 @@ consumer_configuration: .[!] flip(
     (`metadata.broker.list;`localhost:9092);
     (`group.id;`0);
     (`fetch.wait.max.ms;`10);
-    (`statistics.interval.ms;`10000)
+    (`statistics.interval.ms;`10000);
+    (`enable.auto.commit; `false)
   );
 
 producer_configuration: .[!] flip(
@@ -42,20 +43,22 @@ producer_configuration: .[!] flip(
 consumer_table1: ();
 consumer_table2: ();
 
-topic_callback1:{[msg]
+topic_callback1:{[msg; consumer]
   msg[`rcvtime]:.z.p;
   msg[`data]:"c"$msg[`data];
   msg[`key]:"c"$msg[`key];
   msg[`headers]:"c"$msg[`headers];
   consumer_table1,::enlist msg;
+  .kafka.commitNewOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b]
  };
 
-topic_callback2:{[msg]
+topic_callback2:{[msg; consumer]
   msg[`rcvtime]:.z.p;
   msg[`data]:"c"$msg[`data];
   msg[`key]:"c"$msg[`key];
   msg[`headers]:"c"$msg[`headers];
   consumer_table2,::enlist msg;
+  .kafka.commitNewOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b]
  };
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -75,6 +78,8 @@ topic2:.kafka.newTopic[producer; `topic2; ()!()];
 .test.ASSERT_EQ["get topic name 1"; .kafka.getTopicName topic1; `topic1]
 .test.ASSERT_EQ["get topic name 2"; .kafka.getTopicName topic2; `topic2]
 
+.test.ASSERT_EQ["register topics"; .kafka.CLIENT_TOPIC_MAP; enlist[producer]!enlist `topic1`topic2]
+
 // Register callback functions for the consumer
 .kafka.registerConsumeTopicCallback[consumer; `topic1; topic_callback1];
 .kafka.registerConsumeTopicCallback[consumer; `topic2; topic_callback2];
@@ -87,6 +92,8 @@ consumer_topic_config:.kafka.getBrokerTopicConfig[consumer];
 // Subscribe to topic1 and topic2.
 .kafka.subscribe[consumer; `topic1; enlist .kafka.PARTITION_UA];
 .kafka.subscribe[consumer; `topic2; enlist .kafka.PARTITION_UA];
+
+.test.ASSERT_EQ["subscribe to topics"; .kafka.CLIENT_TOPIC_MAP; (producer; consumer)!2#enlist `topic1`topic2]
 
 // Rebalancing will happen at the initial subscription.
 while[0 = count .kafka.getCurrentAssignment[consumer]; system "sleep 5"];
