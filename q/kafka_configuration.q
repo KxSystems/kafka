@@ -59,7 +59,7 @@
 // @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
 // @param topic_to_partiton {dictionary}: Dictionary mapping from topic to partition.
 // - key {symbol}: Topic name.
-// - value {long}: Partition ID.
+// - value {int}: Partition ID.
 // @note
 // This function will replace existing mapping.
 .kafka.assignNewTopicPartition_impl:LIBPATH_ (`assign_new_topic_partition; 1);
@@ -72,7 +72,7 @@
 // @param topic_to_part {dictionary}: Dictionary mapping from topic to partition to add.
 // - key {symbol}: Topic name.
 // - value {int}: Partition ID.
-.kafka.addTopicPartition_impl:LIBPATH_ (`add_topic_partition; 2);
+.kafka.addTopicPartitionToAssignment_impl:LIBPATH_ (`add_topic_partition; 2);
 
 // @private
 // @kind function
@@ -82,18 +82,18 @@
 // @param topic_to_part {dictionary}: Dictionary mapping from topic to partition to delete.
 // - key {symbol}: Topic name.
 // - value {int}: Partition ID.
-.kafka.deleteTopicPartition_impl:LIBPATH_ (`delete_topic_partition; 2);
+.kafka.deleteTopicPartitionFromAssignment_impl:LIBPATH_ (`delete_topic_partition; 2);
 
 // @private
 // @kind function
 // @category Configuration
-// @brief Reset offsets for given partitions to last message+1.
+// @brief Get the prevailing offsets for given partitions (last consumed message+1).
 // @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
 // @param topic {symbol}: Topic.
 // @param part_to_offset {dictionary}: Map from partition to offset. Offsets are dummy appended by q function `.kafka.setOffsetsToEnd`.
 // @return 
-// - list of dictionary: List of topic partition information incuding the reset offsets.
-.kafka.setOffsetsToEnd_impl:LIBPATH_ (`set_offsets_to_end; 3);
+// - list of dictionary: List of topic partition information incuding the pervailing offsets.
+.kafka.getPrevailingOffsets_impl:LIBPATH_ (`get_prevailing_offsets; 3);
 
 // @kind function
 // @category Configuration
@@ -131,16 +131,17 @@
 
 // @kind function
 // @category Configuration
-// @brief Assign a new map from topic to partition for consumption of message to a client.
+// @brief Assign a new map from topic to partition for the consumer.
 //  Client will consume from the specified partition for the specified topic.
 // @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
 // @param topic_to_partiton {dictionary}: Dictionary mapping from topic to partition.
 // - key {symbol}: Topic name.
-// - value {long}: Partition ID.
+// - value {int}: Partition ID.
 // @note
 // - This function will replace existing mapping.
 // - Replacement of `.kfk.Assign`.
 .kafka.assignNewTopicPartition:{[consumer_idx;topic_to_partiton]
+  if[not 6i ~ type value topic_to_partiton; '"partition must be integer type."];
   // Make key-value distinct to avoid system crash
   topic_to_partiton:.[!] flip distinct flip (key; value) @\: topic_to_partiton;
   .kafka.assignNewTopicPartition_impl[consumer_idx; topic_to_partiton];
@@ -155,9 +156,9 @@
 // - value {int}: Partition ID.
 // @note
 // Replacement of `.kfk.AssignmentAdd`.
-.kafka.addTopicPartition:{[client_idx;topic_to_partition]
+.kafka.addTopicPartitionToAssignment:{[client_idx;topic_to_partition]
   topic_to_partition:.kafka.assignCheck[client_idx; topic_to_partition; `add];
-  .kafka.addTopicPartition_impl[client_idx; topic_to_partition];
+  .kafka.addTopicPartitionToAssignment_impl[client_idx; topic_to_partition];
  };
 
 // @kind function
@@ -169,9 +170,9 @@
 // - value {int}: Partition ID.
 // @note
 // Replacement of `.kfk.AssignmentDel`.
-.kafka.deleteTopicPartition:{[client_idx;topic_to_partition]
+.kafka.deleteTopicPartitionFromAssignment:{[client_idx;topic_to_partition]
   topic_to_partition:.kafka.assignCheck[client_idx; topic_to_partition; `delete];
-  .kafka.deleteTopicPartition_impl[client_idx; topic_to_partition];
+  .kafka.deleteTopicPartitionFromAssignment_impl[client_idx; topic_to_partition];
  };
 
 // @kind function
@@ -189,18 +190,17 @@
 
 // @kind function
 // @category Configuration
-// @brief Commit new offsets on broker for partitions of a given topic for a given client.
+// @brief Commit offsets on broker for partitions of a given topic for a given client.
 // @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
 // @param topic {symbol}: Topic of partitions to which assign offsets.
-// @param new_part_to_offset {dictionary}: Map from partition to offsets.
+// @param part_to_offset {dictionary}: Map from partition to offsets.
 // - key int: partition
 // - value long: offset
 // @param is_async {bool}: True to process asynchronusly. If `is_async` is false this operation will
 //  block until the broker offset commit is done.
 // @note
-// - This function will replace existing mapping.
-// - Replacement of `.kfk.CommitOffset`
-.kafka.commitNewOffsetsToTopicPartition:LIBPATH_ (`commit_new_offsets_to_topic_partition; 4);
+// Replacement of `.kfk.CommitOffset`
+.kafka.commitOffsetsToTopicPartition:LIBPATH_ (`commit_offsets_to_topic_partition; 4);
 
 // @kind function
 // @category Configuration
@@ -238,16 +238,16 @@
 
 // @kind function
 // @category Configuration
-// @brief Reset offsets for given partitions to last message+1.
+// @brief Get the prevailing offsets for given partitions (last consumed message+1).
 // @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
 // @param topic {symbol}: Topic.
 // @param partitions: Partitions whose offsets are set to the prevailing position.
 // @return 
-// - list of dictionary: List of topic partition information including the reset offsets.
+// - list of dictionary: List of topic partition information including the prevailing offsets.
 // @note
 // Replacement of `.kfk.PositionOffsets`.
-.kafka.setOffsetsToEnd:{[consumer_idx;topic;partitions]
-  .kafka.setOffsetsToEnd_impl[consumer_idx; topic; partitions!count[partitions]#0]
+.kafka.getPrevailingOffsets:{[consumer_idx;topic;partitions]
+  .kafka.getPrevailingOffets_impl[consumer_idx; topic; partitions!count[partitions]#0]
  };
 
 // @kind function

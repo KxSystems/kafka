@@ -49,8 +49,8 @@
 // @param producer_idx {int}: Index of client (producer) in `CLIENTS`.
 // @param topic_idx {int}: Index of topic in `TOPICS`.
 // @param partition {int}: Topic partition.
-// @param payload {string}: Payload to be sent.
-// @param key {string}: Message key.
+// @param payload {string|bytes}: Payload to be sent.
+// @param key {string|bytes}: Message key.
 // @param headers {dictionary}: Message headers expressed in a map between header keys to header values.
 // - key symbol
 // - value string
@@ -63,8 +63,8 @@
 // @brief Send a message with a specified topic to a specified partition.
 // @param topic_idx {int}: Index of topic in `TOPICS`.
 // @param partition {int}: Topic partition.
-// @param payload {string}: Message to send.
-// @param key {string}: Message key.
+// @param payload {string|bytes}: Message to send.
+// @param key {strng|bytes}: Message key.
 // @note
 // Replacement of `.kfk.Pub`.
 .kafka.publish:LIBPATH_ (`publish; 4);
@@ -76,11 +76,11 @@
 // @param partitions {dynamic}: 
 // @type
 // - int: Partition to use for all message
-// - list of ints: Partition per message 
+// - list of int: Partition per message 
 // @param payloads {compound list}: List of messages.
 // @param keys: 
 // - `""`: Use auto-generated key for all messages
-// - list of string: Keys for each message
+// - list of string or bytes: Keys for each message
 // @note
 // Replacement of `.kfk.BatchPub`.
 .kafka.publishBatch:{[topic_idx;partitions;payloads;keys_]

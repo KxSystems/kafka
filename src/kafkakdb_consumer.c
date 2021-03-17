@@ -13,15 +13,12 @@
  * @brief Subscribe to a given topic with its partitions (and offsets).
  * @param consumer_idx: Index of client (consumer) in `CLIENTS`.
  * @param topic: Topic to subscribe.
- * @param partition_to_offset: 
- * - list of int: Topic partitons
- * - dictionary: Map from topic partition to offsets (int -> long).
  */
-EXP K subscribe(K consumer_idx, K topic, K partition_to_offset){
+EXP K subscribe(K consumer_idx, K topic){
   
-  if(!check_qtype("is[I!]", consumer_idx, topic, partition_to_offset)){
+  if(!check_qtype("is", consumer_idx, topic)){
     // Wrong argument types
-    return krr((S) "consumer index, topic and map from partition to offset must be (int; symbol; list of int|dictionary)");
+    return krr((S) "consumer index and topic must be (int; symbol) type");
   }
 
   rd_kafka_t *handle=index_to_handle(consumer_idx);
@@ -38,7 +35,8 @@ EXP K subscribe(K consumer_idx, K topic, K partition_to_offset){
     // Fail to get subscription
     return krr((S)rd_kafka_err2str(error));
   }
-    
+  
+  /*
   if(partition_to_offset->t == XD){
     // Map from topic partition to offset was provided
     if(!check_qtype("IJ", kK(partition_to_offset)[0], kK(partition_to_offset)[1])){
@@ -55,7 +53,11 @@ EXP K subscribe(K consumer_idx, K topic, K partition_to_offset){
       rd_kafka_topic_partition_list_add(topic_partitions, topic->s, kI(partition_to_offset)[i]);
     }
   }
+  */
   
+  // Add topic partitions to existing list. Only topic makes an effect to subscribe.
+  rd_kafka_topic_partition_list_add(topic_partitions, topic->s, 0);
+
   // Subscribe with new topics and partitions
   error= rd_kafka_subscribe(handle, topic_partitions);
   if(error!=KFK_OK){

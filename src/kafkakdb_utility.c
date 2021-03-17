@@ -258,7 +258,7 @@ void extend_topic_partition_list(K topic_to_part, rd_kafka_topic_partition_list_
   // Length of keys
   J n=kK(topic_to_part)[0]->n;
   S *topics=kS(kK(topic_to_part)[0]);
-  J *partitions=kJ(kK(topic_to_part)[1]);
+  I *partitions=kI(kK(topic_to_part)[1]);
   for(J i = 0; i < n; i++){
     // Add a pair of topic and partition to the given list
     rd_kafka_topic_partition_list_add(t_partition, topics[i], partitions[i]);

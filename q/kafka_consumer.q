@@ -39,13 +39,9 @@
 // @brief Subscribe to a given topic with its partitions (and offsets).
 // @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
 // @param topic {symbol}: Topic to subscribe.
-// @param partition_to_offset {dynamic}: Topic partitons (and corresponding offsets).
-// @type
-// - list of int: List of partitions.
-// - dictionary: Map from partition to offset 
 // @note
 // Replacement of `.kfk.Sub`.
-.kafka.subscribe:LIBPATH_ (`subscribe; 3);
+.kafka.subscribe:LIBPATH_ (`subscribe; 2);
 
 // @kind function
 // @category Consumer

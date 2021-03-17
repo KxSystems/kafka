@@ -60,6 +60,9 @@ current_offset_2:last exec offset from .kafka.getCommittedOffsetsForTopicPartiti
 // Flush the handle
 .kafka.flushProducerHandle[producer; 1000];
 
+// Somehow tis fails. Consumer does not receive the message though it receives messages for topic2.
+// Probably this is related to the setting where producer sends to the consumer in the same q process.
+// This works in the example separated producer and consumer.
 .test.ASSERT_EQ["offset proceeds for topic 1 after batch publish"; (last exec offset from .kafka.getCommittedOffsetsForTopicPartition[consumer; `topic1; enlist 1i]) - current_offset_1; 2]
 
 // Publish messages
@@ -78,6 +81,9 @@ current_offset_1:last exec offset from .kafka.getCommittedOffsetsForTopicPartiti
 // Flush the handle
 .kafka.flushProducerHandle[producer; 1000];
 
+// Somehow tis fails. Consumer does not receive the message though it receives messages for topic2.
+// Probably this is related to the setting where producer sends to the consumer in the same q process.
+// This works in the example separated producer and consumer.
 .test.ASSERT_EQ["offset proceeds for topic 1 after publish with headers"; (last exec offset from .kafka.getCommittedOffsetsForTopicPartition[consumer; `topic1; enlist 1i]) - current_offset_1; 1]
 
 // Continue to test_stage3.q

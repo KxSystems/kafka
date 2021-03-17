@@ -15,11 +15,8 @@
  * @brief Subscribe to a given topic with its partitions (and offsets).
  * @param consumer_idx: Index of client (consumer) in `CLIENTS`.
  * @param topic: Topic to subscribe.
- * @param partition_to_offset: 
- * - list of int: Topic partitons
- * - dictionary: Map from topic partition to offsets (int -> long).
  */
-EXP K subscribe(K consumer_idx, K topic, K partition_to_offset);
+EXP K subscribe(K consumer_idx, K topic);
 
 /**
  * @brief Make a given consumer unsubscribe.

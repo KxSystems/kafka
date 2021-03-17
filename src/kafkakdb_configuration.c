@@ -131,7 +131,7 @@ K decode_metadata(const rd_kafka_metadata_t *meta) {
  */
 
 /**
- * @brief Assign a new map from topic to partition for consumption of message to a client.
+ * @brief Assign a new map from topic to partition for the consumer.
  *  Client will consume from the specified partition for the specified topic.
  * @param consumer_idx: Index of client in `CLIENTS`.
  * @param topic_to_partiton: Dictionary mapping from topic to partition.
@@ -215,14 +215,14 @@ EXP K assign_new_offsets_to_topic_partition(K consumer_idx, K topic, K new_part_
 }
 
 /**
- * @brief Commit new offsets on partitions of a given topic for a given client.
+ * @brief Commit offsets on partitions of a given topic for a given client.
  * @param consumer_idx: Index of client (consumer) in `CLIENTS`.
  * @param topic: Topic of partitions to which assign offsets.
  * @param new_part_to_offset: q dictionary (map) from partition to offsets (int -> long).
  * @param is_async: True to process asynchronusly. If `is_async` is false this operation will
  *  block until the broker offset commit is done.
  */
-EXP K commit_new_offsets_to_topic_partition(K consumer_idx, K topic, K new_part_to_offset, K is_async){
+EXP K commit_offsets_to_topic_partition(K consumer_idx, K topic, K new_part_to_offset, K is_async){
 
   if(!check_qtype("is!b", consumer_idx, topic, new_part_to_offset, is_async)){
     // Argument types do not match required types
@@ -371,14 +371,14 @@ EXP K get_earliest_offsets_for_times(K consumer_idx, K topic, K part_to_offset, 
 }
 
 /**
- * @brief Reset offsets for given partitions to last message+1.
+ * @brief Get the prevailing offsets for given partitions (last consumed message+1).
  * @param consumer_idx: Index of client (consumer) in `CLIENTS`.
  * @param topic: Topic.
  * @param part_to_offset: Map from partition to offset. Offsets are dummy appended by q function `.kafka.setOffsetsToEnd`.
  * @return 
  * - list of dictionary: List of topic partition information incuding the reset offsets.
  */
-EXP K set_offsets_to_end(K consumer_idx, K topic, K part_to_offset){
+EXP K get_prevailing_offsets(K consumer_idx, K topic, K part_to_offset){
   
   if(!check_qtype("isI", consumer_idx, topic, kK(part_to_offset)[0])){
     // Wrong argument types

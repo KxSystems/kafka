@@ -24,7 +24,7 @@
 .kfk.Consumer: .kafka.newConsumer;
 .kfk.Producer: .kafka.newProducer;
 .kfk.SetLoggerLevel: .kafka.setLogLevel;
-.kfk.CommitOffsets: .kafka.commitNewOffsetsToTopicPartition;
+.kfk.CommitOffsets: .kafka.commitOffsetsToTopicPartition;
 .kfk.PositionOffsets: .kafka.setOffsetsToEnd;
 .kfk.CommittedOffsets: .kafka.getCommittedOffsetsForTopicPartition;
 .kfk.AssignOffsets: .kafka.assignNewOffsetsToTopicPartition;
@@ -32,18 +32,26 @@
 .kfk.Pub: .kafka.publish;
 .kfk.PubWithHeaders: .kafka.publishWithHeaders;
 .kfk.OutQLen: .kafka.getOutQueueLength;
-.kfk.Sub: .kafka.subscribe;
+.kfk.Sub:{[consumer_idx;topic;partition_to_offset_]
+  .kafka.subscribe[consumer_idx; topic]
+ };
 .kfk.Subscription: .kafka.getCurrentSubscription;
 .kfk.Unsub: .kafka.unsubscribe;
 .kfk.MaxMsgsPerPoll: .kafka.setMaximumNumberOfPolling;
 .kfk.Poll: .kafka.manualPoll;
-.kfk.Assign: .kafka.assignNewTopicPartition;
-.kfk.AssignAdd: .kafka.addTopicPartition;
-.kfk.AssignDel: .kafka.deleteTopicPartition;
+.kfk.Assign:{[consumer_idx;topic_to_partiton]
+  // convert partitions from long to int
+  topic_to_partiton: key[topic_to_partiton]!`int$value topic_to_partiton;
+  .kafka.assignNewTopicPartition;[consumer_idx; topic_to_partiton]
+ };
+.kfk.AssignAdd: .kafka.addTopicPartitionToAssignment;
+.kfk.AssignDel: .kafka.deleteTopicPartitionFromAssignment;
 .kfk.Assignment: .kafka.getCurrentAssignment;
 .kfk.Metadata: .kafka.getBrokerTopicConfig;
 .kfk.Version: .kafka.version;
-.kfk.VersionSym: .kafka.versionString;
+.kfk.VersionSym:{[]
+  `$.kafka.versionString[]
+ }
 .kfk.ThreadCount: .kafka.getKafkaThreadCount;
 
 //%% Table %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
