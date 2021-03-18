@@ -7,7 +7,7 @@ kfk_cfg:(!) . flip(
     (`statistics.interval.ms;`10000);
     (`enable.auto.commit; `false)
     );
-consumer:.kafka.newConsumer[kfk_cfg; 5000];
+consumer:.kafka.newConsumer[kfk_cfg; 5000i];
 
 // Topics to subscribe to
 topic1:`test1; topic2:`test2;
@@ -37,6 +37,6 @@ topic_cb2:{[consumer;msg]
 .kafka.registerConsumeTopicCallback[consumer; topic1; topic_cb1 consumer];
 .kafka.registerConsumeTopicCallback[consumer; topic2; topic_cb2 consumer];
 
-client_meta:.kafka.getBrokerTopicConfig[consumer];
+client_meta:.kafka.getBrokerTopicConfig[consumer; 5000i];
 
 show client_meta`topics;

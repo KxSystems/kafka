@@ -20,7 +20,7 @@ topic2:.kafka.newTopic[producer;`test2;()!()]
 .kafka.publish[;.kafka.PARTITION_UA; string .z.p; ""] each (topic1; topic2);
 
 -1 "Published one message for each topic";
-producer_meta:.kafka.getBrokerTopicConfig[producer];
+producer_meta:.kafka.getBrokerTopicConfig[producer; 5000i];
 
 show producer_meta `topics;
 -1 "Set timer with \\t 500 to publish a message each second to each topic.";
