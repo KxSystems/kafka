@@ -5,7 +5,7 @@ kfk_cfg:(!) . flip(
   (`queue.buffering.max.ms;`1);
   (`fetch.wait.max.ms;`10)
   );
-producer:.kafka.newProducer[kfk_cfg];
+producer:.kafka.newProducer[kfk_cfg; 5000i];
 
 // Create two topics associated with the producer publishing on `test1`test2
 topic1:.kafka.newTopic[producer;`test1;()!()];

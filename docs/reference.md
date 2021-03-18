@@ -165,11 +165,12 @@ q).kafka.manualPoll[0i;100;100]
 
 _Create a consumer according to user-defined configuration._
 
-Syntax: `.kafka.newConsumer[config]`
+Syntax: `.kafka.newConsumer[config;timeout]`
 
 Where
 
 - `config` is a dictionary user-defined configuration.
+- `timeout` is an integer value denoting the timeout (in milliseconds) to wait for a response frm a kafka broker.
 
 returns an integer denoting the index of the consumer.
 
@@ -181,7 +182,7 @@ queue.buffering.max.ms| 1
 fetch.wait.max.ms     | 10
 statistics.interval.ms| 10000
 enable.auto.commit    | false
-q).kafka.newConsumer[kafka_cfg]
+q).kafka.newConsumer[kafka_cfg; 5000i]
 0i
 ```
 
@@ -194,6 +195,7 @@ Syntax: `.kafka.newProducer[config]`
 Where
 
 - `config` is a user-defined dictionary configuration.
+- `timeout` is an integer value denoting the timeout (in milliseconds) to wait for a response frm a kafka broker.
 
 returns an integer denoting the index of the producer.
 
@@ -203,7 +205,7 @@ metadata.broker.list  | localhost:9092
 statistics.interval.ms| 10000
 queue.buffering.max.ms| 1
 fetch.wait.max.ms     | 10
-q).kafka.newProducer[kafka_cfg]
+q).kafka.newProducer[kafka_cfg; 5000i]
 0i
 ```
 
@@ -760,16 +762,17 @@ q).kafka.deleteTopicPartitionFromAssignment[consumer;`test1`test2!1 1i]
 
 _Information about configuration of brokers and topics._
 
-Syntax: `.kafka.getBrokerTopicConfig[client_idx]`
+Syntax: `.kafka.getBrokerTopicConfig[client_idx;timout]`
 
 Where
 
 - `client_idx` is the integer denoting the index of a client.
+- `timeout` is an integer value denoting the timeout (in milliseconds) to wait for a response frm a kafka broker.
 
 returns a dictionary with information about the brokers and topics.
 
 ```q
-q)show producer_meta:.kafka.getBrokerTopicConfig[producer]
+q)show producer_meta:.kafka.getBrokerTopicConfig[producer; 5000i]
 orig_broker_id  | 0i
 orig_broker_name| `localhost:9092/0
 brokers         | ,`id`host`port!(0i;`localhost;9092i)

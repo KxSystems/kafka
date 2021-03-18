@@ -135,11 +135,12 @@ static V throttle_cb(rd_kafka_t* handle, const char* brokername, int32_t brokeri
  * - "p": Producer
  * - "c": Consumer
  * @param q_config: Dictionary containing a configuration.
+ * @param timeout: Timeout (milliseconds) for querying.
  * @return 
  * - error: If passing client type which is neither of "p" or "c". 
  * - int: Client index.
  */
-EXP K new_client(K client_type, K q_config);
+EXP K new_client(K client_type, K q_config, K timeout);
 
 /**
  * @brief Destroy client handle and remove from `CLIENTS`.

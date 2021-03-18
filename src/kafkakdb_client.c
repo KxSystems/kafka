@@ -4,6 +4,7 @@
 
 #include "kafkakdb_utility.h"
 #include "kafkakdb_client.h"
+#include "kafkakdb_configuration.h"
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Global Variables                   //
@@ -290,18 +291,19 @@ J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt){
  * - "p": Producer
  * - "c": Consumer
  * @param q_config: Dictionary containing a configuration.
+ * @param timeout: Timeout (milliseconds) for querying.
  * @return 
  * - error: If passing client type which is neither of "p" or "c". 
  * - int: Client index.
  */
-EXP K new_client(K client_type, K q_config){
+EXP K new_client(K client_type, K q_config, K timeout){
 
   // Buffer for error message
   char error_message[512];
 
-  if(!check_qtype("c!", client_type, q_config)){
+  if(!check_qtype("c!i", client_type, q_config, timeout)){
     // Argument type does not match char and dictionary
-    return krr("client type and config must be (char; dictionary) type.");
+    return krr("client type, config and timeout must be (char; dictionary; int) type.");
   }
     
   if('p' != client_type->g && 'c' != client_type->g){
@@ -345,6 +347,17 @@ EXP K new_client(K client_type, K q_config){
   if(!handle){
     // Error in creating a client
     return krr(error_message);
+  }
+
+  // Check status with the new handle.
+  // Holder of configuration
+  const struct rd_kafka_metadata *meta;  
+  rd_kafka_resp_err_t error= rd_kafka_metadata(handle, 1, NULL, &meta, timeout->i);
+  if(error!=KFK_OK){
+    // Error in getting metadata
+    // Destroy the client handle
+    rd_kafka_destroy(handle);
+    return krr((S) rd_kafka_err2str(error));
   }
 
   // Redirect logs to main queue

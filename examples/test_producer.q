@@ -5,7 +5,7 @@ kfk_cfg:(!) . flip(
   (`queue.buffering.max.ms;`1);
   (`fetch.wait.max.ms;`10)
   );
-producer:.kafka.newProducer[kfk_cfg]
+producer:.kafka.newProducer[kfk_cfg; 5000i]
 
 topic1:.kafka.newTopic[producer;`test1;()!()]
 topic2:.kafka.newTopic[producer;`test2;()!()]

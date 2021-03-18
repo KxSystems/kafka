@@ -99,7 +99,7 @@ EXP K assign_new_offsets_to_topic_partition(K consumer_idx, K topic, K new_part_
  * @param is_async: True to process asynchronusly. If `is_async` is false this operation will
  *  block until the broker offset commit is done.
  */
-EXP K commit_new_offsets_to_topic_partition(K consumer_idx, K topic, K new_part_to_offset, K is_async);
+EXP K commit_offsets_to_topic_partition(K consumer_idx, K topic, K new_part_to_offset, K is_async);
 
 /**
  * @brief Get latest commited offset for a given topic and partitions for a client (consumer).
@@ -123,14 +123,14 @@ EXP K get_committed_offsets_for_topic_partition(K consumer_idx, K topic, K parti
 EXP K get_earliest_offsets_for_times(K consumer_idx, K topic, K part_to_offset, K q_timeout);
 
 /**
- * @brief Reset offsets for given partitions to last message+1.
+ * @brief Get the prevailing offsets for given partitions (last consumed message+1).
  * @param consumer_idx: Index of client (consumer) in `CLIENTS`.
  * @param topic: Topic.
  * @param part_to_offset: Map from partition to offset. Offsets are dummy appended by q function `.kafka.setOffsetsToEnd`.
  * @return 
  * - list of dictionary: List of topic partition information incuding the reset offsets.
  */
-EXP K set_offsets_to_end(K consumer_idx, K topic, K part_to_offset);
+EXP K get_prevailing_offsets(K consumer_idx, K topic, K part_to_offset);
 
 /** 
  * @brief Return the current consumption assignment for a specified client
@@ -157,6 +157,7 @@ EXP K delete_topic_partition(K consumer_idx, K topic_to_part);
 /**
  * @brief Get configuration of topic and broker for a given client index.
  * @param client_idx: Index of client in `CLIENTS`.
+ * @param timeout: Timeout in millisecond for querying.
  * @return 
  * - dictionary: Informaition of originating broker, brokers and topics.
  *   - orig_broker_id: int | Broker originating this meta data
@@ -164,7 +165,7 @@ EXP K delete_topic_partition(K consumer_idx, K topic_to_part);
  *   - brokers: list of dictionary | Information of brokers
  *   - topics: list of dictionary | Infomation of topics
  */
-EXP K get_broker_topic_config(K client_idx);
+EXP K get_broker_topic_config(K client_idx, K timeout);
 
 // __KAFKAKDB_CONFIGURATION_H__
 #endif

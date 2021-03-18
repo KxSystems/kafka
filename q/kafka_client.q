@@ -147,10 +147,11 @@
 // @param config {dictionary}: Dictionary containing a configuration.
 //  - key: symbol
 //  - value: symbol
+// @param timeout {int}: Timeout (milliseconds) for querying.
 // @return
 // - error: If passing client type which is neither of "p" or "c". 
 // - int: Client index in `CLIENTS`.
-.kafka.newClient_impl:LIBPATH_ (`new_client; 2);
+.kafka.newClient_impl:LIBPATH_ (`new_client; 3);
 
 // @private
 // @kind function
@@ -163,12 +164,13 @@
 // @param config {dictionary}: Dictionary containing a configuration.
 //  - key: symbol
 //  - value: symbol
+// @param timeout {int}: Timeout (milliseconds) for querying.
 // @return
 // - error: If passing client type which is neither of "p" or "c". 
 // - int: Client index in `CLIENTS`.
-.kafka.newClient:{[client_type;config]
+.kafka.newClient:{[client_type;config;timeout]
   if[(not `group.id in key config) and client_type="c"; '"consumer must define 'group.id' within the config"];
-  client:.kafka.newClient_impl[client_type; config];
+  client:.kafka.newClient_impl[client_type; config; timeout];
   .kafka.CLIENT_TYPE_MAP,: enlist[client]!enlist[`$client_type];
   client
  };
@@ -319,10 +321,11 @@
 // @param config {dictionary}: Dictionary containing a configuration.
 // - key: symbol
 // - value: symbol
+// @param timeout {int}: Timeout (milliseconds) for querying.
 // @return
 // - int: Client index in `CLIENTS`.
-.kafka.newProducer:{[config]
-  .kafka.newClient["p"; config]
+.kafka.newProducer:{[config;timeout]
+  .kafka.newClient["p"; config; timeout]
  };
 
 // @kind function
@@ -331,10 +334,11 @@
 // @param config {dictionary}: Dictionary containing a configuration.
 // - key: symbol
 // - value: symbol
+// @param timeout {int}: Timeout (milliseconds) for querying.
 // @return
 // - int: Client index in `CLIENTS`.
-.kafka.newConsumer:{[config]
-  .kafka.newClient["c"; config]
+.kafka.newConsumer:{[config;timeout]
+  .kafka.newClient["c"; config; timeout]
  };
 
 // @kind function

@@ -7,7 +7,7 @@ kfk_cfg:(!) . flip(
     (`statistics.interval.ms;`10000);
     (`enable.auto.commit; `false)
     );
-consumer:.kafka.newConsumer[kfk_cfg];
+consumer:.kafka.newConsumer[kfk_cfg; 5000];
 
 // Topics to subscribe to
 topic1:`test1; topic2:`test2;
