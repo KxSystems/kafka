@@ -756,7 +756,7 @@ q).kafka.deleteTopicPartitionFromAssignment[consumer;`test1`test2!1 1i]
 
 _Information about configuration of brokers and topics._
 
-Syntax: `.kafka.getBrokerTopicConfig[client_idx;timout]`
+Syntax: `.kafka.getBrokerTopicConfig[client_idx;timeout]`
 
 Where
 
