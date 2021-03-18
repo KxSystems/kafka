@@ -57,17 +57,18 @@ EXP K flush_producer_handle(K producer_idx, K q_timeout){
 /**
  * @brief Publish message with custom headers.
  * @param producer_idx: Index of client (producer) in `CLIENTS`.
+ * @param timestamp: Timestamp for this message. Precision under milliseconds are supressed.
  * @param topic_idx: Index of topic in `TOPICS`.
  * @param partition: Topic partition.
  * @param payload: Payload to be sent.
  * @param key: Message key.
  * @param headers: Message headers expressed in a map between header keys to header values (symbol -> string).
  */
-EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, K key, K headers){
+EXP K publish_with_headers(K producer_idx, K timestamp, K topic_idx, K partition, K payload, K key, K headers){
   
-  if(!check_qtype("iii[CG][CG]!", producer_idx, topic_idx, partition, payload, key, headers)){
+  if(!check_qtype("ipii[CG][CG]!", producer_idx, timestamp, topic_idx, partition, payload, key, headers)){
     // Error in check type.
-    return krr((S) "producer_idx, topic_idx, partition, payload, key and headers must be (int; int; int; string; string; dictionary) type.");
+    return krr((S) "producer_idx, timestamp, topic_idx, partition, payload, key and headers must be (int; timestamp; int; int; string; string; dictionary) type.");
   }
     
   rd_kafka_t *handle=index_to_handle(producer_idx);
@@ -108,6 +109,8 @@ EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, 
 
   rd_kafka_resp_err_t err = rd_kafka_producev(
                         handle,
+                        // Timestamp is elapsed time in milliseconds since epoch.
+                        RD_KAFKA_V_TIMESTAMP((KDB_TIMESTAMP_OFFSET + timestamp->j) / 1000000),
                         RD_KAFKA_V_RKT(topic_handle),
                         RD_KAFKA_V_PARTITION(partition->i),
                         RD_KAFKA_V_MSGFLAGS(RD_KAFKA_MSG_F_COPY),
@@ -126,7 +129,7 @@ EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, 
 // rdkafka version < 0.11.4
 #else
 
-EXP K publish_with_headers(K UNUSED(client_idx),K UNUSED(topic_idx),K UNUSED(partition),K UNUSED(value),K UNUSED(key),K UNUSED(headers)) {
+EXP K publish_with_headers(K UNUSED(client_idx), K UNUSED(timestamp), K UNUSED(topic_idx), K UNUSED(partition), K UNUSED(value), K UNUSED(key), K UNUSED(headers)) {
   return krr(".kafka.PublishWithHeaders is not supported for current rdkafka version. please update to librdkafka >= 0.11.4");
 }
 

@@ -190,7 +190,7 @@ q).kafka.newConsumer[kafka_cfg; 5000i]
 
 _Create a producer according to user-defined configuration._
 
-Syntax: `.kafka.newProducer[config]`
+Syntax: `.kafka.newProducer[config;timeout]`
 
 Where
 
@@ -267,7 +267,7 @@ Where
 returns a null on successful publication.
 
 ```q
-q)producer:.kafka.newProducer[kafka_cfg]
+q)producer:.kafka.newProducer[kafka_cfg; 5000i]
 q)test_topic:.kafka.newTopic[producer;`test;()!()]
 // partition set as -1i denotes an unassigned partition
 q).kafka.publish[test_topic;-1i;string .z.p;""]
@@ -313,11 +313,12 @@ q).kafka.publishBatch[;0 1i;batchMsg;batchKeys]each(topic1;topic2)
 
 _Publish a message to a defined topic, with an associated header._
 
-Syntax: `.kafka.publishWithHeaders[producer_idx;tpcid;partid;data;keys;hdrs]`
+Syntax: `.kafka.publishWithHeaders[producer_idx;timestamp;topic_idx;partition;data;keys;headers]`
 
 Where
 
 - `producer_idx` is an integer denoting the index of a producer.
+- `timestamp`: Timestamp for this message. Precision under milliseconds are supressed.
 - `topic_idx` is the integer denoting the index of the topic to be published on.
 - `partition` is an integer denoting the target partition.
 - `data` is a string or bytes which incorporates the payload to be published.
@@ -328,13 +329,13 @@ returns a null on successful publication, errors if version conditions not met
 
 ```q
 // Create an appropriate producer
-q)producer:.kafka.newProducer[kafka_cfg]
+q)producer:.kafka.newProducer[kafka_cfg; 5000i]
 
 // Create a topic
 q)test_topic:.kafka.newTopic[producer;`test;()!()]
 
 // Define the target partition as unassigned
-part:-1i
+partition:.kafka.PARTITION_UA
 
 // Define an appropriate payload
 payload:"hello from a producer"
@@ -342,11 +343,8 @@ payload:"hello from a producer"
 // Define the headers to be added
 headers:`header1`header2!("test1";"test2")
 
-// Publish a message to client #0 with a header but no key
-q).kafka.publishWithHeaders[0i;test_topic;part;payload;"";headers]
-
-// Publish a message to client #1 with headers and a key
-q).kafka.publishWithHeaders[1i;test_topic;part;payload;"test_key";headers]
+// Publish a message
+q).kafka.publishWithHeaders[producer; .z.p; test_topic; partition; payload; ""; headers]
 ```
 
 !!!Note "Support for functionality"
@@ -387,7 +385,7 @@ Where
 returns a table with the topic, partition, offset and metadata of the most recent subscription.
 
 ```q
-q)consumer:.kafka.newConsumer[kafka_cfg];
+q)consumer:.kafka.newConsumer[kafka_cfg; 5000i];
 q).kafka.subscribe[consumer;`test2]
 q).kafka.getCurrentSubscription[snsumer]
 topic partition offset metadata
@@ -417,7 +415,7 @@ returns a null on successful execution.
     As of v1.4.0 multiple calls to `.kafka.Sub` for a given client will allow for consumption from multiple topics rather than overwriting the subscribed topic.
 
 ```q
-q)client:.kafka.newConsumer[kafka_cfg]
+q)client:.kafka.newConsumer[kafka_cfg; 5000i]
 // List of topics to be subscribed to
 q)topic_list:`test`test1`test2
 q).kafka.subscribe[client] each topic_list
@@ -461,19 +459,15 @@ returns a null on successful execution.
 
 ```q
 // Attempt to create a consumer which will fail
-q)consumer1: .kafka.newConsumer[`metadata.broker.list`group.id!`foobar`0]
+q)consumer1: .kafka.newConsumer[`metadata.broker.list`group.id!`foobar`0; 5000i]
 q)consumer1
 0i
 // Attempt to create another failing consumer
-q)consumer2: .kafka.Consumer[`metadata.broker.list`group.id!`foobar`0]
+q)consumer2: .kafka.Consumer[`metadata.broker.list`group.id!`foobar`0; 5000i]
 q)consumer2
 1i
-q)1i
--193i
-"foobar:9092/bootstrap: Failed to resolve 'foobar:9092': nodename nor servnam..
-1i
--187i
-"1/1 brokers are down"
+q)"(1i;-193i;\"foobar:9092/bootstrap: Failed to resolve 'foobar:9092': nodename nor servnam..
+"(1i;-187i;\"1/1 brokers are down\")"
 // Attempt to create a consumer that will fail
 q)consumer3:.kafka.newConsumer[`metadata.broker.list`group.id!`foobar`0]
 q).kafka.registerErrorCallback[consumer3;{[cid;error_code;reason] show error_code;}]
@@ -600,7 +594,7 @@ Where
 returns an integer denoting the value given to the assigned topic.
 
 ```q
-q)producer:.kafka.newProducer[kafka_cfg]
+q)producer:.kafka.newProducer[kafka_cfg; 5000i]
 q).kafka.newTopic[producer;`test1;()!()]
 0i
 q).kafka.newTopic[producer;`test2;()!()]
@@ -883,7 +877,7 @@ Where
 returns a table containing the current offset and partition for the topic of interest.
 
 ```q
-q)consumer:.kafka.newConsumer[kafka_cfg];
+q)consumer:.kafka.newConsumer[kafka_cfg; 5000i];
 q)topic:`test
 q).kafka.PositionOffsets[client;topic;0 1i]
 topic partition offset metadata

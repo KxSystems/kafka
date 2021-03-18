@@ -26,18 +26,20 @@
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 consumer_configuration: .[!] flip(
-    (`metadata.broker.list;`localhost:9092);
-    (`group.id;`0);
-    (`fetch.wait.max.ms;`10);
-    (`statistics.interval.ms;`10000);
-    (`enable.auto.commit; `false)
+  (`metadata.broker.list;`localhost:9092);
+  (`group.id;`0);
+  (`fetch.wait.max.ms;`10);
+  (`statistics.interval.ms;`10000);
+  (`enable.auto.commit; `false);
+  (`api.version.request; `true)
   );
 
 producer_configuration: .[!] flip(
   (`metadata.broker.list;`localhost:9092);
   (`statistics.interval.ms;`10000);
   (`queue.buffering.max.ms;`1);
-  (`fetch.wait.max.ms;`10)
+  (`fetch.wait.max.ms;`10);
+  (`api.version.request; `true)
   );
 
 consumer_table1: ();
@@ -66,10 +68,10 @@ topic_callback2:{[consumer;msg]
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 // Create a consumer
-consumer: .kafka.newConsumer[consumer_configuration];
+consumer: .kafka.newConsumer[consumer_configuration; 5000i];
 
 // Create a producer
-producer: .kafka.newProducer[producer_configuration];
+producer: .kafka.newProducer[producer_configuration; 5000i];
 
 // Create topics
 topic1:.kafka.newTopic[producer; `topic1; ()!()];
@@ -85,7 +87,7 @@ topic2:.kafka.newTopic[producer; `topic2; ()!()];
 .kafka.registerConsumeTopicCallback[consumer; `topic2; topic_callback2 consumer];
 
 // Get current visible topic configuration for the consumer
-consumer_topic_config:.kafka.getBrokerTopicConfig[consumer];
+consumer_topic_config:.kafka.getBrokerTopicConfig[consumer; 5000i];
 
 .test.ASSERT_EQ["registered topic names"; (asc exec topic from consumer_topic_config `topics) except `$"__consumer_offsets"; `topic1`topic2]
 

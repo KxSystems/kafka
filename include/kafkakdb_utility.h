@@ -63,6 +63,11 @@ typedef unsigned int UI;
 extern const J KDB_DAY_OFFSET;
 
 /**
+ * @brief Offset between UNIX epoch (1970.01.01) and kdb+ epoch (2000.01.01) in nanoseconds.
+ */
+extern const J KDB_TIMESTAMP_OFFSET;
+
+/**
  * @brief Milliseconds in a day
  */
 extern const J ONEDAY_MILLIS;

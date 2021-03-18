@@ -16,6 +16,11 @@
 const J KDB_DAY_OFFSET = 10957;
 
 /**
+ * @brief Offset between UNIX epoch (1970.01.01) and kdb+ epoch (2000.01.01) in nanoseconds.
+ */
+extern const J KDB_TIMESTAMP_OFFSET = 946684800000000000;
+
+/**
  * @brief Milliseconds in a day
  */
 const J ONEDAY_MILLIS = 86400000;

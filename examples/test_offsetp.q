@@ -3,7 +3,8 @@ kfk_cfg:(!) . flip(
   (`metadata.broker.list;`localhost:9092);
   (`statistics.interval.ms;`10000);
   (`queue.buffering.max.ms;`1);
-  (`fetch.wait.max.ms;`10)
+  (`fetch.wait.max.ms;`10);
+  (`api.version.request; `true)
   );
 producer:.kafka.newProducer[kfk_cfg; 5000i];
 
@@ -18,15 +19,15 @@ topic2:.kafka.newTopic[producer;`test2;()!()];
 
 // Publish messages at different rates
 .z.ts:{n+:1;
-  .kafka.publish[topic1; 0i; string x; ""];
+  .kafka.publish[topic1; 0i; "Hello from producer"; ""];
   if[n mod 2;
-    .kafka.publish[topic2; 0i; string x; ""]
+    .kafka.publish[topic2; 0i; "Hello from producer"; ""]
   ];
  };
 
 -1 "Publishing on topics:", " " sv {string .kafka.getTopicName x} each (topic1; topic2);
-.kafka.publish[topic1; 0i; string .z.p; ""];
-.kafka.publish[topic2; 0i; string .z.p; ""];
+.kafka.publish[topic1; 0i; "Hello from producer"; ""];
+.kafka.publish[topic2; 0i; "Hello from producer"; ""];
 
 -1 "Published one message to each topic.\n";
 -1"Set timer with \\t 1000 to publish a message on `test1 every second and on `test2 every two seconds.";

@@ -5,8 +5,9 @@ kfk_cfg:(!) . flip(
     (`group.id;`0);
     (`fetch.wait.max.ms;`10);
     (`statistics.interval.ms;`10000);
-    (`enable.auto.commit; `false)
-    );
+    (`enable.auto.commit; `false);
+    (`api.version.request; `true)
+  );
 consumer:.kafka.newConsumer[kfk_cfg; 5000i];
 
 // Topics to subscribe to
@@ -18,6 +19,7 @@ data1:();
 topic_cb1:{[consumer;msg]
   msg[`data]:"c"$msg[`data];
   msg[`rcvtime]:.z.p;
+  msg[`headers]:"c"$msg[`headers];
   data1,::enlist msg;
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b]
  };
@@ -26,6 +28,7 @@ data2:();
 topic_cb2:{[consumer;msg]
   msg[`data]:"c"$msg[`data];
   msg[`rcvtime]:.z.t;
+  msg[`headers]:"c"$msg[`headers];
   data2,::enlist msg;
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b]
  };

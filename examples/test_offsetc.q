@@ -7,8 +7,9 @@ kfk_cfg:(!) . flip(
     (`fetch.wait.max.ms;`10);
     (`statistics.interval.ms;`10000);
     (`enable.auto.commit;`false);
-    (`enable.auto.offset.store;`false)
-    );
+    (`enable.auto.offset.store;`false);
+    (`api.version.request; `true)
+  );
 consumer:.kafka.newConsumer[kfk_cfg; 5000i];
 
 // Topics to be published to

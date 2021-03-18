@@ -280,6 +280,7 @@
 // @category Configuration
 // @brief Get configuration of topic and broker for a given client index.
 // @param client_idx {int}: Index of client in `CLIENT`.
+// @param timeout {int}: Timeout (milliseconds) for querying.
 // @return 
 // - dictionary: Informaition of originating broker, brokers and topics.
 //   - orig_broker_id {int}: Broker originating this meta data
@@ -288,4 +289,4 @@
 //   - topics {list of dictionary}: Infomation of topics
 // @note
 // Replacement of `.kfk.Metadata`
-.kafka.getBrokerTopicConfig:LIBPATH_ (`get_broker_topic_config; 1);
+.kafka.getBrokerTopicConfig:LIBPATH_ (`get_broker_topic_config; 2);
