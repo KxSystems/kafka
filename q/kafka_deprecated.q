@@ -25,9 +25,10 @@
 .kfk.Producer: .kafka.newProducer;
 .kfk.SetLoggerLevel: .kafka.setLogLevel;
 .kfk.CommitOffsets: .kafka.commitOffsetsToTopicPartition;
-.kfk.PositionOffsets: .kafka.setOffsetsToEnd;
+.kfk.PositionOffsets: .kafka.getPrevailingOffsets;
 .kfk.CommittedOffsets: .kafka.getCommittedOffsetsForTopicPartition;
 .kfk.AssignOffsets: .kafka.assignNewOffsetsToTopicPartition;
+.kfk.offsetForTimes: .kafka.getEarliestOffsetsForTimes;
 .kfk.BatchPub: .kafka.publishBatch;
 .kfk.Pub: .kafka.publish;
 .kfk.PubWithHeaders: .kafka.publishWithHeaders;

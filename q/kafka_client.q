@@ -228,7 +228,7 @@
 // @param reason {string}: Reason for the error.
 .kafka.default_error_cb:{[client_idx;error_code;reason]
   // Change if you wish
-  -2 -3!(client_idx; error_code; reason);
+  show -3!(client_idx; error_code; reason);
  };
 
 // @kind function
