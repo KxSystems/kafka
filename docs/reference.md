@@ -313,12 +313,11 @@ q).kafka.publishBatch[;0 1i;batchMsg;batchKeys]each(topic1;topic2)
 
 _Publish a message to a defined topic, with an associated header._
 
-Syntax: `.kafka.publishWithHeaders[producer_idx;timestamp;topic_idx;partition;data;keys;headers]`
+Syntax: `.kafka.publishWithHeaders[producer_idx;topic_idx;partition;data;keys;headers]`
 
 Where
 
 - `producer_idx` is an integer denoting the index of a producer.
-- `timestamp`: Timestamp for this message. Precision under milliseconds are supressed.
 - `topic_idx` is the integer denoting the index of the topic to be published on.
 - `partition` is an integer denoting the target partition.
 - `data` is a string or bytes which incorporates the payload to be published.
@@ -344,7 +343,7 @@ payload:"hello from a producer"
 headers:`header1`header2!("test1";"test2")
 
 // Publish a message
-q).kafka.publishWithHeaders[producer; .z.p; test_topic; partition; payload; ""; headers]
+q).kafka.publishWithHeaders[producer; test_topic; partition; payload; ""; headers]
 ```
 
 !!!Note "Support for functionality"

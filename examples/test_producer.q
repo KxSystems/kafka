@@ -14,7 +14,7 @@ topic2:.kafka.newTopic[producer;`test2;()!()]
 .z.ts:{
   n+:1;topic:$[n mod 2;topic1;topic2];
   .kafka.publish[topic;.kafka.PARTITION_UA; "Hello from producer";""];
-  .kafka.publishWithHeaders[producer; .z.p; topic; .kafka.PARTITION_UA; "locusts"; ""; `header1`header2!("firmament"; "divided")];
+  .kafka.publishWithHeaders[producer; topic; .kafka.PARTITION_UA; "locusts"; ""; `header1`header2!("firmament"; "divided")];
   }
 
 -1 "Publishing on topics:", string[.kafka.getTopicName topic1], ", ", string[.kafka.getTopicName topic2];

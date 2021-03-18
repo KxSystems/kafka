@@ -25,19 +25,18 @@ EXP K flush_producer_handle(K producer_idx, K q_timeout);
 /**
  * @brief Publish message with custom headers.
  * @param producer_idx: Index of client (producer) in `CLIENTS`.
- * @param timestamp: Timestamp for this message. Precision under milliseconds are supressed.
  * @param topic_idx: Index of topic in `TOPICS`.
  * @param partition: Topic partition.
  * @param payload: Payload to be sent.
  * @param key: Message key.
  * @param headers: Message headers expressed in a map between header keys to header values (symbol -> string).
  */
-EXP K publish_with_headers(K producer_idx, K timestamp, K topic_idx, K partition, K payload, K key, K headers);
+EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, K key, K headers);
 
 // rdkafka version < 0.11.4
 #else
 
-EXP K publish_with_headers(K UNUSED(client_idx), K UNUSED(timestamp), K UNUSED(topic_idx), K UNUSED(partition), K UNUSED(value), K UNUSED(key), K UNUSED(headers));
+EXP K publish_with_headers(K UNUSED(client_idx), K UNUSED(topic_idx), K UNUSED(partition), K UNUSED(value), K UNUSED(key), K UNUSED(headers));
 
 #endif
 

@@ -31,9 +31,7 @@
 .kfk.offsetForTimes: .kafka.getEarliestOffsetsForTimes;
 .kfk.BatchPub: .kafka.publishBatch;
 .kfk.Pub: .kafka.publish;
-.kfk.PubWithHeaders:{[producer_idx;topic_idx;partition;data;keys;headers]
- .kafka.publishWithHeaders[producer_idx;.z.p;topic_idx;partition;data;keys;headers]
- };
+.kfk.PubWithHeaders:.kafka.publishWithHeaders;
 .kfk.OutQLen: .kafka.getOutQueueLength;
 .kfk.Sub:{[consumer_idx;topic;partition_to_offset_]
   .kafka.subscribe[consumer_idx; topic]

@@ -47,7 +47,6 @@
 // @category Producer
 // @brief Publish message with custom headers.
 // @param producer_idx {int}: Index of client (producer) in `CLIENTS`.
-// @param timestamp: Timestamp for this message. Precision under milliseconds are supressed.
 // @param topic_idx {int}: Index of topic in `TOPICS`.
 // @param partition {int}: Topic partition.
 // @param payload {string|bytes}: Payload to be sent.
@@ -57,7 +56,7 @@
 // - value string
 // @note
 // Replacement of `.kfk.PubWithHeaders`.
-.kafka.publishWithHeaders:LIBPATH_	(`publish_with_headers; 7);
+.kafka.publishWithHeaders:LIBPATH_	(`publish_with_headers; 6);
 
 // @kind function
 // @category Producer
