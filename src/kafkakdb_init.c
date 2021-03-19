@@ -4,6 +4,7 @@
 
 #include <fcntl.h>
 #include "kafkakdb_utility.h"
+#include "kafkakdb_client.h"
 #include "kafkakdb_init.h"
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//

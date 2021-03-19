@@ -123,6 +123,21 @@ static V error_cb(rd_kafka_t* handle, int error_code, const char* reason, V* UNU
  */
 static V throttle_cb(rd_kafka_t* handle, const char* brokername, int32_t brokerid, int throttle_time_ms, V* UNUSED(opaque));
 
+//%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Poll producer or consumer with timeout (and a limitation of the number of polling for consumer).
+ * @param handle: Client handle.
+ * @param timeout: The maximum amount of time (in milliseconds) that the call will block waiting for events.
+ * - 0: non-blocking
+ * - -1: wait indefinitely
+ * - others: wait for this period
+ * @param max_poll_cnt: The maximum number of polls, in turn the number of messages to get.
+ * @return 
+ * - int: The number of messages retrieved (poll count).
+ */
+J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt);
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                      Interface                        //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
