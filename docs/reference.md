@@ -422,7 +422,7 @@ q).kafka.subscribe[client] each topic_list
 
 ### `.kafka.unsubscribe`
 
-_Unsubscribe from all topics associated with teh consumer and remove consume-topic callback._
+_Unsubscribe from all topics associated with the consumer and remove consume-topic callback._
 
 Syntax: `.kafka.unsubscribe[consumer_idx]`
 
