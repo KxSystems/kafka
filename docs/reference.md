@@ -17,53 +17,53 @@ The following functions are those exposed within the `.kafka` namespace allowing
 Kafka interface functionality
 
   // client functionality 
-  [.kafka.deleteClient](#kafkadeleteclient)               Close consumer and destroy Kafka handle to client
-  [.kafka.getClientName](#kafkagetclientname)              Get a name of client from client index
-  [.kafka.getOutQueueLength](#kafkagetoutqueuelength)                 Current out queue length
-  [.kafka.manualPoll](#kafkamanualpoll)                    Manually poll the feed
-  [.kafka.newConsumer](#kafkanewconsumer)                 Create a consumer according to defined configuration
-  [.kafka.newProducer](#kafkanewproducer)                Create a producer according to defined configuration
-  [.kafka.setLogLevel](#kafkasetloglevel)          Set the maximum logging level for a client
-  [.kafka.setMaximumNumberOfPolling](#kafkasetmaximumnumberofpolling)          Set the maximum number of messages per poll
+  [.kafka.deleteClient](#kafkadeleteclient)               Close consumer and destroy Kafka handle to client. All registered callback for this client are removed.
+  [.kafka.getClientName](#kafkagetclientname)              Get a name of client from client index.
+  [.kafka.getOutQueueLength](#kafkagetoutqueuelength)                 Current out queue length.
+  [.kafka.manualPoll](#kafkamanualpoll)                    Manually poll the feed.
+  [.kafka.newConsumer](#kafkanewconsumer)                 Create a consumer according to defined configuration.
+  [.kafka.newProducer](#kafkanewproducer)                Create a producer according to defined configuration.
+  [.kafka.setLogLevel](#kafkasetloglevel)          Set the maximum logging level for a client.
+  [.kafka.setMaximumNumberOfPolling](#kafkasetmaximumnumberofpolling)          Set the maximum number of messages per poll.
 
   // Producer functionality
-  [.kafka.flushProducerHandle](#kafkaflushproducerhandle)   Flush a handle of a producer
-  [.kafka.publish](#kafkapublish)                     Publish a message to a defined topic
-  [.kafka.publishBatch](#kafkapublishbatch)                Publish a batch of data to a defined topic
-  [.kafka.publishWithHeaders](#kafkapublishwithheaders)          Publish a message to a defined topic with a header
+  [.kafka.flushProducerHandle](#kafkaflushproducerhandle)   Flush a handle of a producer.
+  [.kafka.publish](#kafkapublish)                     Publish a message to a defined topic.
+  [.kafka.publishBatch](#kafkapublishbatch)                Publish a batch of data to a defined topic.
+  [.kafka.publishWithHeaders](#kafkapublishwithheaders)          Publish a message to a defined topic with a header.
 
   // Consumer functionality
-  [.kafka.getConsumerGroupMemberID](getconsumergroupmemberid)  Get a broker-assigned member ID
-  [.kafka.getCurrentSubscription](#kafkagetcurrentsubscription)            Get current topic subscription information for the consumer
-  [.kafka.subscribe](#kafkasubscribe)                     Subscribe to a defined topic
-  [.kafka.unsubscribe](#kafkaunsubscribe)                   Unsubscribe from a topic
+  [.kafka.getConsumerGroupMemberID](getconsumergroupmemberid)  Get a broker-assigned member ID.
+  [.kafka.getCurrentSubscription](#kafkagetcurrentsubscription)            Get current topic subscription information for the consumer.
+  [.kafka.subscribe](#kafkasubscribe)                     Subscribe to a defined topic.
+  [.kafka.unsubscribe](#kafkaunsubscribe)                   Unsubscribe from a topic and remove consume-topic callback.
 
   // Callback registration
-  [.kafka.registerErrorCallback](#kafkaregistererrorcallback)                Register an error callback associated with a specific client
-  [.kafka.registerThrottleCallback](#kafkaregisterthrottlecallback)           Register a throttle callback associated with a specific client
-  [.kafka.registerConsumeTopicCallback](#kafkaregistconsumetopiccallback)      Register a topic consumption callback associated with a specific client-topic pair
+  [.kafka.registerErrorCallback](#kafkaregistererrorcallback)                Register an error callback associated with a specific client.
+  [.kafka.registerThrottleCallback](#kafkaregisterthrottlecallback)           Register a throttle callback associated with a specific client.
+  [.kafka.registerConsumeTopicCallback](#kafkaregistconsumetopiccallback)      Register a topic consumption callback associated with a specific client-topic pair.
 
   // Topic functionality
-  [.kafka.deleteTopic](#kafkadeletetopic)                Delete a defined topic
-  [.kafka.getTopicName](#kafkagettopicname)               Get a topic namefrom a topic index
-  [.kafka.newTopic](#kafkanewtopic)                   Create a new topic on which messages can be sent
+  [.kafka.deleteTopic](#kafkadeletetopic)                Delete a defined topic.
+  [.kafka.getTopicName](#kafkagettopicname)               Get a topic namefrom a topic index.
+  [.kafka.newTopic](#kafkanewtopic)                   Create a new topic on which messages can be sent.
 
   // Offsets/Topic-partition functionality
-  [.kafka.addTopicPartitionToAssignment](#kafkaaddtopicpartitiontoassignment)               Add pairs of topic and partition to the current assignment for a client
-  [.kafka.assignNewOffsetsToTopicPartition](#kafkaassignnewoffsetstotopicpartition)           Set offsets on partitions of a given topic for a given client
-  [.kafka.assignNewTopicPartition](#kafkaassignnewtopicpartition)                  Create a new assignment from which data will be consumed
-  [.kafka.commitOffsetsToTopicPartition](#kafkacommitoffsetstotopicpartition)           Commit new offsets on broker for partitions of a given topic for a given client
-  [.kafka.deleteTopicPartitionFromAssignment](#kafkadeletetopicpartitionfromassignment)               Delete pairs of topic and partition from the current assignment for a client
+  [.kafka.addTopicPartitionToAssignment](#kafkaaddtopicpartitiontoassignment)               Add pairs of topic and partition to the current assignment for a client.
+  [.kafka.assignNewOffsetsToTopicPartition](#kafkaassignnewoffsetstotopicpartition)           Set offsets on partitions of a given topic for a given client.
+  [.kafka.assignNewTopicPartition](#kafkaassignnewtopicpartition)                  Create a new assignment from which data will be consumed.
+  [.kafka.commitOffsetsToTopicPartition](#kafkacommitoffsetstotopicpartition)           Commit new offsets on broker for partitions of a given topic for a given client.
+  [.kafka.deleteTopicPartitionFromAssignment](#kafkadeletetopicpartitionfromassignment)               Delete pairs of topic and partition from the current assignment for a client.
   [.kafka.getBrokerTopicConfig](#kafkabrokertopicconfig)                Broker topic information.
-  [.kafka.getCommittedOffsetsForTopicPartition](#kafkagetcommittedoffsetsfortopicpartition)        Retrieve committed offsets for the given topics and partitions
-  [.kafka.getCurrentAssignment](#kafkagetcurrentassignment)              Return the current assignment for the consumer
-  [.kafka.getEarliestOffsetsForTimes](#kafkagetearliestoffsetsfortimes)  Query earliest offsets for given partitions whose timestamps are greater or equal to given offsets
-  [.kafka.getPrevailingOffsets](#kafkagetprevailingoffsets)         Get the prevailing offsets for given partitions (last consumed message+1)
+  [.kafka.getCommittedOffsetsForTopicPartition](#kafkagetcommittedoffsetsfortopicpartition)        Retrieve committed offsets for the given topics and partitions.
+  [.kafka.getCurrentAssignment](#kafkagetcurrentassignment)              Return the current assignment for the consumer.
+  [.kafka.getEarliestOffsetsForTimes](#kafkagetearliestoffsetsfortimes)  Query earliest offsets for given partitions whose timestamps are greater or equal to given offsets.
+  [.kafka.getPrevailingOffsets](#kafkagetprevailingoffsets)         Get the prevailing offsets for given partitions (last consumed message+1).
 
   // System infomation
-  [.kafka.getKafkaThreadCount](#kafkagetkafkathreadcount)             Get a number of threads being used by librdkafka
-  [.kafka.version](#kafkaversion)                 Librdkafka version
-  [.kafka.versionString](#kafkaversionstring)              Human readable librdkafka version
+  [.kafka.getKafkaThreadCount](#kafkagetkafkathreadcount)             Get a number of threads being used by librdkafka.
+  [.kafka.version](#kafkaversion)                 Librdkafka version.
+  [.kafka.versionString](#kafkaversionstring)              Human readable librdkafka version.
 
 </pre>
 
@@ -78,7 +78,7 @@ The following functions relate to the creation of consumers and producers and th
 
 ### `.kafka.deleteClient`
 
-_Close a consumer and destroy the associated Kafka handle to client._
+_Close a consumer and destroy the associated Kafka handle to client. All registered callback for this client are removed._
 
 Syntax: `.kafka.deleteClient[client_idx]`
 
@@ -422,7 +422,7 @@ q).kafka.subscribe[client] each topic_list
 
 ### `.kafka.unsubscribe`
 
-_Unsubscribe from all topics associated with teh consumer._
+_Unsubscribe from all topics associated with teh consumer and remove consume-topic callback._
 
 Syntax: `.kafka.unsubscribe[consumer_idx]`
 

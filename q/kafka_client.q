@@ -256,7 +256,10 @@
 // @category Callback
 // @brief Register error callback function for a given client.
 // @param client_idx {int}: Index of client in `CLIENTS`.
-// @param callback {function}: Callback function.
+// @param callback {function}: Callback function which has following parametrers:
+// - `client_idx` {int}: Same client index as the parent function.
+// - `error_code` {int}: Error code.
+// - `reason` {string}: Reason of the error.
 // @note
 // Replacement of `.kfk.errcbreg`.
 .kafka.registerErrorCallback:{[client_idx;callback]
@@ -267,7 +270,11 @@
 // @category Callback
 // @brief Register throttle callback function for a given client.
 // @param client_idx {int}: Index of client in `CLIENTS`.
-// @param callback {function}: Callback function.
+// @param callback {function}: Callback function which has following parameters:
+// - `client_idx` {int}: Same client index as the parent function.
+// - `broker_name` {string}: Name of broker.
+// - `broker_id` {int}: ID of broker.
+// - `throttle_time_ms` {int}: Broker throttle time in milliseconds.
 // @note
 // Replacement of `.kfk.throttlecbreg`.
 .kafka.registerThrottleCallback:{[client_idx;callback]
@@ -279,7 +286,9 @@
 // @brief Register callback at message consumption for a given client and topic.
 // @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
 // @param topic {symbol}: Topic for which calback is to be set.
-// @param callback {function}: Callback function.
+// @param callback {function}: Callback function which has following parameters:
+// - `consumer_idx` {int}: Same consumer index as the parent function.
+// - `message` {dictionary}: Dictionary containing a message returned by `rd_kafka_consumer_poll()`.
 .kafka.registerConsumeTopicCallback:{[consumer_idx; topic; callback]
   .kafka.CONSUME_TOPIC_CALLBACK_PER_CONSUMER[consumer_idx],: enlist[topic]!enlist callback;
  };
@@ -344,26 +353,34 @@
 // @kind function
 // @category Create/Delete
 // @brief Destroy client handle and remove from `CLIENTS`.
+//  All registered callback for this client are removed.
 // @param client_idx {int}: Index of client in `CLIENTS`.
 // @note
 // Replacement of `.kfk.ClientDel`. 
 .kafka.deleteClient:{[client_idx]
-  $[`c ~ .kafka.CLIENT_TYPE_MAP client_idx;
+  if[is_consumer: `c ~ .kafka.CLIENT_TYPE_MAP client_idx;
     // Consumer has not unsubscribed.
-    if[not count .kafka.getCurrentSubscription client_idx; .kafka.unsubscribe client_idx];
-    [
-      // Get topics of this producer
-      topics: .kafka.PRODUCER_TOPIC_MAP client_idx;
-      // Delete the producer from client-topic map
-      .kafka.PRODUCER_TOPIC_MAP:client_idx _ .kafka.PRODUCER_TOPIC_MAP;
-    ]
+    if[not count .kafka.getCurrentSubscription client_idx; .kafka.unsubscribe client_idx]
+  ];
+
+  // Delete the client from kafka ecosystem.
+  .kafka.deleteClient_impl[client_idx];
+
+  if[not is_consumer;
+    // Get topics of this producer
+    topics: .kafka.PRODUCER_TOPIC_MAP client_idx;
+    // Delete the producer from client-topic map
+    .kafka.PRODUCER_TOPIC_MAP:client_idx _ .kafka.PRODUCER_TOPIC_MAP
   ];
 
   // Delete the client from client-type map
   .kafka.CLIENT_TYPE_MAP _: client_idx;
 
-  // Delete the client from kafka ecosystem.
-  .kafka.deleteClient_impl[client_idx];
+  // Delete error callback.
+  .kafka.ERROR_CALLBACK_PER_CLIENT _: client_idx;
+
+  // Delete throttle callback.
+  .kafka.THROTTLE_CALLBACK_PER_CLIENT _: client_idx;
  };
 
 //%% Setting %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/

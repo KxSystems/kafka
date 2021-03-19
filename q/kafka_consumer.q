@@ -7,6 +7,21 @@
 // Define kafka consumer interfaces.
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                    Private Interface                   //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+//%% Consumer %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+// @private
+// @kind function
+// @category Consumer
+// @brief Make a given consumer unsubscribe.
+// @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
+// @note
+// Replacement of `.kfk.Unsub`.
+.kafka.unsubscribe_impl:LIBPATH_ (`unsubscribe; 1);
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Public Interface                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
@@ -45,8 +60,12 @@
 
 // @kind function
 // @category Consumer
-// @brief Make a given consumer unsubscribe.
+// @brief Make a given consumer unsubscribe and remove consume-topic callback.
 // @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
 // @note
 // Replacement of `.kfk.Unsub`.
-.kafka.unsubscribe:LIBPATH_ (`unsubscribe; 1);
+.kafka.unsubscribe:{[consumer_idx]
+  // Remove consume callback.
+  .kafka.CONSUME_TOPIC_CALLBACK_PER_CONSUMER _: consumer_idx;
+  .kafka.unsubscribe_impl[consumer_idx]
+ }

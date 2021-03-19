@@ -73,6 +73,9 @@ consumer: .kafka.newConsumer[consumer_configuration; 5000i];
 // Create a producer
 producer: .kafka.newProducer[producer_configuration; 5000i];
 
+// Register error callback.
+.kafka.registerErrorCallback[producer; {[client_idx;error_code;reason] show "Oh no!! Error happenned due to :", reason, "!";}] 
+
 // Create topics
 topic1:.kafka.newTopic[producer; `topic1; ()!()];
 topic2:.kafka.newTopic[producer; `topic2; ()!()];
