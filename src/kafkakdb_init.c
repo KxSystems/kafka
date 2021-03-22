@@ -14,7 +14,7 @@
 /**
  * @brief Indicate if internal state is initial state. Used to protect from being re-intialized at corruption.
  */
-static I CLEAN_STATE=1;
+//static I CLEAN_STATE=1;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
@@ -94,7 +94,7 @@ static void detach(void){
   spair[1]= 0;
 
   // Set initializable true
-  CLEAN_STATE = 1;
+  //CLEAN_STATE = 1;
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -102,54 +102,84 @@ static void detach(void){
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 /**
- * @brief Initialize internal state of interface.
+ * @brief Safely unhook sockets and store them for reloading a library.
+ * @return
+ * - list of int: Stashed pair of sockets. 
  */
-EXP K init(K UNUSED(unused)){
+EXP K stash_sockets(K UNUSED(unused)){
+  // Unhook from event loop and Stash socket pair.
+  sd0(*spair);
+  K stored_spair=ktn(KI, 2);
+  for(int i=0; i!=2; ++i){
+    kI(stored_spair)[i]=spair[i];
+    spair[i]=-1;
+  };
+  return stored_spair;
+}
 
+/**
+ * @brief Initialize internal state of interface.
+ * @note
+ * This function should be executed only once by user. For reloading the library, use `reload`.
+ */
+EXP K init(K probably_spair){
+
+  /*
   if(CLEAN_STATE!=1){
     // Guard from being initialized twice.
     return krr((S) "data is remained or corruption in internal state. cannot be initialized");
   }
+  */
 
-  // Initialized client handle list.
-  CLIENTS=ktn(KS, 0);
-  // Initialize topic handle list.
-  TOPICS=ktn(KS, 0);
-
-  // WHAT IS THIS??
-  // I don't know why null string must be kept as global...
-  S0=ks("");
-
-  // Create socket pair
-  if(dumb_socketpair(spair, 1) == SOCKET_ERROR){
-    // Error in creating socket pair
-    fprintf(stderr, "creation of socketpair failed: %s\n", strerror(errno));
+  if(probably_spair->t == KI){
+    // Reload
+    for(int i=0; i!=2; ++i){
+      spair[i]=kI(probably_spair)[i];
+    }
   }
+  else{
+    // First initialization
+    // Initialized client handle list.
+    CLIENTS=ktn(KS, 0);
+    // Initialize topic handle list.
+    TOPICS=ktn(KS, 0);
+
+    // WHAT IS THIS??
+    // I don't know why null string must be kept as global...
+    S0=ks("");
+
+    // Create socket pair
+    if(dumb_socketpair(spair, 1) == SOCKET_ERROR){
+      // Error in creating socket pair
+      fprintf(stderr, "creation of socketpair failed: %s\n", strerror(errno));
+    }
     
 #ifdef WIN32
-  u_long iMode = 1;
-  if (ioctlsocket(spair[0], FIONBIO, &iMode) != NO_ERROR){
-    // Failure in setting pair[0]
-    return krr((S) "failed to set socket to non-blocking");
-  }
-  if (ioctlsocket(spair[1], FIONBIO, &iMode) != NO_ERROR){
-    // Failure in setting pair[1]
-    return krr((S) "failed to set socket1] to non-blocking");
-  }
+    u_long iMode = 1;
+    if (ioctlsocket(spair[0], FIONBIO, &iMode) != NO_ERROR){
+      // Failure in setting pair[0]
+      return krr((S) "failed to set socket to non-blocking");
+    }
+    if (ioctlsocket(spair[1], FIONBIO, &iMode) != NO_ERROR){
+      // Failure in setting pair[1]
+      return krr((S) "failed to set socket1] to non-blocking");
+    }
     
 #else
-  if (fcntl(spair[0], F_SETFL, O_NONBLOCK) == -1){
-    // Failure in setting pair[0]
-    return krr((S) "failed to set socket[0] to non-blocking");
-  } 
-  if (fcntl(spair[1], F_SETFL, O_NONBLOCK) == -1){
-    // Failure in setting pair[1]
-    return krr((S) "failed to set socket[1] to non-blocking");
-  }
+    if (fcntl(spair[0], F_SETFL, O_NONBLOCK) == -1){
+      // Failure in setting pair[0]
+      return krr((S) "failed to set socket[0] to non-blocking");
+    } 
+    if (fcntl(spair[1], F_SETFL, O_NONBLOCK) == -1){
+      // Failure in setting pair[1]
+      return krr((S) "failed to set socket[1] to non-blocking");
+    }
 #endif
+  }
+
 
   // Fook callback functions to event loop
-  K ok=sd1(-spair[0], &trigger_callback);
+  K ok=sd1(spair[0], &trigger_callback);
   if(ok==0){
     fprintf(stderr, "adding callback failed\n");
     spair[0]=0;
@@ -159,7 +189,7 @@ EXP K init(K UNUSED(unused)){
   r0(ok);
 
   // Set protect mode
-  CLEAN_STATE=0;
+  //CLEAN_STATE=0;
 
   // Register `detach` functoin to be called at exit
   atexit(detach);

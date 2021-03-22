@@ -17,7 +17,7 @@
 /**
  * @brief Indicate if internal state is initial state. Used to protect from being re-intialized at corruption.
  */
-static I CLEAN_STATE;
+//static I CLEAN_STATE;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
@@ -41,7 +41,7 @@ static void detach(void);
 /**
  * @brief Initialize internal state of interface.
  */
-EXP K init(K UNUSED(unused));
+EXP K init(K probably_spair);
 
 // __KAFKAKDB_INIT_H__
 #endif
