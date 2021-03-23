@@ -127,7 +127,6 @@ EXP K init(K probably_spair){
       // Error in creating socket pair
       fprintf(stderr, "creation of socketpair failed: %s\n", strerror(errno));
     }
-    printf("Initial status: %d\n", fcntl(spair[0], F_GETFL));
   }
 
   #ifdef WIN32

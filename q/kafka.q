@@ -10,7 +10,17 @@
 //                     Initial Setting                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-LIBPATH_:`:kafkakdb 2:;
+LIBPATH_:$[
+  (`kafkakdb.so in key hsym `$getenv[`QHOME], (1#string .z.o), "64") or `kafkakdb.so in key hsym `$getenv `LD_LIBRARY_PATH;
+  // Exist under QHOME/[os]64 or LD_LIBRARY_PATH
+  `:kafkakdb 2:;
+  `kafkakdb.so in key `:clib;
+  // Exist under clib.
+  `:clib/kafkakdb 2:;
+  // Default location
+  `:kafkakdb 2:
+ ];
+
 QLIBPATH_: (::);
 LOAD_Q_FILE_:{[file]
   if[(::) ~ QLIBPATH_;
