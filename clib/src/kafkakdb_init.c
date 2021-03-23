@@ -8,15 +8,6 @@
 #include "kafkakdb_init.h"
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-//                    Global Variables                   //
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-
-/**
- * @brief Indicate if internal state is initial state. Used to protect from being re-intialized at corruption.
- */
-//static I CLEAN_STATE=1;
-
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
@@ -51,19 +42,6 @@ K trigger_callback(I socket){
  */
 static void detach(void){
 
-  if(TOPICS){
-    // `TOPICS` is not empty. Destroy.
-    for(int i= 0; i < TOPICS->n; i++){
-      // TODO
-      // 0 hole must be reused at generating a new topic
-      if(((S) 0) != kS(TOPICS)[i]){
-        // Delete if the topic is not null pointer
-        delete_topic(ki(i));
-      }      
-    }
-    // Set ready for free
-    r0(TOPICS);
-  }
   if(CLIENTS){
     for(int i= 0; i < CLIENTS->n; i++){
       // TODO
@@ -75,26 +53,21 @@ static void detach(void){
     }
     // Delete the client fron kafka broker. Wait for 1 second until the client is destroyed.
     rd_kafka_wait_destroyed(1000);
-    // Set ready for free
-    r0(CLIENTS);
   }
 
-  int socketpair;
-  if(socketpair=spair[0]){
+  if(spair[0] > -1){
     // Unfook from q network event loop
-    sd0x(socketpair, 0);
-    close(socketpair);
+    sd0x(spair[0], 0);
+    close(spair[0]);
   }
-  if(socketpair=spair[1]){
-    close(socketpair);
+  if(spair[1] > -1){
+    close(spair[1]);
   }
   
   // Set null pointer
-  spair[0]= 0;
-  spair[1]= 0;
+  spair[0]= -1;
+  spair[1]= -1;
 
-  // Set initializable true
-  //CLEAN_STATE = 1;
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -124,75 +97,88 @@ EXP K stash_sockets(K UNUSED(unused)){
  */
 EXP K init(K probably_spair){
 
-  /*
-  if(CLEAN_STATE!=1){
-    // Guard from being initialized twice.
-    return krr((S) "data is remained or corruption in internal state. cannot be initialized");
-  }
-  */
+  //K is_reload=k(0, ".kafka.LOADING_VERSION", KNULL);
 
-  if(probably_spair->t == KI){
+  if(!CLIENTS){
+    // Initialized client handle list.
+    CLIENTS=ktn(KS, 0);
+  }
+  if(!TOPICS){
+    // Initialize topic handle list.
+    TOPICS=ktn(KS, 0);
+  }
+  if(!S0){
+    // WHAT IS THIS??
+    // I don't know why null string must be kept as global...
+    S0=ks("");
+  }
+  
+  if(probably_spair->t == KI && probably_spair->n == 2 && kI(probably_spair)[0] > -1 && kI(probably_spair)[1] > -1){
     // Reload
     for(int i=0; i!=2; ++i){
       spair[i]=kI(probably_spair)[i];
     }
+    printf("FD?: %d\n", spair[0]);
+    printf("Current status: %d\n", fcntl(spair[0], F_GETFL));
   }
   else{
-    // First initialization
-    // Initialized client handle list.
-    CLIENTS=ktn(KS, 0);
-    // Initialize topic handle list.
-    TOPICS=ktn(KS, 0);
-
-    // WHAT IS THIS??
-    // I don't know why null string must be kept as global...
-    S0=ks("");
-
     // Create socket pair
     if(dumb_socketpair(spair, 1) == SOCKET_ERROR){
       // Error in creating socket pair
       fprintf(stderr, "creation of socketpair failed: %s\n", strerror(errno));
     }
-    
-#ifdef WIN32
-    u_long iMode = 1;
-    if (ioctlsocket(spair[0], FIONBIO, &iMode) != NO_ERROR){
-      // Failure in setting pair[0]
-      return krr((S) "failed to set socket to non-blocking");
-    }
-    if (ioctlsocket(spair[1], FIONBIO, &iMode) != NO_ERROR){
-      // Failure in setting pair[1]
-      return krr((S) "failed to set socket1] to non-blocking");
-    }
-    
-#else
-    if (fcntl(spair[0], F_SETFL, O_NONBLOCK) == -1){
-      // Failure in setting pair[0]
-      return krr((S) "failed to set socket[0] to non-blocking");
-    } 
-    if (fcntl(spair[1], F_SETFL, O_NONBLOCK) == -1){
-      // Failure in setting pair[1]
-      return krr((S) "failed to set socket[1] to non-blocking");
-    }
-#endif
+    printf("Initial status: %d\n", fcntl(spair[0], F_GETFL));
   }
 
+  #ifdef WIN32
+  u_long iMode = 1;
+  if (ioctlsocket(spair[0], FIONBIO, &iMode) != NO_ERROR){
+    // Failure in setting pair[0]
+    close(spair[0]);
+    close(spair[1]);
+    spair[0]=-1;
+    spair[1]=-1;
+    return krr((S) "failed to set socket to non-blocking");
+  }
+  if (ioctlsocket(spair[1], FIONBIO, &iMode) != NO_ERROR){
+    // Failure in setting pair[1]
+    close(spair[0]);
+    close(spair[1]);
+    spair[0]=-1;
+    spair[1]=-1;
+    return krr((S) "failed to set socket1] to non-blocking");
+  }
+
+#else
+  if (fcntl(spair[0], F_SETFL, O_NONBLOCK) == -1){
+    // Failure in setting pair[0]
+    close(spair[0]);
+    close(spair[1]);
+    spair[0]=-1;
+    spair[1]=-1;
+    return krr((S) "failed to set socket[0] to non-blocking");
+  } 
+  if (fcntl(spair[1], F_SETFL, O_NONBLOCK) == -1){
+    // Failure in setting pair[1]
+    close(spair[0]);
+    close(spair[1]);
+    spair[0]=-1;
+    spair[1]=-1;
+    return krr((S) "failed to set socket[1] to non-blocking");
+  }
+#endif
 
   // Fook callback functions to event loop
   K ok=sd1(spair[0], &trigger_callback);
-  if(ok==0){
+  if(!ok){
     fprintf(stderr, "adding callback failed\n");
-    spair[0]=0;
-    spair[1]=0;
+    close(spair[0]);
+    close(spair[1]);
+    spair[0]=-1;
+    spair[1]=-1;
     return 0;
   }
   r0(ok);
-
-  // Set protect mode
-  //CLEAN_STATE=0;
-
-  // Register `detach` functoin to be called at exit
-  atexit(detach);
 
   return KNULL;
 }

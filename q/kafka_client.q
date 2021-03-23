@@ -360,7 +360,7 @@
 .kafka.deleteClient:{[client_idx]
   if[is_consumer: `c ~ .kafka.CLIENT_TYPE_MAP client_idx;
     // Consumer has not unsubscribed.
-    if[not count .kafka.getCurrentSubscription client_idx; .kafka.unsubscribe client_idx]
+    if[count .kafka.getCurrentSubscription client_idx; .kafka.unsubscribe client_idx]
   ];
 
   // Delete the client from kafka ecosystem.

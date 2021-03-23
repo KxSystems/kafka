@@ -43,9 +43,11 @@
 // @brief Reload shared library.
 .kafka.reload:{[]
   .kafka.LOADING_VERSION+:1;
+  // Unsubscribe.
+  .kafka.deleteClient each key .kafka.CLIENT_TYPE_MAP;
   // Stash spair.
   sockets: .kafka.stash_sockets[];
-  // Load q files except for kafka.init.q.
+  // Load shared library.
   .kafka.newClient_impl:LIBPATH_ (`new_client; 3);
   .kafka.deleteClient_impl:LIBPATH_ (`delete_client;1);
   .kafka.manualPoll:LIBPATH_ (`manual_poll; 3);
@@ -78,6 +80,8 @@
   .kafka.newTopic_impl:LIBPATH_ (`new_topic; 3);
   .kafka.deleteTopic_impl:LIBPATH_ (`delete_topic; 1);
   .kafka.getTopicName:LIBPATH_ (`get_topic_name; 1);
+  .kafka.init:LIBPATH_ (`init; 1);
+  .kafka.stash_sockets:LIBPATH_ (`stash_sockets; 1);
   // Execute `init` with the stashed sockets.
   .kafka.init[sockets]
  }

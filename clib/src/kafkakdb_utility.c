@@ -20,6 +20,23 @@ const J KDB_DAY_OFFSET = 10957;
  */
 const J ONEDAY_MILLIS = 86400000;
 
+//%% Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief WHAT IS THIS??
+ */
+K S0 = 0;
+
+/**
+ * @brief Client handles expressed in symbol list
+ */
+K CLIENTS = 0;
+
+/**
+ * @brief Topic names expressed in symbol list
+ */
+K TOPICS = 0;
+
 /**
  * @brief Type indicators sorted in ascending order by underlying integer values.
  * @note

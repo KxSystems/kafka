@@ -1,2 +1,2 @@
-include/k.h
-build/
+clib/include/k.h
+clib/build/
