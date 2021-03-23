@@ -219,8 +219,8 @@ To use OpenSSL set `OPENSSL_ROOT_DIR` to the install directory of OpenSSL.
 
 ]$ git clone https://github.com/KxSystems/kafka.git
 ]$ cd kafka
-]$ mkdir build && cd build
-build]$ cmake .. -DENABLE_SSL:BOOL=OFF
+]$ mkdir -p clib/build && cd clib/build
+build]$ cmake ../.. -DENABLE_SSL:BOOL=OFF
 build]$ cmake --build . --target install
 
 ```
@@ -235,8 +235,9 @@ build]$ cmake --build . --target install
 
 > git clone https://github.com/KxSystems/kafka.git
 > cd kafka
+> cd clib
 > mkdir build && cd build
-build> cmake --config Release .. -DENABLE_SSL:BOOL=OFF
+build> cmake --config Release ..\.. -DENABLE_SSL:BOOL=OFF
 build> cmake --build . --config Release --target install
 
 ```

@@ -1,0 +1,5 @@
+{
+  "default": {
+    "entry": [ "kafkakdb.so" ]
+  }
+}
