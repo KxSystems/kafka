@@ -6,6 +6,12 @@
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 #include "kafkakdb_utility.h"
+#include <signal.h>
+#ifndef _WIN32
+#include <pthread.h>
+#else
+#include <process.h>
+#endif
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Global Variables                   //
@@ -26,6 +32,11 @@ static const I KR;
  * In order to make this parameter effective, pass `0` for `max_poll_cnt` in `poll_client`.
  */
 static J MAXIMUM_NUMBER_OF_POLLING;
+
+/**
+ * @brief Thread pool for polling client.
+ */
+static K ALL_THREADS;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
@@ -137,6 +148,18 @@ static V throttle_cb(rd_kafka_t* handle, const char* brokername, int32_t brokeri
  * - int: The number of messages retrieved (poll count).
  */
 J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt);
+
+/**
+ * @brief Poller executed in the background.
+ * @param handle: Kafka client handle.
+ */
+static void*background_thread(void* handle);
+
+/**
+ * @brief Generate thread ID from a memory location for controlling.
+ * @param 
+ */
+static J make_thread_id(pthread_t thread);
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                      Interface                        //

@@ -2,12 +2,6 @@
 //                     Load Libraries                    //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-#ifndef _WIN32
-#include <pthread.h>
-#else
-#include <process.h>
-#endif
-
 #include <fcntl.h>
 #include "kafkakdb_utility.h"
 #include "kafkakdb_client.h"
@@ -17,34 +11,20 @@
 //                   Private Functions                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-K poller_thread_callback(I socket){
-  // Read buffer from socket
-  char buf[1024];
-  J read_bytes;
-  J consumed=0;
-  // MSG_DONTWAIT - set in sd1(-h,...)
-  while(0 < (read_bytes=recv(socket, buf, sizeof(buf), MSG_DONTWAIT))){
-    // Read until end or error
-    consumed+=read_bytes;
-  }
-  printf("client num: %ld", CLIENTS->n);
-  for(J i= 0; i < CLIENTS->n; i++){
-    if(((S) 0)!=kS(CLIENTS)[i]){
-      printf("client: %s", kS(CLIENTS)[i]);
-      // Poll if the client is not a null pointer
-      poll_client((rd_kafka_t*) kS(CLIENTS)[i], 0, 0);  
-    }
-  }
-}
-
 /**
  * @brief Trigger callback of client when mesage was sent from worker thread..
  * @param socket: Socket to read.
  */
 K trigger_callback(I socket){
-  K data[1];
-  read(socket, data, sizeof(K));
-  printr0(k(0, ".kafka.consume_topic_cb", kK(*data)[0], kK(*data)[1], KNULL));
+  static K data[16]; //! worth experimenting with since this will affect performance, probably longer than 512 is a waste 512*8 = 4096 (1page)
+  int received;
+  if((received=recv(socket, data, sizeof(data), MSG_DONTWAIT)) > 0) {
+    // convert `received` to length (number of poitners)
+    received /= sizeof(K);
+    for(int i = 0; i < received; ++i){
+      r0(k(0, ".kafka.consume_topic_cb .", data[i], KNULL));
+    }
+  }
   return KNULL;
 }
 
@@ -69,10 +49,10 @@ static void detach(void){
   if(spair[0] > -1){
     // Unfook from q network event loop
     sd0x(spair[0], 0);
-    close(spair[0]);
+    closesocket(spair[0]);
   }
   if(spair[1] > -1){
-    close(spair[1]);
+    closesocket(spair[1]);
   }
   
   // Set null pointer
@@ -136,60 +116,16 @@ EXP K init(K probably_spair){
       // Error in creating socket pair
       fprintf(stderr, "creation of socketpair failed: %s\n", strerror(errno));
     }
-    if(dumb_socketpair(spair_internal, 1) == SOCKET_ERROR){
-      // Error in creating socket pair
-      fprintf(stderr, "creation of socketpair failed: %s\n", strerror(errno));
-    }
   }
 
-/*
-  #ifdef WIN32
-  u_long iMode = 1;
-  if (ioctlsocket(spair[0], FIONBIO, &iMode) != NO_ERROR){
-    // Failure in setting pair[0]
-    close(spair[0]);
-    close(spair[1]);
-    spair[0]=-1;
-    spair[1]=-1;
-    return krr((S) "failed to set socket to non-blocking");
-  }
-  if (ioctlsocket(spair[1], FIONBIO, &iMode) != NO_ERROR){
-    // Failure in setting pair[1]
-    close(spair[0]);
-    close(spair[1]);
-    spair[0]=-1;
-    spair[1]=-1;
-    return krr((S) "failed to set socket1] to non-blocking");
-  }
-
-#else
-  if (fcntl(spair[0], F_SETFL, O_NONBLOCK) == -1){
-    // Failure in setting pair[0]
-    close(spair[0]);
-    close(spair[1]);
-    spair[0]=-1;
-    spair[1]=-1;
-    return krr((S) "failed to set socket[0] to non-blocking");
-  } 
-  if (fcntl(spair[1], F_SETFL, O_NONBLOCK) == -1){
-    // Failure in setting pair[1]
-    close(spair[0]);
-    close(spair[1]);
-    spair[0]=-1;
-    spair[1]=-1;
-    return krr((S) "failed to set socket[1] to non-blocking");
-  }
-#endif
-*/
-  
   // Fook callback functions to event loop
-  K ok=sd1(-spair_internal[0], &trigger_callback);
+  K ok=sd1(spair[0], trigger_callback);
   if(!ok){
     fprintf(stderr, "adding callback failed\n");
-    close(spair_internal[0]);
-    close(spair_internal[1]);
-    spair_internal[0]=-1;
-    spair_internal[1]=-1;
+    closesocket(spair[0]);
+    closesocket(spair[1]);
+    spair[0]=-1;
+    spair[1]=-1;
     return 0;
   }
   r0(ok);

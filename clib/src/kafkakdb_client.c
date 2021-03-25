@@ -27,6 +27,11 @@ static const I KR = -128;
  */
 static J MAXIMUM_NUMBER_OF_POLLING = 0;
 
+/**
+ * @brief Thread pool for polling client.
+ */
+static K ALL_THREADS = 0;
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -228,6 +233,38 @@ static V throttle_cb(rd_kafka_t *handle, const char *brokername, int32_t brokeri
 
 //%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
+static void flush(J h, const void *ptr, J len_bytes) {
+	J sent;
+  while(sent = send(h, ptr, len_bytes, 0)){
+    if(sent < 0) {
+      if(errno == EINTR){
+        continue;
+      }
+      else{
+        perror("send");
+        exit(255);
+      }
+    }
+    if(sent < len_bytes) {
+      ptr = ((const char *)ptr) + sent;
+      len_bytes -= sent;
+      // keep going until everything is written
+    }
+  }
+/*
+again:	r = send(h,ptr,len_bytes,0);
+	if(r < 0) {
+		if(errno == EINTR) goto again;
+		perror("send"),exit(255);
+	}
+	if(r < len_bytes) {
+		ptr = ((const char *)ptr) + r;
+		len_bytes -= r;
+		goto again; // keep going until everything is written
+  }
+  */
+}
+
 /**
  * @brief Poll producer or consumer with timeout (and a limitation of the number of polling for consumer).
  * @param handle: Client handle.
@@ -250,37 +287,58 @@ J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt){
     J n= 0;
     // Holder of message from polling
     rd_kafka_message_t *message;
-    // Holder of q message converted from message
-    K q_message;
+
+    // Holder of q message converted from message.
+    // Store one mesage in each box in one loop.
+    K buffer[16];
+    int buf_cursor=0;
 
     while((message= rd_kafka_consumer_poll(handle, timeout))){
       // Poll and retrieve message while message is not empty
-      // Tuple of (client index; data)
-      K client_data=knk(2, ki(handle_to_index(handle)), decode_message(handle, message), KNULL);      
-      //q_message= decode_message(handle, message);
-      // Send (client index; data) to q main thread.
-      send(spair_internal[1], client_data, sizeof(K), 0);
-      // Call `.kfk.consume_topic_cb` passing client index and message information dictionary
-      //printr0(k(0, ".kafka.consume_topic_cb", ki(handle_to_index(handle)), q_message, KNULL));
+      // Store tuple of (client index; data)
+      buffer[buf_cursor++]=knk(2, ki(handle_to_index(handle)), decode_message(handle, message), KNULL);    
+      if(buf_cursor==(sizeof(buffer)/sizeof(K))){
+        // Buffer became full.
+        flush(spair[1], buffer, sizeof(buffer));
+        buf_cursor=0;
+      }
       // Discard message which is not necessary any more
       rd_kafka_message_destroy(message);
 
       // Increment the poll counter
       ++n;
+    }
 
-      // Argument `max_poll_cnt` has priority over MAXIMUM_NUMBER_OF_POLLING
-      if ((n == max_poll_cnt) || (n == MAXIMUM_NUMBER_OF_POLLING && max_poll_cnt==0)){
-        // The counter of polling reacched specified `max_poll_cnt` or globally set `MAX_MESSAGES_PER_POLL`.
-        char data = 'Z';
-        //write(spair[1], &data, 1);
-        // Return the number of mesasges
-        return n;
-      }
+    if(buf_cursor){
+      flush(spair[1], buffer, buf_cursor*sizeof(K));
     }
     // Return the number of mesasges
     return n;
   }
-  
+}
+
+/**
+ * @brief Poller executed in the background.
+ * @param handle: Kafka client handle.
+ */
+static void*background_thread(void* handle) {
+  rd_kafka_t *client = handle;
+  while(1){
+    // Poll forever.
+    poll_client(client, -1, 1000);
+  }
+}
+
+/**
+ * @brief Generate thread ID from a memory location for controlling.
+ * @param 
+ */
+static J make_thread_id(pthread_t thread) {
+	void *id = malloc(sizeof(pthread_t));
+  // Use memory location as an ID.
+	memcpy(id, &thread, sizeof(pthread_t));
+  // works because sizeof(J) == sizeof(id)
+	return (J) id;
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -372,11 +430,11 @@ EXP K new_client(K client_type, K q_config, K timeout){
     rd_kafka_poll_set_consumer(handle);
     // create a separate file-descriptor to which librdkafka will write payload (of size size) whenever a new element is enqueued on a previously empty queue.
     // Consumer gets from consumer queue
-    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_consumer(handle), spair_internal[1], "", 0);
+    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_consumer(handle), spair[1], "", 0);
   }
   else{
     // Producer gets from main queue
-    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_main(handle), spair_internal[1], "", 0);
+    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_main(handle), spair[1], "", 0);
   }
 
   // Store client hande as symbol
@@ -459,6 +517,58 @@ EXP K manual_poll(K client_idx, K timeout, K max_poll_cnt){
   // Return the number of messages (poll count)
   return kj(n);
 }
+
+/**
+ * @brief Start polling for a given client in background.
+ * @param client_idx: Index of the client in `CLIENTS`.
+ */
+EXP K start_background_poll(K client_idx) {
+  if(!check_qtype("i", client_idx)){
+    // The argument type does not match int
+    return krr("cient index must be int type.");
+  }
+  if(ALL_THREADS && (ALL_THREADS->n > client_idx->i)) {
+    if(kJ(ALL_THREADS)[client_idx->i]){
+      return krr("already_running");
+    }
+  } else {
+    ALL_THREADS=k(0,"{[threads; idx] first[idx + 1]#threads}", (ALL_THREADS? ALL_THREADS: ktn(KJ, 0)), r1(client_idx), KNULL);
+  }
+  
+  // TODO
+  // branching for Windows
+  rd_kafka_t *handle=index_to_handle(client_idx);
+  pthread_t task;
+  kJ(ALL_THREADS)[client_idx->i] = make_thread_id(task);
+  pthread_create(&task, NULL, background_thread, handle);
+  return r1(client_idx);
+}
+
+/**
+ * @brief Stop polling for a given client in background.
+ * @param client_idx: Index of the client in `CLIENTS`.
+ * @return
+ * - bool: true for successful termination.
+ */
+EXP K stop_background_poll(K client_idx) {
+  if(!check_qtype("i", client_idx)){
+    // The argument type does not match
+    return krr("cient index must be int type.");
+  }
+  if(ALL_THREADS && ALL_THREADS->n > client_idx->i) {
+    // Thread ID
+    J id = kJ(ALL_THREADS)[client_idx->i];
+    if(!id){
+      return krr("not running in background");
+    }
+    pthread_t task;
+    memcpy(&task, (void*) id, sizeof(pthread_t));
+    pthread_kill(task, SIGKILL); //SIGTERM?
+    kJ(ALL_THREADS)[client_idx->i] = 0;
+  }
+  return kb(1);
+}
+
 
 /**
  * @brief Set a new number on `MAXIMUM_NUMBER_OF_POLLING`.

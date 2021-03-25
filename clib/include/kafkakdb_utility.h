@@ -18,13 +18,11 @@
 #pragma comment(lib, "librdkafka.lib")
 #define EXP __declspec(dllexport)
 SOCKET spair[2];
-SOCKET spair_internal[2];
 #else
 #include <unistd.h>
 #define EXP
 #define SOCKET_ERROR -1
 I spair[2];
-I spair_internal[2];
 #endif
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
