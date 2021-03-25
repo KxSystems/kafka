@@ -2,6 +2,12 @@
 //                     Load Libraries                    //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
+#ifndef _WIN32
+#include <pthread.h>
+#else
+#include <process.h>
+#endif
+
 #include <fcntl.h>
 #include "kafkakdb_utility.h"
 #include "kafkakdb_client.h"
@@ -11,29 +17,34 @@
 //                   Private Functions                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-/**
- * @brief Trigger callback of client.
- * @param socket: Socket to read.
- */
-K trigger_callback(I socket){
-
+K poller_thread_callback(I socket){
   // Read buffer from socket
   char buf[1024];
   J read_bytes;
   J consumed=0;
   // MSG_DONTWAIT - set in sd1(-h,...)
-  while(0 < (read_bytes=recv(socket, buf, sizeof(buf), 0))){
+  while(0 < (read_bytes=recv(socket, buf, sizeof(buf), MSG_DONTWAIT))){
     // Read until end or error
     consumed+=read_bytes;
   }
-    
+  printf("client num: %ld", CLIENTS->n);
   for(J i= 0; i < CLIENTS->n; i++){
     if(((S) 0)!=kS(CLIENTS)[i]){
+      printf("client: %s", kS(CLIENTS)[i]);
       // Poll if the client is not a null pointer
-      poll_client((rd_kafka_t*) kS(CLIENTS)[i], 0, 0);
+      poll_client((rd_kafka_t*) kS(CLIENTS)[i], 0, 0);  
     }
   }
+}
 
+/**
+ * @brief Trigger callback of client when mesage was sent from worker thread..
+ * @param socket: Socket to read.
+ */
+K trigger_callback(I socket){
+  K data[1];
+  read(socket, data, sizeof(K));
+  printr0(k(0, ".kafka.consume_topic_cb", kK(*data)[0], kK(*data)[1], KNULL));
   return KNULL;
 }
 
@@ -118,8 +129,6 @@ EXP K init(K probably_spair){
     for(int i=0; i!=2; ++i){
       spair[i]=kI(probably_spair)[i];
     }
-    printf("FD?: %d\n", spair[0]);
-    printf("Current status: %d\n", fcntl(spair[0], F_GETFL));
   }
   else{
     // Create socket pair
@@ -127,8 +136,13 @@ EXP K init(K probably_spair){
       // Error in creating socket pair
       fprintf(stderr, "creation of socketpair failed: %s\n", strerror(errno));
     }
+    if(dumb_socketpair(spair_internal, 1) == SOCKET_ERROR){
+      // Error in creating socket pair
+      fprintf(stderr, "creation of socketpair failed: %s\n", strerror(errno));
+    }
   }
 
+/*
   #ifdef WIN32
   u_long iMode = 1;
   if (ioctlsocket(spair[0], FIONBIO, &iMode) != NO_ERROR){
@@ -166,18 +180,21 @@ EXP K init(K probably_spair){
     return krr((S) "failed to set socket[1] to non-blocking");
   }
 #endif
-
+*/
+  
   // Fook callback functions to event loop
-  K ok=sd1(spair[0], &trigger_callback);
+  K ok=sd1(-spair_internal[0], &trigger_callback);
   if(!ok){
     fprintf(stderr, "adding callback failed\n");
-    close(spair[0]);
-    close(spair[1]);
-    spair[0]=-1;
-    spair[1]=-1;
+    close(spair_internal[0]);
+    close(spair_internal[1]);
+    spair_internal[0]=-1;
+    spair_internal[1]=-1;
     return 0;
   }
   r0(ok);
+
+  atexit(detach);
 
   return KNULL;
 }

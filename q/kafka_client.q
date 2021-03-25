@@ -128,6 +128,7 @@
 // @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
 // @param message {dictionary}: Dictionary containing a message returned by `rd_kafka_consumer_poll()`.
 .kafka.consume_topic_cb:{[consumer_idx; message]
+  show message;
   // Call registered callback function for the topic in the message if any; otherwise call default callback function.
   $[(::) ~ registered_consume_topic_cb:.kafka.CONSUME_TOPIC_CALLBACK_PER_CONSUMER[consumer_idx; message `topic];
      .kafka.default_consume_topic_cb;

@@ -255,9 +255,13 @@ J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt){
 
     while((message= rd_kafka_consumer_poll(handle, timeout))){
       // Poll and retrieve message while message is not empty
-      q_message= decode_message(handle, message);
+      // Tuple of (client index; data)
+      K client_data=knk(2, ki(handle_to_index(handle)), decode_message(handle, message), KNULL);      
+      //q_message= decode_message(handle, message);
+      // Send (client index; data) to q main thread.
+      send(spair_internal[1], client_data, sizeof(K), 0);
       // Call `.kfk.consume_topic_cb` passing client index and message information dictionary
-      printr0(k(0, ".kafka.consume_topic_cb", ki(handle_to_index(handle)), q_message, KNULL));
+      //printr0(k(0, ".kafka.consume_topic_cb", ki(handle_to_index(handle)), q_message, KNULL));
       // Discard message which is not necessary any more
       rd_kafka_message_destroy(message);
 
@@ -268,7 +272,7 @@ J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt){
       if ((n == max_poll_cnt) || (n == MAXIMUM_NUMBER_OF_POLLING && max_poll_cnt==0)){
         // The counter of polling reacched specified `max_poll_cnt` or globally set `MAX_MESSAGES_PER_POLL`.
         char data = 'Z';
-        send(spair[1], &data, 1, 0);
+        //write(spair[1], &data, 1);
         // Return the number of mesasges
         return n;
       }
@@ -368,11 +372,11 @@ EXP K new_client(K client_type, K q_config, K timeout){
     rd_kafka_poll_set_consumer(handle);
     // create a separate file-descriptor to which librdkafka will write payload (of size size) whenever a new element is enqueued on a previously empty queue.
     // Consumer gets from consumer queue
-    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_consumer(handle), spair[1], "X", 1);
+    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_consumer(handle), spair_internal[1], "", 0);
   }
   else{
     // Producer gets from main queue
-    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_main(handle), spair[1], "X", 1);
+    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_main(handle), spair_internal[1], "", 0);
   }
 
   // Store client hande as symbol

@@ -10,6 +10,8 @@
 //                     Initial Setting                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
+//if[0 = system "s"; '"thread?"];
+
 LIBPATH_:$[
   (`kafkakdb.so in key hsym `$getenv[`QHOME], (1#string .z.o), "64") or `kafkakdb.so in key hsym `$getenv `LD_LIBRARY_PATH;
   // Exist under QHOME/[os]64 or LD_LIBRARY_PATH
