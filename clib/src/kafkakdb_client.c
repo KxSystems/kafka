@@ -10,14 +10,6 @@
 //                    Global Variables                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-
-//%% Utility %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-/**
- * @brief Error type of K object
- */
-static const I KR = -128;
-
 //%% Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
@@ -116,7 +108,9 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
   // Convert it to kdb+ timestamp
   K msgtime= ktj(-KP, (timestamp > 0)? millis_to_kdb_nanos(timestamp): nj);
 
-  return build_dictionary_n(9,
+  K error=msg->err? kp((S) rd_kafka_err2str(msg->err)): kp("");
+
+  return build_dictionary_n(10,
             "mtype", msg->err? ks((S) rd_kafka_err2name(msg->err)): r1(S0), 
             "topic", msg->rkt? ks((S) rd_kafka_topic_name(msg->rkt)): r1(S0),
             "client", ki(handle_to_index(handle)),
@@ -126,33 +120,11 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
             "data", payload,
             "key", key,
             "headers", k_headers,
+            "error", error,
             (S) 0);
 }
 
 //%% Callback Functions %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-/**
- * @brief Print error if any and release K object.
- * @note
- * Return 0 to indicate mem free to kafka where needed in callback
- */
-I printr0(K response){
-  if(!response){
-    // null object (success). Nothing to do.
-    return 0;
-  }
-  else if(KR == response->t){
-    // execution error)
-    // print error message
-    fprintf(stderr, "%s\n", response->s);
-  }
-  else{
-    // Not sure what case is this.
-    // nothing to do.
-  }
-  r0(response);
-  return 0;
-}
 
 /**
  * @brief Callback function for statistics set by `rd_kafka_conf_set_stats_cb` and triggered from `rd_kafka_poll()` every `statistics.interval.ms`.
@@ -163,7 +135,11 @@ I printr0(K response){
 static I stats_cb(rd_kafka_t *UNUSED(handle), S json, size_t json_len, V *UNUSED(opaque)){
   // Pass string statistics to q
   // Return 0 to indicate mem free to kafka
-  return printr0(k(0, (S) ".kafka.stats_cb", kpn(json, json_len), KNULL));
+  K stats_message=knk(2, kp((S) ".kafka.stats_cb"), kpn(json, json_len), KNULL);
+  // Must be processed in the main thread.
+  // stats_message will be freed in the main thread.
+  send(spair[1], &stats_message, sizeof(K), MSG_DONTWAIT);
+  return 0;
 }
 
 /**
@@ -173,7 +149,11 @@ static I stats_cb(rd_kafka_t *UNUSED(handle), S json, size_t json_len, V *UNUSED
  * @param buf: WHAT IS THIS??
  */
 static void log_cb(const rd_kafka_t *UNUSED(handle), int level, const char *fac, const char *buf){
-  printr0(k(0, (S) ".kafka.log_cb", ki(level), kp((S) fac), kp((S) buf), KNULL));
+  K log_message=knk(4, kp((S) ".kafka.log_cb"), ki(level), kp((S) fac), kp((S) buf), KNULL);
+  // Must be processed in the main thread.
+  // stats_message will be freed in the main thread.
+  send(spair[1], &log_message, sizeof(K), MSG_DONTWAIT);
+  //printr0(k(0, (S) ".kafka.log_cb", ki(level), kp((S) fac), kp((S) buf), KNULL));
 }
 
 /**
@@ -185,7 +165,11 @@ static void log_cb(const rd_kafka_t *UNUSED(handle), int level, const char *fac,
  */
 static void offset_commit_cb(rd_kafka_t *handle, rd_kafka_resp_err_t error_code, rd_kafka_topic_partition_list_t *offsets, V *UNUSED(opaque)){
   // Pass client (consumer) index, error message and a list of topic-partition information dictionaries
-  printr0(k(0, (S) ".kafka.offset_commit_cb", ki(handle_to_index(handle)), kp((S) rd_kafka_err2str(error_code)), decode_topic_partition_list(offsets), KNULL));
+  K offset_commit_message=knk(4, kp((S) ".kafka.offset_commit_cb"), ki(handle_to_index(handle)), kp((S) rd_kafka_err2str(error_code)), decode_topic_partition_list(offsets), KNULL);
+  // Must be processed in the main thread.
+  // stats_message will be freed in the main thread.
+  send(spair[1], &offset_commit_message, sizeof(K), MSG_DONTWAIT);
+  //printr0(k(0, (S) ".kafka.offset_commit_cb", ki(handle_to_index(handle)), kp((S) rd_kafka_err2str(error_code)), decode_topic_partition_list(offsets), KNULL));
 }
 
 /**
@@ -199,7 +183,11 @@ static void offset_commit_cb(rd_kafka_t *handle, rd_kafka_resp_err_t error_code,
  */
 static V dr_msg_cb(rd_kafka_t *handle, const rd_kafka_message_t *msg, V *UNUSED(opaque)){
   // Pass client (producer) index and dictionary of delivery report information
-  printr0(k(0, (S) ".kafka.dr_msg_cb", ki(handle_to_index(handle)), decode_message(handle, msg), KNULL));
+  K dr_msg_message=knk(3, kp((S) ".kafka.dr_msg_cb"), ki(handle_to_index(handle)), decode_message(handle, msg), KNULL);
+  // Must be processed in the main thread.
+  // stats_message will be freed in the main thread.
+  send(spair[1], &dr_msg_message, sizeof(K), MSG_DONTWAIT);
+  //printr0(k(0, (S) ".kafka.dr_msg_cb", ki(handle_to_index(handle)), decode_message(handle, msg), KNULL)); 
 }
 
 /**
@@ -213,7 +201,11 @@ static V dr_msg_cb(rd_kafka_t *handle, const rd_kafka_message_t *msg, V *UNUSED(
  */
 static V error_cb(rd_kafka_t *handle, int error_code, const char *reason, V *UNUSED(opaque)){
   // Pass client index, error code and reson for the error.
-  printr0(k(0, (S) ".kafka.error_cb", ki(handle_to_index(handle)), ki(error_code), kp((S)reason), KNULL));
+  K error_message=knk(4, kp((S) ".kafka.error_cb"), ki(handle_to_index(handle)), ki(error_code), kp((S)reason), KNULL);
+  // Must be processed in the main thread.
+  // stats_message will be freed in the main thread.
+  send(spair[1], &error_message, sizeof(K), MSG_DONTWAIT);
+  //printr0(k(0, (S) ".kafka.error_cb", ki(handle_to_index(handle)), ki(error_code), kp((S)reason), KNULL));
 }
 
 /**
@@ -228,14 +220,18 @@ static V error_cb(rd_kafka_t *handle, int error_code, const char *reason, V *UNU
  */
 static V throttle_cb(rd_kafka_t *handle, const char *brokername, int32_t brokerid, int throttle_time_ms, V *UNUSED(opaque)){
   // Pass client index, brker name, broker ID and throttle time
-  printr0(k(0,(S) ".kafka.throttle_cb", ki(handle_to_index(handle)), kp((S) brokername), ki(brokerid), ki(throttle_time_ms), KNULL));
+  K throttle_message=knk(5, kp((S) ".kafka.throttle_cb"), ki(handle_to_index(handle)), kp((S) brokername), ki(brokerid), ki(throttle_time_ms), KNULL);
+  // Must be processed in the main thread.
+  // stats_message will be freed in the main thread.
+  send(spair[1], &throttle_message, sizeof(K), MSG_DONTWAIT);
+  //printr0(k(0,(S) ".kafka.throttle_cb", ki(handle_to_index(handle)), kp((S) brokername), ki(brokerid), ki(throttle_time_ms), KNULL));
 }
 
 //%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
-static void flush(J h, const void *ptr, J len_bytes) {
+static void flush(J socket, const void *ptr, J len_bytes) {
 	J sent;
-  while(sent = send(h, ptr, len_bytes, 0)){
+  while(sent = send(socket, ptr, len_bytes, 0)){
     if(sent < 0) {
       if(errno == EINTR){
         continue;
@@ -296,12 +292,16 @@ J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt){
     while((message= rd_kafka_consumer_poll(handle, timeout))){
       // Poll and retrieve message while message is not empty
       // Store tuple of (client index; data)
+      K q_message=knk(2, ki(handle_to_index(handle)), decode_message(handle, message), KNULL);;
+      send(spair[1], &q_message, sizeof(K), MSG_DONTWAIT);
+      /*
       buffer[buf_cursor++]=knk(2, ki(handle_to_index(handle)), decode_message(handle, message), KNULL);    
       if(buf_cursor==(sizeof(buffer)/sizeof(K))){
         // Buffer became full.
         flush(spair[1], buffer, sizeof(buffer));
         buf_cursor=0;
       }
+      */
       // Discard message which is not necessary any more
       rd_kafka_message_destroy(message);
 
@@ -502,7 +502,7 @@ EXP K manual_poll(K client_idx, K timeout, K max_poll_cnt){
   
   if(!check_qtype("ijj", client_idx, timeout, max_poll_cnt)){
     // The argument types do not match (int; long; long)
-    return krr("cient index, timeout and maximum poll count must be (int; long; long) type.");
+    return krr("client index, timeout and maximum poll count must be (int; long; long) type.");
   }
   
   rd_kafka_t *handle=index_to_handle(client_idx);
@@ -540,8 +540,13 @@ EXP K start_background_poll(K client_idx) {
   rd_kafka_t *handle=index_to_handle(client_idx);
   pthread_t task;
   kJ(ALL_THREADS)[client_idx->i] = make_thread_id(task);
-  pthread_create(&task, NULL, background_thread, handle);
-  return r1(client_idx);
+  int ok=pthread_create(&task, NULL, background_thread, handle);
+  if(ok){
+    return krr("Failed to create a thread.");
+  }
+  else{
+    return r1(client_idx);
+  } 
 }
 
 /**

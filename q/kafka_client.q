@@ -199,7 +199,7 @@
 // Change output destination by `level`
 .kafka.log_cb:{[level;fac;buf]
   // Change if you wish
-  show -3!(level; fac; buf);
+  -1 .Q.s1 (level; fac; buf);
  };
 
 // @kind function
@@ -216,9 +216,9 @@
 // @kind function
 // @category Callback
 // @brief Callback function for delivery report set by `rd_kafka_conf_set_dr_msg_cb`.
-// @param consumer_idx {int}: Index of client (consumer).
+// @param producer_idx {int}: Index of client (producer).
 // @param message {dictionary}: Information conatined in delivery report.
-.kafka.dr_msg_cb:{[consumer_idx;message]
+.kafka.dr_msg_cb:{[producer_idx;message]
   // Change if you wish
  };
 
@@ -230,7 +230,7 @@
 // @param reason {string}: Reason for the error.
 .kafka.default_error_cb:{[client_idx;error_code;reason]
   // Change if you wish
-  show -3!(client_idx; error_code; reason);
+  -1 .Q.s1 (client_idx; error_code; reason);
  };
 
 // @kind function
@@ -250,6 +250,7 @@
 // @param message {dictionary}: Dictionary containing a message returned by `rd_kafka_consumer_poll()`.
 .kafka.default_consume_topic_cb:{[message]
   // Change if you wish
+  -1 .Q.s1 message;
  };
 
 // @kind function

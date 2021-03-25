@@ -17,13 +17,6 @@
 //                    Global Variables                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-//%% Utility %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-/**
- * @brief Error type of K object
- */
-static const I KR;
-
 //%% Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
@@ -67,13 +60,6 @@ static K load_config(rd_kafka_conf_t* conf, K q_config);
 K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t* msg);
 
 //%% Callback Functions %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-/**
- * @brief Print error if any and release K object.
- * @note
- * Return 0 to indicate mem free to kafka where needed in callback
- */
-I printr0(K response);
 
 /**
  * @brief Callback function for statistics set by `rd_kafka_conf_set_stats_cb` and triggered from `rd_kafka_poll()` every `statistics.interval.ms`.

@@ -1,5 +1,6 @@
 \l ../q/kafka.q
 
+// Configuration
 kfk_cfg:(!) . flip(
     (`metadata.broker.list;`localhost:9092);
     (`group.id;`0);
@@ -8,6 +9,8 @@ kfk_cfg:(!) . flip(
     (`enable.auto.commit; `false);
     (`api.version.request; `true)
   );
+
+// Create a consumer.
 consumer:.kafka.newConsumer[kfk_cfg; 5000i];
 
 // Topics to subscribe to
@@ -21,7 +24,7 @@ topic_cb1:{[consumer;msg]
   msg[`rcvtime]:.z.p;
   msg[`headers]:"c"$msg[`headers];
   data1,::enlist msg;
-  .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b]
+  .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 
 data2:();
@@ -30,13 +33,14 @@ topic_cb2:{[consumer;msg]
   msg[`rcvtime]:.z.t;
   msg[`headers]:"c"$msg[`headers];
   data2,::enlist msg;
-  .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b]
+  .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 
 // Subscribe to topic1 and topic2 with different callbacks from a single client
 .kafka.subscribe[consumer;topic1];
 .kafka.subscribe[consumer;topic2];
 
+// Register callback functions for the topic.
 .kafka.registerConsumeTopicCallback[consumer; topic1; topic_cb1 consumer];
 .kafka.registerConsumeTopicCallback[consumer; topic2; topic_cb2 consumer];
 

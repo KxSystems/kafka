@@ -1,4 +1,6 @@
 \l ../q/kafka.q
+
+// Configuration
 kfk_cfg:(!) . flip(
   (`metadata.broker.list;`localhost:9092);
   (`statistics.interval.ms;`10000);
@@ -6,11 +8,23 @@ kfk_cfg:(!) . flip(
   (`fetch.wait.max.ms;`10);
   (`api.version.request; `true)
   );
+
+// Create a producer.
 producer:.kafka.newProducer[kfk_cfg; 5000i]
 
+// Create topics.
 topic1:.kafka.newTopic[producer;`test1;()!()]
 topic2:.kafka.newTopic[producer;`test2;()!()]
 
+// Callback for delivery report.
+.kafka.dr_msg_cb:{[producer_idx; message]
+  $["" ~ message `error;
+    -1 "delivered:", .Q.s1 (message `msgtime; message `topic; "c"$message `data);
+    -2 "delivery error:", message `error
+  ];
+ }
+
+// Timer to publish messages.
 .z.ts:{
   n+:1;topic:$[n mod 2;topic1;topic2];
   .kafka.publish[topic;.kafka.PARTITION_UA; "Hello from producer";""];

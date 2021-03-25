@@ -22,7 +22,14 @@ K trigger_callback(I socket){
     // convert `received` to length (number of poitners)
     received /= sizeof(K);
     for(int i = 0; i < received; ++i){
-      r0(k(0, ".kafka.consume_topic_cb .", data[i], KNULL));
+      S function=kC(kK(data[i])[0]);
+      J length=kK(data[i])[0]->n;
+      if((!strncmp(function, ".kafka.stats_cb", length)) || (!strncmp(function, ".kafka.log_cb", length)) || (!strncmp(function, ".kafka.offset_commit_cb", length)) || (!strncmp(function, ".kafka.dr_msg_cb", length)) || (!strncmp(function, ".kafka.error_cb", length)) || (!strncmp(function, ".kafka.throttle_cb", length))){
+        printr0(k(0, "value", data[i], KNULL));
+      }
+      else{
+        printr0(k(0, ".kafka.consume_topic_cb .", data[i], KNULL));
+      }
     }
   }
   return KNULL;
