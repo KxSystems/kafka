@@ -49,7 +49,7 @@ start:.z.t;
     show seen:exec last offset by partition from data where topic=topic;
     
     show "Position:";
-    show .kafka.setOffsetsToEnd[consumer; topic; seen];
+    show .kafka.getPrevailingOffsets[consumer; topic; seen];
     
     show "Before commited:";
     show .kafka.getCommittedOffsetsForTopicPartition[consumer; topic; seen];
