@@ -182,6 +182,22 @@
 // @param client_idx {int}: Index of client in `CLIENTS`.
 .kafka.deleteClient_impl:LIBPATH_ (`delete_client;1);
 
+//%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+// @private
+// @kind function
+// @category Poll
+// @brief Start polling client in background.
+// @param client_idx {int}: Client index in `CLIENTS`.
+.kafka.startBackgroundPoll:LIBPATH_ (`start_background_poll; 1);
+
+// @private
+// @kind function
+// @category Poll
+// @brief Stop polling client in background.
+// @param client_idx {int}: Client index in `CLIENTS`.
+.kafka.stopBackgroundPoll:LIBPATH_ (`stop_background_poll; 1);
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Public Interface                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -294,39 +310,6 @@
   .kafka.CONSUME_TOPIC_CALLBACK_PER_CONSUMER[consumer_idx],: enlist[topic]!enlist callback;
  };
 
-//%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-// @kind function
-// @category Poll
-// @brief Poll client manually.
-// @param client_idx {int}: Client index in `CLIENTS`.
-// @param timeout {long}: The maximum amount of time (in milliseconds) that the call will block waiting for events.
-// - 0: non-blocking
-// - -1: wait indefinitely
-// - others: wait for this period
-// @param max_poll_cnt {long}: The maximum number of polls, in turn the number of messages to get.
-// @return
-// - long: The number of messages retrieved (poll count).
-// @note
-// Replacement of `.kfk.Poll`
-.kafka.manualPoll:LIBPATH_ (`manual_poll; 3);
-
-.kafka.startBackgroundPoll:LIBPATH_ (`start_background_poll; 1);
-
-.kafka.stopBackgroundPoll:LIBPATH_ (`stop_background_poll; 1);
-
-// @kind function
-// @category Poll
-// @brief Set maximum number of polling at execution of `.kafka.manualPoll` function or C function `poll_client`.
-//  This number coincides with the number of maximum number of messages to retrieve.
-// @param n {long}: The maximum number of polling at execution of `.kafka.manualPoll` function.
-// @return
-// - long: The number set as upper limit of polling.
-// @note
-// - In order for this threshold to make effect, `max_poll_cnt` parameter for `manualPoll` must be 0.
-// Replacement of `.kfk.MaxMsgsPerPoll`.
-.kafka.setMaximumNumberOfPolling:LIBPATH_ (`set_maximum_number_of_polling; 1);
-
 // %% Create/Delete %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 // @kind function
@@ -339,7 +322,8 @@
 // @return
 // - int: Client index in `CLIENTS`.
 .kafka.newProducer:{[config;timeout]
-  .kafka.newClient["p"; config; timeout]
+  producer: .kafka.newClient["p"; config; timeout];
+  .kafka.startBackgroundPoll[producer]
  };
 
 // @kind function
@@ -352,7 +336,8 @@
 // @return
 // - int: Client index in `CLIENTS`.
 .kafka.newConsumer:{[config;timeout]
-  .kafka.newClient["c"; config; timeout]
+  consumer: .kafka.newClient["c"; config; timeout];
+  .kafka.startBackgroundPoll[consumer]
  };
 
 // @kind function
@@ -368,6 +353,8 @@
     if[count .kafka.getCurrentSubscription client_idx; .kafka.unsubscribe client_idx]
   ];
 
+  // Stop polling
+  .kafka.stopBackgroundPoll[client_idx];
   // Delete the client from kafka ecosystem.
   .kafka.deleteClient_impl[client_idx];
 

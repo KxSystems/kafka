@@ -50,10 +50,10 @@
   // Load shared library.
   .kafka.newClient_impl:LIBPATH_ (`new_client; 3);
   .kafka.deleteClient_impl:LIBPATH_ (`delete_client;1);
-  .kafka.manualPoll:LIBPATH_ (`manual_poll; 3);
-  .kafka.setMaximumNumberOfPolling:LIBPATH_ (`set_maximum_number_of_polling; 1);
   .kafka.getClientName:LIBPATH_ (`get_client_name; 1);
   .kafka.setLogLevel:LIBPATH_ (`set_log_level; 2);
+  .kafka.startBackgroundPoll:LIBPATH_ (`start_background_poll; 1);
+  .kafka.stopBackgroundPoll:LIBPATH_ (`stop_background_poll; 1);
   .kafka.getOutQueueLength:LIBPATH_ (`get_out_queue_length; 1);
   .kafka.assignNewTopicPartition_impl:LIBPATH_ (`assign_new_topic_partition; 1);
   .kafka.addTopicPartitionToAssignment_impl:LIBPATH_ (`add_topic_partition; 2);

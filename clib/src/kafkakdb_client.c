@@ -13,13 +13,6 @@
 //%% Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
- * @brief Maximum number of polling at execution of `poll_client`. Set `0` by default.
- * @note
- * In order to make this parameter effective, pass `0` for `max_poll_cnt` in `poll_client`.
- */
-static J MAXIMUM_NUMBER_OF_POLLING = 0;
-
-/**
  * @brief Thread pool for polling client.
  */
 static K ALL_THREADS = 0;
@@ -286,22 +279,25 @@ J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt){
 
     // Holder of q message converted from message.
     // Store one mesage in each box in one loop.
-    K buffer[16];
-    int buf_cursor=0;
+    //K buffer[16];
+    //int buf_cursor=0;
 
     while((message= rd_kafka_consumer_poll(handle, timeout))){
       // Poll and retrieve message while message is not empty
       // Store tuple of (client index; data)
       K q_message=knk(2, ki(handle_to_index(handle)), decode_message(handle, message), KNULL);;
       send(spair[1], &q_message, sizeof(K), MSG_DONTWAIT);
+      
       /*
-      buffer[buf_cursor++]=knk(2, ki(handle_to_index(handle)), decode_message(handle, message), KNULL);    
+      K data=knk(2, ki(handle_to_index(handle)), decode_message(handle, message), KNULL); 
+      buffer[buf_cursor++]=&data;
       if(buf_cursor==(sizeof(buffer)/sizeof(K))){
         // Buffer became full.
         flush(spair[1], buffer, sizeof(buffer));
         buf_cursor=0;
       }
       */
+      
       // Discard message which is not necessary any more
       rd_kafka_message_destroy(message);
 
@@ -309,9 +305,11 @@ J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt){
       ++n;
     }
 
+    /*
     if(buf_cursor){
       flush(spair[1], buffer, buf_cursor*sizeof(K));
     }
+    */
     // Return the number of mesasges
     return n;
   }
@@ -426,15 +424,8 @@ EXP K new_client(K client_type, K q_config, K timeout){
   rd_kafka_set_log_queue(handle, NULL);
 
   if(type == RD_KAFKA_CONSUMER){
-    // Redirect `rd_kafka_poll()` to `consumer_poll()`
+    // Redirect `rd_kafka_poll()` to `consumer_poll()`. (Producer gets from main queue).
     rd_kafka_poll_set_consumer(handle);
-    // create a separate file-descriptor to which librdkafka will write payload (of size size) whenever a new element is enqueued on a previously empty queue.
-    // Consumer gets from consumer queue
-    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_consumer(handle), spair[1], "", 0);
-  }
-  else{
-    // Producer gets from main queue
-    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_main(handle), spair[1], "", 0);
   }
 
   // Store client hande as symbol
@@ -463,12 +454,6 @@ EXP K delete_client(K client_idx){
     // Null pointer (`krr`). Error happened in `index_to_cient`.
     return (K) handle;
   }
-
-  /*
-  while(rd_kafka_outq_len(handle)){
-    // Spin wait until it is confirmed that there is no remained message to this client.
-  }
-  */
 
   if(rd_kafka_type(handle) == RD_KAFKA_CONSUMER){
     // For consumer, close first.
@@ -572,22 +557,6 @@ EXP K stop_background_poll(K client_idx) {
     kJ(ALL_THREADS)[client_idx->i] = 0;
   }
   return kb(1);
-}
-
-
-/**
- * @brief Set a new number on `MAXIMUM_NUMBER_OF_POLLING`.
- * @param n: The maximum number of polling at execution of `poll_client()` or `manual_poll()`.
- */
-EXP K set_maximum_number_of_polling(K n){
-  if(!check_qtype("j", n)){
-    // Return error for non-long type
-    return krr("limit must be long type.");
-  }
-  // Set new upper limit
-  MAXIMUM_NUMBER_OF_POLLING=n->j;
-  // Return the new value
-  return kj(MAXIMUM_NUMBER_OF_POLLING);
 }
 
 /**

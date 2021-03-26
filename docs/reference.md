@@ -20,11 +20,9 @@ Kafka interface functionality
   [.kafka.deleteClient](#kafkadeleteclient)               Close consumer and destroy Kafka handle to client. All registered callback for this client are removed.
   [.kafka.getClientName](#kafkagetclientname)              Get a name of client from client index.
   [.kafka.getOutQueueLength](#kafkagetoutqueuelength)                 Current out queue length.
-  [.kafka.manualPoll](#kafkamanualpoll)                    Manually poll the feed.
   [.kafka.newConsumer](#kafkanewconsumer)                 Create a consumer according to defined configuration.
   [.kafka.newProducer](#kafkanewproducer)                Create a producer according to defined configuration.
   [.kafka.setLogLevel](#kafkasetloglevel)          Set the maximum logging level for a client.
-  [.kafka.setMaximumNumberOfPolling](#kafkasetmaximumnumberofpolling)          Set the maximum number of messages per poll.
 
   // Producer functionality
   [.kafka.flushProducerHandle](#kafkaflushproducerhandle)   Flush a handle of a producer.
@@ -137,30 +135,6 @@ q).kafka.getOutQueueLength[producer]
 5i
 ```
 
-### `.kafka.manualPoll`
-
-_Manually poll the messages from the message feed._
-
-Syntax: `.kafka.manualPoll[cid;timeout;max_messages]`
-
-Where
-
-- `client_idx` is an integer representing the index of a client.
-- `timeout` is a long. Possible values are:
-  - 0: non-blocking
-  - -1: wait indefinitely
-  - others: wait for this period in milliseconds
-- `max_poll_cnt` is a long denoting The maximum number of polls, in turn the number of messages to get.
-
-returns the number of messages polled within the allotted time.
-
-```q
-q).kafka.manualPoll[0i;5;100]
-0
-q).kafka.manualPoll[0i;100;100]
-10
-```
-
 ### `.kafka.newConsumer`
 
 _Create a consumer according to user-defined configuration._
@@ -227,27 +201,6 @@ q)show client
 0i
 q).kafka.SetLogLevel[client;7]
 ```
-
-### `.kafka.setMaximumNumberOfPolling`
-
-_Set the maximum number of messages per poll._
-
-Syntax: `.kafka.setMaximumNumberOfPolling[max_messages]
-
-Where
-
-- `max_messages` is a long denoting the maximum number of polling at execution of `.kafka.manualPoll`.
-
-returns the set limit.
-
-```q
-q).kafka.setMaximumNumberOfPolling[100]
-100
-```
-
-!!! note "Upper limit set by `.kafka.setMaximumNumberOfPolling` vs max_messages in `.kafka.manualPoll`"
-
-    The argument `max_messages` passed to `.kafka.manualPoll` is preferred to the global limit of maximum number of messages set by `.kafka.setMaximumNumberOfPolling`. The latter limit is used only when `max_messages` passed to `.kafka.manualPoll` is 0.
 
 ## Producer functionality
 

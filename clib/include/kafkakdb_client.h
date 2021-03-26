@@ -20,13 +20,6 @@
 //%% Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
- * @brief Maximum number of polling at execution of `poll_client`. Set `0` by default.
- * @note
- * In order to make this parameter effective, pass `0` for `max_poll_cnt` in `poll_client`.
- */
-static J MAXIMUM_NUMBER_OF_POLLING;
-
-/**
  * @brief Thread pool for polling client.
  */
 static K ALL_THREADS;
