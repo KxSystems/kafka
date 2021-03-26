@@ -261,11 +261,10 @@ again:	r = send(h,ptr,len_bytes,0);
  * - 0: non-blocking
  * - -1: wait indefinitely
  * - others: wait for this period
- * @param max_poll_cnt: The maximum number of polls, in turn the number of messages to get.
  * @return 
  * - int: The number of messages retrieved (poll count).
  */
-J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt){
+J poll_client(rd_kafka_t *handle, I timeout){
   if(rd_kafka_type(handle) == RD_KAFKA_PRODUCER){
     // Main poll for producer
     return rd_kafka_poll(handle, timeout);
@@ -323,7 +322,7 @@ static void*background_thread(void* handle) {
   rd_kafka_t *client = handle;
   while(1){
     // Poll forever.
-    poll_client(client, -1, 1000);
+    poll_client(client, -1);
   }
 }
 
@@ -471,37 +470,6 @@ EXP K delete_client(K client_idx){
 }
 
 //%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-/**
- * @brief Poll client manually.
- * @param client_idx: Client index in `CLIENTS`.
- * @param timeout: The maximum amount of time (in milliseconds) that the call will block waiting for events.
- * - 0: non-blocking
- * - -1: wait indefinitely
- * - others: wait for this period
- * @param max_poll_cnt: The maximum number of polls, in turn the number of messages to get.
- * @return 
- * - long: The number of messages retrieved (poll count).
- */
-EXP K manual_poll(K client_idx, K timeout, K max_poll_cnt){
-  
-  if(!check_qtype("ijj", client_idx, timeout, max_poll_cnt)){
-    // The argument types do not match (int; long; long)
-    return krr("client index, timeout and maximum poll count must be (int; long; long) type.");
-  }
-  
-  rd_kafka_t *handle=index_to_handle(client_idx);
-  if(!handle){
-    // Null pointer from `krr`. Error happened in `index_to_handle`.
-    // Return the error.
-    return (K) handle;
-  }
-    
-  // Poll producer or consumer
-  J n=poll_client(handle, timeout->j, max_poll_cnt->j);
-  // Return the number of messages (poll count)
-  return kj(n);
-}
 
 /**
  * @brief Start polling for a given client in background.

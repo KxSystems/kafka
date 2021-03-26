@@ -1,2 +1,3 @@
 clib/include/k.h
 clib/build/
+tests/bench_producer.log

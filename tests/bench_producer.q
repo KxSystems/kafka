@@ -43,7 +43,7 @@ bench_pub:{[]
  }
 
 .z.ts:{
-  do[1000; bench_pub[]];
+  do[1500; bench_pub[]];
   if[00:00:10 < .z.p-START; -1 "Stop publisher"; exit 0];
  }
 

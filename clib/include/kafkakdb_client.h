@@ -122,11 +122,10 @@ static V throttle_cb(rd_kafka_t* handle, const char* brokername, int32_t brokeri
  * - 0: non-blocking
  * - -1: wait indefinitely
  * - others: wait for this period
- * @param max_poll_cnt: The maximum number of polls, in turn the number of messages to get.
  * @return 
  * - int: The number of messages retrieved (poll count).
  */
-J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt);
+J poll_client(rd_kafka_t *handle, I timeout);
 
 /**
  * @brief Poller executed in the background.
@@ -166,19 +165,6 @@ EXP K new_client(K client_type, K q_config, K timeout);
 EXP K delete_client(K client_idx);
 
 //%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-/**
- * @brief Poll client manually.
- * @param client_idx: Client index in `CLIENTS`.
- * @param timeout: The maximum amount of time (in milliseconds) that the call will block waiting for events.
- * - 0: non-blocking
- * - -1: wait indefinitely
- * - others: wait for this period
- * @param max_poll_cnt: The maximum number of polls, in turn the number of messages to get.
- * @return
- * - long: The number of messages retrieved (poll count).
- */
-EXP K manual_poll(K client_idx, K timeout, K max_poll_cnt);
 
 /**
  * @brief Set a new number on `MAXIMUM_NUMBER_OF_POLLING`.
