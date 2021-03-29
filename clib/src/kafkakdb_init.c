@@ -18,7 +18,9 @@
 K trigger_callback(I socket){
   static K data[16]; //! worth experimenting with since this will affect performance, probably longer than 512 is a waste 512*8 = 4096 (1page)
   int received;
-  if((received=recv(socket, data, sizeof(data), MSG_DONTWAIT)) > 0) {
+  // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
+  // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
+  if((received=recv(socket, data, sizeof(data), 0)) > 0) {
     // convert `received` to length (number of poitners)
     received /= sizeof(K);
     for(int i = 0; i < received; ++i){
@@ -95,8 +97,6 @@ EXP K stash_sockets(K UNUSED(unused)){
  */
 EXP K init(K probably_spair){
 
-  //K is_reload=k(0, ".kafka.LOADING_VERSION", KNULL);
-
   if(!CLIENTS){
     // Initialized client handle list.
     CLIENTS=ktn(KS, 0);
@@ -123,6 +123,29 @@ EXP K init(K probably_spair){
       // Error in creating socket pair
       fprintf(stderr, "creation of socketpair failed: %s\n", strerror(errno));
     }
+
+#ifdef WIN32
+    u_long iMode = 1;
+    if (ioctlsocket(spair[0], FIONBIO, &iMode) != NO_ERROR) {
+        // Failure in setting pair[0]
+        return krr((S)"failed to set socket to non-blocking");
+    }
+    if (ioctlsocket(spair[1], FIONBIO, &iMode) != NO_ERROR) {
+        // Failure in setting pair[1]
+        return krr((S)"failed to set socket1] to non-blocking");
+    }
+
+#else
+    if (fcntl(spair[0], F_SETFL, O_NONBLOCK) == -1) {
+        // Failure in setting pair[0]
+        return krr((S)"failed to set socket[0] to non-blocking");
+    }
+    if (fcntl(spair[1], F_SETFL, O_NONBLOCK) == -1) {
+        // Failure in setting pair[1]
+        return krr((S)"failed to set socket[1] to non-blocking");
+    }
+#endif
+    
   }
 
   // Fook callback functions to event loop

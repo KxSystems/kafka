@@ -11,15 +11,6 @@
 #include "kafkakdb_topic.h"
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-//                    Global Variables                   //
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-
-/**
- * @brief Indicate if internal state is initial state. Used to protect from being re-intialized at corruption.
- */
-//static I CLEAN_STATE;
-
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 

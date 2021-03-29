@@ -131,7 +131,9 @@ static I stats_cb(rd_kafka_t *UNUSED(handle), S json, size_t json_len, V *UNUSED
   K stats_message=knk(2, kp((S) ".kafka.stats_cb"), kpn(json, json_len), KNULL);
   // Must be processed in the main thread.
   // stats_message will be freed in the main thread.
-  send(spair[1], &stats_message, sizeof(K), MSG_DONTWAIT);
+  // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
+  // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
+  send(spair[1], &stats_message, sizeof(K), 0);
   return 0;
 }
 
@@ -145,8 +147,9 @@ static void log_cb(const rd_kafka_t *UNUSED(handle), int level, const char *fac,
   K log_message=knk(4, kp((S) ".kafka.log_cb"), ki(level), kp((S) fac), kp((S) buf), KNULL);
   // Must be processed in the main thread.
   // stats_message will be freed in the main thread.
-  send(spair[1], &log_message, sizeof(K), MSG_DONTWAIT);
-  //printr0(k(0, (S) ".kafka.log_cb", ki(level), kp((S) fac), kp((S) buf), KNULL));
+  // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
+  // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
+  send(spair[1], &log_message, sizeof(K), 0);
 }
 
 /**
@@ -161,8 +164,9 @@ static void offset_commit_cb(rd_kafka_t *handle, rd_kafka_resp_err_t error_code,
   K offset_commit_message=knk(4, kp((S) ".kafka.offset_commit_cb"), ki(handle_to_index(handle)), kp((S) rd_kafka_err2str(error_code)), decode_topic_partition_list(offsets), KNULL);
   // Must be processed in the main thread.
   // stats_message will be freed in the main thread.
-  send(spair[1], &offset_commit_message, sizeof(K), MSG_DONTWAIT);
-  //printr0(k(0, (S) ".kafka.offset_commit_cb", ki(handle_to_index(handle)), kp((S) rd_kafka_err2str(error_code)), decode_topic_partition_list(offsets), KNULL));
+  // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
+  // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
+  send(spair[1], &offset_commit_message, sizeof(K), 0);
 }
 
 /**
@@ -179,8 +183,9 @@ static V dr_msg_cb(rd_kafka_t *handle, const rd_kafka_message_t *msg, V *UNUSED(
   K dr_msg_message=knk(3, kp((S) ".kafka.dr_msg_cb"), ki(handle_to_index(handle)), decode_message(handle, msg), KNULL);
   // Must be processed in the main thread.
   // stats_message will be freed in the main thread.
-  send(spair[1], &dr_msg_message, sizeof(K), MSG_DONTWAIT);
-  //printr0(k(0, (S) ".kafka.dr_msg_cb", ki(handle_to_index(handle)), decode_message(handle, msg), KNULL)); 
+  // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
+  // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
+  send(spair[1], &dr_msg_message, sizeof(K), 0);
 }
 
 /**
@@ -197,8 +202,9 @@ static V error_cb(rd_kafka_t *handle, int error_code, const char *reason, V *UNU
   K error_message=knk(4, kp((S) ".kafka.error_cb"), ki(handle_to_index(handle)), ki(error_code), kp((S)reason), KNULL);
   // Must be processed in the main thread.
   // stats_message will be freed in the main thread.
-  send(spair[1], &error_message, sizeof(K), MSG_DONTWAIT);
-  //printr0(k(0, (S) ".kafka.error_cb", ki(handle_to_index(handle)), ki(error_code), kp((S)reason), KNULL));
+  // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
+  // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
+  send(spair[1], &error_message, sizeof(K), 0);
 }
 
 /**
@@ -216,8 +222,9 @@ static V throttle_cb(rd_kafka_t *handle, const char *brokername, int32_t brokeri
   K throttle_message=knk(5, kp((S) ".kafka.throttle_cb"), ki(handle_to_index(handle)), kp((S) brokername), ki(brokerid), ki(throttle_time_ms), KNULL);
   // Must be processed in the main thread.
   // stats_message will be freed in the main thread.
-  send(spair[1], &throttle_message, sizeof(K), MSG_DONTWAIT);
-  //printr0(k(0,(S) ".kafka.throttle_cb", ki(handle_to_index(handle)), kp((S) brokername), ki(brokerid), ki(throttle_time_ms), KNULL));
+  // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
+  // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
+  send(spair[1], &throttle_message, sizeof(K), 0);
 }
 
 //%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
@@ -272,8 +279,10 @@ J poll_client(rd_kafka_t *handle, I timeout){
     while((message= rd_kafka_consumer_poll(handle, timeout))){
       // Poll and retrieve message while message is not empty
       // Store tuple of (client index; data)
-      K q_message=knk(2, ki(handle_to_index(handle)), decode_message(handle, message), KNULL);;
-      send(spair[1], &q_message, sizeof(K), MSG_DONTWAIT);
+      K q_message=knk(2, ki(handle_to_index(handle)), decode_message(handle, message), KNULL);
+      // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
+      // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
+      send(spair[1], &q_message, sizeof(K), 0);
       
       /*
       K data=knk(2, ki(handle_to_index(handle)), decode_message(handle, message), KNULL); 
@@ -506,7 +515,7 @@ EXP K stop_background_poll(K client_idx) {
       return krr("not running in background");
     }
     osthread_t task;
-    memcpy(&task, (void*) id, sizeof(pthread_t));
+    memcpy(&task, (void*) id, sizeof(osthread_t));
     osthread_kill(&task);
     kJ(ALL_THREADS)[client_idx->i] = 0;
   }
