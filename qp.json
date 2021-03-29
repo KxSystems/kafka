@@ -1,6 +1,0 @@
-{
-  "default": {
-    "depends": ["clib"],
-    "entry": [ "q/kafka.q" ]
-  }
-}

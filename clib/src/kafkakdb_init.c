@@ -75,22 +75,6 @@ static void detach(void){
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 /**
- * @brief Safely unhook sockets and store them for reloading a library.
- * @return
- * - list of int: Stashed pair of sockets. 
- */
-EXP K stash_sockets(K UNUSED(unused)){
-  // Unhook from event loop and Stash socket pair.
-  sd0(*spair);
-  K stored_spair=ktn(KI, 2);
-  for(int i=0; i!=2; ++i){
-    kI(stored_spair)[i]=spair[i];
-    spair[i]=-1;
-  };
-  return stored_spair;
-}
-
-/**
  * @brief Initialize internal state of interface.
  * @note
  * This function should be executed only once by user. For reloading the library, use `reload`.
