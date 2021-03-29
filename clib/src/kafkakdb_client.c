@@ -240,18 +240,6 @@ static void flush(J socket, const void *ptr, J len_bytes) {
       // keep going until everything is written
     }
   }
-/*
-again:	r = send(h,ptr,len_bytes,0);
-	if(r < 0) {
-		if(errno == EINTR) goto again;
-		perror("send"),exit(255);
-	}
-	if(r < len_bytes) {
-		ptr = ((const char *)ptr) + r;
-		len_bytes -= r;
-		goto again; // keep going until everything is written
-  }
-  */
 }
 
 /**
@@ -318,7 +306,7 @@ J poll_client(rd_kafka_t *handle, I timeout){
  * @brief Poller executed in the background.
  * @param handle: Kafka client handle.
  */
-static void*background_thread(void* handle) {
+static void background_thread(void* handle) {
   rd_kafka_t *client = handle;
   while(1){
     // Poll forever.
@@ -330,10 +318,10 @@ static void*background_thread(void* handle) {
  * @brief Generate thread ID from a memory location for controlling.
  * @param 
  */
-static J make_thread_id(pthread_t thread) {
-	void *id = malloc(sizeof(pthread_t));
+static J make_thread_id(osthread_t thread) {
+	void *id = malloc(sizeof(osthread_t));
   // Use memory location as an ID.
-	memcpy(id, &thread, sizeof(pthread_t));
+	memcpy(id, &thread, sizeof(osthread_t));
   // works because sizeof(J) == sizeof(id)
 	return (J) id;
 }
@@ -488,12 +476,10 @@ EXP K start_background_poll(K client_idx) {
     ALL_THREADS=k(0,"{[threads; idx] first[idx + 1]#threads}", (ALL_THREADS? ALL_THREADS: ktn(KJ, 0)), r1(client_idx), KNULL);
   }
   
-  // TODO
-  // branching for Windows
   rd_kafka_t *handle=index_to_handle(client_idx);
-  pthread_t task;
+  osthread_t task;
   kJ(ALL_THREADS)[client_idx->i] = make_thread_id(task);
-  int ok=pthread_create(&task, NULL, background_thread, handle);
+  int ok=osthread_create(&task, NULL, background_thread, handle);
   if(ok){
     return krr("Failed to create a thread.");
   }
@@ -519,9 +505,9 @@ EXP K stop_background_poll(K client_idx) {
     if(!id){
       return krr("not running in background");
     }
-    pthread_t task;
+    osthread_t task;
     memcpy(&task, (void*) id, sizeof(pthread_t));
-    pthread_kill(task, SIGKILL); //SIGTERM?
+    osthread_kill(&task);
     kJ(ALL_THREADS)[client_idx->i] = 0;
   }
   return kb(1);

@@ -18,6 +18,7 @@ add_library(${MY_LIBRARY_NAME} SHARED
     kafkakdb_producer.c
     kafkakdb_topic.c
     kafkakdb_utility.c
+    osthread.c
     socketpair.c
 )
 

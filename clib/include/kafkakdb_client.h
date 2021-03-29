@@ -7,11 +7,7 @@
 
 #include "kafkakdb_utility.h"
 #include <signal.h>
-#ifndef _WIN32
-#include <pthread.h>
-#else
-#include <process.h>
-#endif
+#include "osthread.h"
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Global Variables                   //
@@ -131,13 +127,13 @@ J poll_client(rd_kafka_t *handle, I timeout);
  * @brief Poller executed in the background.
  * @param handle: Kafka client handle.
  */
-static void*background_thread(void* handle);
+static void background_thread(void* handle);
 
 /**
  * @brief Generate thread ID from a memory location for controlling.
  * @param 
  */
-static J make_thread_id(pthread_t thread);
+static J make_thread_id(osthread_t thread);
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                      Interface                        //
