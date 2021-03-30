@@ -21,8 +21,12 @@
 .kfk.ClientDel: .kafka.deleteClient;
 .kfk.ClientName: .kafka.getClientName;
 .kfk.ClientMemberId: .kafka.getConsumerGroupMemberID;
-.kfk.Consumer: .kafka.newConsumer;
-.kfk.Producer: .kafka.newProducer;
+.kfk.Consumer:{[config]
+  .kafka.newConsumer[config; 5000i]
+ };
+.kfk.Producer:{[config]
+  .kafka.newProducer[config; 5000i]
+ };
 .kfk.SetLoggerLevel: .kafka.setLogLevel;
 .kfk.CommitOffsets: .kafka.commitOffsetsToTopicPartition;
 .kfk.PositionOffsets: .kafka.getPrevailingOffsets;
@@ -50,7 +54,9 @@
 .kfk.AssignAdd: .kafka.addTopicPartitionToAssignment;
 .kfk.AssignDel: .kafka.deleteTopicPartitionFromAssignment;
 .kfk.Assignment: .kafka.getCurrentAssignment;
-.kfk.Metadata: .kafka.getBrokerTopicConfig;
+.kfk.Metadata:{[client_idx]
+  .kafka.getBrokerTopicConfig[client_idx; 5000i]
+ };
 .kfk.Version: .kafka.version;
 .kfk.VersionSym:{[]
   `$.kafka.versionString[]
@@ -59,13 +65,13 @@
 
 //%% Callback %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
-// Simply redirect to old nameed functions.
-.kafka.log_cb::.kfk.logcb;
-.kafka.dr_msg_cb::.kfk.drcb;
-.kafka.offset_commit_cb::.kfk.offsetcb;
-.kafka.default_consume_topic_cb::.kfk.consumetopic.;
-.kafka.default_error_cb::.kfk.errclient.;
-.kafka.default_throttle_cb::.kfk.throttleclient.;
+// Old default definitions
+.kfk.logcb:{[level;fac;buf] -1 .Q.s1 (level;fac;buf);};
+.kfk.drcb:{[producer_idx;message]};
+.kfk.offsetcb:{[consumer_idx;error;offsets]};
+.kfk.consumetopic.:{[message]};
+.kfk.errclient.:{[client_idx;error_code;reason]};
+.kfk.throttleclient.:{[client_idx;broker_name;broker_id;throttle_time_ms]};
 
 /
 * As `.kfk.statcb` is private, KX are reluctant to redirect. Only its artefact

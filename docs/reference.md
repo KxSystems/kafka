@@ -39,6 +39,9 @@ Kafka interface functionality
   .kafka.registerErrorCallback                    Register an error callback associated with a specific client.
   .kafka.registerThrottleCallback                 Register a throttle callback associated with a specific client.
   .kafka.registerConsumeTopicCallback             Register a topic consumption callback associated with a specific client-topic pair.
+  .kafka.log_cb                                   User custom callback for log message.
+  .kafka.offset_commit_cb                         User custom callback for offset commit.
+  .kafka.dr_msg_cb                                User custom callback for message delivery notification.
 
   // Topic functionality
   .kafka.deleteTopic                              Delete a defined topic.
@@ -477,6 +480,79 @@ q)topic_cb
 }
 q).kafka.subscribe[consumer;topic]
 q).kafka.registerConsumeTopicCallback[consumer; topic; topic_cb consumer]
+```
+
+### `.kafka.log_cb`
+
+_User custom callback for log message._
+
+Syntax: `.kafka.log_cb:[level;fac;buf]`
+
+Where
+
+- `level`: is an integer denoting log level.
+- `fac`: is a string.
+- `buf`: is a string.
+
+Exemple implementation is below:
+
+```q
+
+LOG: ();
+.kfk.logcb:{[level;fac;buf]
+  LOG,: `level`fac`buf!(level; fac; buf);
+ }
+
+```
+
+### `.kafka.offset_commit_cb`
+
+_User custom callback for offset commit._
+
+Syntax: `.kafka.offset_commit_cb:[consumer_idx;error;offsets]`
+
+Where
+
+- `consumer_idx`: is an interger denoting consumer index.
+- `error`: is string denoting a error message.
+- `offsets`: is a list of dictionary denoting topic-partition information dictionaries.
+
+Example implementation is below:
+
+```q
+
+.kafka.offset_commit_cb:{[consumer_idx;error;offsets]
+  $[
+    error ~ "Success";
+    -1 "committed:", .Q.s1 offsets;
+    -2 "commit error: ", error
+  ];
+ };
+
+```
+
+### `.kafka.dr_msg_cb`
+
+_User custom callback for message delivery notification._
+
+Syntax:`.kafka.dr_msg_cb:[producer_idx;message]`
+
+Where
+
+- `producer_idx`: is an integer denoting an index of producer.
+- `message`: is a dictionary denoting the information conatined in delivery report.
+
+Example implementation is below:
+
+```q
+
+.kafka.dr_msg_cb:{[producer_idx; message]
+  $["" ~ message `error;
+    -1 "delivered:", .Q.s1 (message `msgtime; message `topic; "c"$message `data);
+    -2 "delivery error:", message `error
+  ];
+ }
+
 ```
 
 ## Topic functionality

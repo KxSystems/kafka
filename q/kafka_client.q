@@ -214,8 +214,12 @@
 // @todo
 // Change output destination by `level`
 .kafka.log_cb:{[level;fac;buf]
-  // Change if you wish
-  -1 .Q.s1 (level; fac; buf);
+  // Change if you wish.
+  // Default definition for users using deprecated kfk.q.
+  $[.kafka.USE_DEPRECATED;
+    .kfk.logcb[level; fac; buf];
+    -1 .Q.s1 (level; fac; buf)
+  ]  
  };
 
 // @kind function
@@ -223,10 +227,16 @@
 // @brief Callback function set by `rd_kafka_conf_set_offset_commit_cb` and triggered by `rd_kafka_consumer_poll()`
 //  for use with consumer groups. Deligated by C function `offset_commit_cb`.
 // @param consumer_idx {int}: client (consumer) index
-// @param err {string}: error message
+// @param error {string}: error message
 // @param offsets {list of dictionary}: A list of topic-partition information dictionaries
-.kafka.offset_commit_cb:{[consumer_idx;err;offsets]
-  // Change if you wish
+.kafka.offset_commit_cb:{[consumer_idx;error;offsets]
+  // Change if you wish.
+  // Default definition for users using deprecated kfk.q.
+  $[.kafka.USE_DEPRECATED;
+    .kfk.offsetcb[consumer_idx; error; offsets];
+    // Bother user to encourage them to define something.
+    -1 .Q.s1 (consumer_idx;error;offsets)
+  ]  
  };
 
 // @kind function
@@ -235,7 +245,13 @@
 // @param producer_idx {int}: Index of client (producer).
 // @param message {dictionary}: Information conatined in delivery report.
 .kafka.dr_msg_cb:{[producer_idx;message]
-  // Change if you wish
+  // Change if you wish.
+  // Default definition for users using deprecated kfk.q.
+  $[.kafka.USE_DEPRECATED;
+    .kfk.drcb[producer_idx; message];
+    // Bother user to encourage them to define something.
+    -1 .Q.s1 (producer_idx;message)
+  ]  
  };
 
 // @kind function
@@ -245,8 +261,12 @@
 // @param error_code {int}: Error code.
 // @param reason {string}: Reason for the error.
 .kafka.default_error_cb:{[client_idx;error_code;reason]
-  // Change if you wish
-  -1 .Q.s1 (client_idx; error_code; reason);
+  // Change if you wish.
+  // Default definition for users using deprecated kfk.q.
+  $[.kafka.USE_DEPRECATED;
+    .kfk.errclient.[client_idx; error_code; reason];
+    -2 .Q.s1 (client_idx; error_code; reason)
+  ]
  };
 
 // @kind function
@@ -257,7 +277,13 @@
 // @param broker_id {int}: ID of broker.
 // @param throttle_time_ms {int}: Broker throttle time in milliseconds.
 .kafka.default_throttle_cb:{[client_idx;broker_name;broker_id;throttle_time]
-  // Change if you wish
+  // Change if you wish.
+  // Default definition for users using deprecated kfk.q.
+  $[.kafka.USE_DEPRECATED;
+    .kfk.throttleclient.[client_idx; broker_name; broker_id; throttle_time];
+    // Bother user to encourage them to define something.
+    -1 .Q.s1 (client_idx; broker_name; broker_id; throttle_time)
+  ]
  };
 
 // @kind function
@@ -265,8 +291,13 @@
 // @brief Default callback for consuming messages called inside `.kfk.consume_cb`.
 // @param message {dictionary}: Dictionary containing a message returned by `rd_kafka_consumer_poll()`.
 .kafka.default_consume_topic_cb:{[message]
-  // Change if you wish
-  -1 .Q.s1 message;
+  // Change if you wish.
+  // Default definition for users using deprecated kfk.q.
+  $[.kafka.USE_DEPRECATED;
+    .kfk.consumetopic.[message];
+    // Bother user to encourage them to define something.
+    -1 .Q.s1 message
+  ]
  };
 
 // @kind function

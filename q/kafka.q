@@ -25,6 +25,12 @@ LIBPATH_:$[
 //                     Global Variable                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
+// @private
+// @kind variable
+// @category Configuration
+// @brief Identifier if user is using deprecated functions.
+.kafka.USE_DEPRECATED: 0b;
+
 // @kind variable
 // @category Configuration
 // @brief Unassigned partition. The unassigned partition is used by the producer API for messages

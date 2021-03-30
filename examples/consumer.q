@@ -36,6 +36,14 @@ topic_cb2:{[consumer;msg]
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 
+.kafka.offset_commit_cb:{[consumer_idx;error;offsets]
+  $[
+    error ~ "Success";
+    -1 "committed:", .Q.s1 offsets;
+    -2 "commit error: ", error
+  ];
+ };
+
 // Subscribe to topic1 and topic2 with different callbacks from a single client
 .kafka.subscribe[consumer;topic1];
 .kafka.subscribe[consumer;topic2];
