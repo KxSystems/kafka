@@ -10,7 +10,7 @@
 //                    Public Interface                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-// @kind variable
+// @kind function
 // @category Initiallization
 // @brief Initialize internal state of interface.
 // @note

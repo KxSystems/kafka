@@ -546,6 +546,7 @@ EXP K delete_topic_partition(K consumer_idx, K topic_to_part){
 /**
  * @brief Get configuration of topic and broker for a given client index.
  * @param client_idx: Index of client in `CLIENTS`.
+ * @param timeout: Timeout in millisecond for querying.
  * @return 
  * - dictionary: Informaition of originating broker, brokers and topics.
  *   - orig_broker_id: int | Broker originating this meta data
@@ -553,11 +554,11 @@ EXP K delete_topic_partition(K consumer_idx, K topic_to_part){
  *   - brokers: list of dictionary | Information of brokers
  *   - topics: list of dictionary | Infomation of topics
  */
-EXP K get_broker_topic_config(K client_idx){
+EXP K get_broker_topic_config(K client_idx, K timeout){
   
-  if(!check_qtype("i", client_idx)){
+  if(!check_qtype("ii", client_idx, timeout)){
     // index must be int
-    return krr((S) "client index must be int type.");
+    return krr((S) "client index and timeout must be (int; int) types.");
   }
     
   rd_kafka_t *handle=index_to_handle(client_idx);
@@ -568,7 +569,7 @@ EXP K get_broker_topic_config(K client_idx){
 
   // Holder of configuration
   const struct rd_kafka_metadata *meta;  
-  rd_kafka_resp_err_t error= rd_kafka_metadata(handle, 1, NULL, &meta, 5000);
+  rd_kafka_resp_err_t error= rd_kafka_metadata(handle, 1, NULL, &meta, timeout->i);
   if(error!=KFK_OK){
     // Error in getting metadata
     return krr((S) rd_kafka_err2str(error));

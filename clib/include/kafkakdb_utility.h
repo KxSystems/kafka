@@ -58,6 +58,11 @@ typedef unsigned int UI;
 //%% Utility %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
+ * @brief Error type of K object
+ */
+extern const I KR;
+
+/**
  * @brief Offset between UNIX epoch (1970.01.01) and kdb+ epoch (2000.01.01) in day.
  */
 extern const J KDB_DAY_OFFSET;
@@ -203,3 +208,12 @@ void extend_topic_partition_list_and_set_offset_for_topic(S topic, K partition_t
  * @param topic_partitions: list of topic-partitons.
  */
 void delete_elems_from_topic_partition_list(K topic_to_part, rd_kafka_topic_partition_list_t *topic_partitions);
+
+//%% Callback Functions %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Print error if any and release K object.
+ * @note
+ * Return 0 to indicate mem free to kafka where needed in callback
+ */
+I printr0(K response);

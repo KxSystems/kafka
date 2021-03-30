@@ -11,6 +11,11 @@
 //%% Utility %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
+ * @brief Error type of K object
+ */
+const I KR = -128;
+
+/**
  * @brief Offset between UNIX epoch (1970.01.01) and kdb+ epoch (2000.01.01) in day.
  */
 const J KDB_DAY_OFFSET = 10957;
@@ -19,6 +24,23 @@ const J KDB_DAY_OFFSET = 10957;
  * @brief Milliseconds in a day
  */
 const J ONEDAY_MILLIS = 86400000;
+
+//%% Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief WHAT IS THIS??
+ */
+K S0 = 0;
+
+/**
+ * @brief Client handles expressed in symbol list
+ */
+K CLIENTS = 0;
+
+/**
+ * @brief Topic names expressed in symbol list
+ */
+K TOPICS = 0;
 
 /**
  * @brief Type indicators sorted in ascending order by underlying integer values.
@@ -297,4 +319,30 @@ void delete_elems_from_topic_partition_list(K topic_to_part, rd_kafka_topic_part
     // Delete a pair of topic and partition from the given list
     rd_kafka_topic_partition_list_del(topic_partitions, topics[i], partitions[i]);
   }
+}
+
+//%% Callback %%//
+
+
+/**
+ * @brief Print error if any and release K object.
+ * @note
+ * Return 0 to indicate mem free to kafka where needed in callback
+ */
+I printr0(K response){
+  if(!response){
+    // null object (success). Nothing to do.
+    return 0;
+  }
+  else if(KR == response->t){
+    // execution error)
+    // print error message
+    fprintf(stderr, "%s\n", response->s);
+  }
+  else{
+    // Not sure what case is this.
+    // nothing to do.
+  }
+  r0(response);
+  return 0;
 }

@@ -1,13 +1,13 @@
 ##%% General Settings %%##vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv#
 
 cmake_minimum_required(VERSION 3.1)
+
+# Set project name
+# Declaration for installing files.
 project(kafkakdb C)
 
-# Set library name
-set(MY_LIBRARY_NAME kafkakdb)
-
 # Add src directry
-add_subdirectory(src)
+add_subdirectory(clib)
 
 # Default option is Release
 if(NOT CMAKE_BUILD_TYPE)

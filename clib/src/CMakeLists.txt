@@ -18,10 +18,15 @@ add_library(${MY_LIBRARY_NAME} SHARED
     kafkakdb_producer.c
     kafkakdb_topic.c
     kafkakdb_utility.c
+    osthread.c
     socketpair.c
 )
 
 # Specify include directory
+if("$ENV{KAFKA_INSTALL_DIR}" STREQUAL "")
+    # Default location
+    set(ENV{KAFKA_INSTALL_DIR} /usr/local/lib/librdkafka)
+endif()
 target_include_directories(${MY_LIBRARY_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/include
     $ENV{KAFKA_INSTALL_DIR}/include/librdkafka
@@ -112,4 +117,8 @@ add_custom_command(TARGET ${MY_LIBRARY_NAME}
 )
 
 # Install shared object at Release to QHOME and package directory
-install(TARGETS ${MY_LIBRARY_NAME} DESTINATION $ENV{QHOME}/${OSFLAG}${BITNESS}/ CONFIGURATIONS Release)
+if("$ENV{DESTDIR}" STREQUAL "")
+    install(TARGETS ${MY_LIBRARY_NAME} DESTINATION $ENV{QHOME}/${OSFLAG}${BITNESS}/ CONFIGURATIONS Release)
+else()
+    install(TARGETS ${MY_LIBRARY_NAME} DESTINATION ${DESTDIR}/ CONFIGURATIONS Release)
+endif()

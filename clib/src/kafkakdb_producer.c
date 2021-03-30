@@ -126,7 +126,7 @@ EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, 
 // rdkafka version < 0.11.4
 #else
 
-EXP K publish_with_headers(K UNUSED(client_idx),K UNUSED(topic_idx),K UNUSED(partition),K UNUSED(value),K UNUSED(key),K UNUSED(headers)) {
+EXP K publish_with_headers(K UNUSED(client_idx), K UNUSED(topic_idx), K UNUSED(partition), K UNUSED(value), K UNUSED(key), K UNUSED(headers)) {
   return krr(".kafka.PublishWithHeaders is not supported for current rdkafka version. please update to librdkafka >= 0.11.4");
 }
 

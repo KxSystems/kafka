@@ -12,60 +12,56 @@ As outlined in the overview for this API, the kdb+/Kafka interface is a thin wra
 
 The following functions are those exposed within the `.kafka` namespace allowing users to interact with Kafka from a kdb+ instance.
 
-<pre markdown="1" class="language-text">
-
+```txt
 Kafka interface functionality
 
   // client functionality 
-  [.kafka.deleteClient](#kafkadeleteclient)               Close consumer and destroy Kafka handle to client
-  [.kafka.getClientName](#kafkagetclientname)              Get a name of client from client index
-  [.kafka.getOutQueueLength](#kafkagetoutqueuelength)                 Current out queue length
-  [.kafka.manualPoll](#kafkamanualpoll)                    Manually poll the feed
-  [.kafka.newConsumer](#kafkanewconsumer)                 Create a consumer according to defined configuration
-  [.kafka.newProducer](#kafkanewproducer)                Create a producer according to defined configuration
-  [.kafka.setLogLevel](#kafkasetloglevel)          Set the maximum logging level for a client
-  [.kafka.setMaximumNumberOfPolling](#kafkasetmaximumnumberofpolling)          Set the maximum number of messages per poll
+  .kafka.deleteClient                             Close consumer and destroy Kafka handle to client. All registered callback for this client are removed.
+  .kafka.getClientName                            Get a name of client from client index.
+  .kafka.getOutQueueLength                        Current out queue length.
+  .kafka.newConsumer                              Create a consumer according to defined configuration.
+  .kafka.newProducer                              Create a producer according to defined configuration.
+  .kafka.setLogLevel                              Set the maximum logging level for a client.
 
   // Producer functionality
-  [.kafka.flushProducerHandle](#kafkaflushproducerhandle)   Flush a handle of a producer
-  [.kafka.publish](#kafkapublish)                     Publish a message to a defined topic
-  [.kafka.publishBatch](#kafkapublishbatch)                Publish a batch of data to a defined topic
-  [.kafka.publishWithHeaders](#kafkapublishwithheaders)          Publish a message to a defined topic with a header
+  .kafka.flushProducerHandle                      Flush a handle of a producer.
+  .kafka.publish                                  Publish a message to a defined topic.
+  .kafka.publishBatch                             Publish a batch of data to a defined topic.
+  .kafka.publishWithHeaders                       Publish a message to a defined topic with a header.
 
   // Consumer functionality
-  [.kafka.getConsumerGroupMemberID](getconsumergroupmemberid)  Get a broker-assigned member ID
-  [.kafka.getCurrentSubscription](#kafkagetcurrentsubscription)            Get current topic subscription information for the consumer
-  [.kafka.subscribe](#kafkasubscribe)                     Subscribe to a defined topic
-  [.kafka.unsubscribe](#kafkaunsubscribe)                   Unsubscribe from a topic
+  .kafka.getConsumerGroupMemberID                 Get a broker-assigned member ID.
+  .kafka.getCurrentSubscription                   Get current topic subscription information for the consumer.
+  .kafka.subscribe](#kafkasubscribe)              Subscribe to a defined topic.
+  .kafka.unsubscribe                              Unsubscribe from a topic and remove consume-topic callback.
 
   // Callback registration
-  [.kafka.registerErrorCallback](#kafkaregistererrorcallback)                Register an error callback associated with a specific client
-  [.kafka.registerThrottleCallback](#kafkaregisterthrottlecallback)           Register a throttle callback associated with a specific client
-  [.kafka.registerConsumeTopicCallback](#kafkaregistconsumetopiccallback)      Register a topic consumption callback associated with a specific client-topic pair
+  .kafka.registerErrorCallback                    Register an error callback associated with a specific client.
+  .kafka.registerThrottleCallback                 Register a throttle callback associated with a specific client.
+  .kafka.registerConsumeTopicCallback             Register a topic consumption callback associated with a specific client-topic pair.
 
   // Topic functionality
-  [.kafka.deleteTopic](#kafkadeletetopic)                Delete a defined topic
-  [.kafka.getTopicName](#kafkagettopicname)               Get a topic namefrom a topic index
-  [.kafka.newTopic](#kafkanewtopic)                   Create a new topic on which messages can be sent
+  .kafka.deleteTopic                              Delete a defined topic.
+  .kafka.getTopicName                             Get a topic namefrom a topic index.
+  .kafka.newTopic                                 Create a new topic on which messages can be sent.
 
   // Offsets/Topic-partition functionality
-  [.kafka.addTopicPartitionToAssignment](#kafkaaddtopicpartitiontoassignment)               Add pairs of topic and partition to the current assignment for a client
-  [.kafka.assignNewOffsetsToTopicPartition](#kafkaassignnewoffsetstotopicpartition)           Set offsets on partitions of a given topic for a given client
-  [.kafka.assignNewTopicPartition](#kafkaassignnewtopicpartition)                  Create a new assignment from which data will be consumed
-  [.kafka.commitOffsetsToTopicPartition](#kafkacommitoffsetstotopicpartition)           Commit new offsets on broker for partitions of a given topic for a given client
-  [.kafka.deleteTopicPartitionFromAssignment](#kafkadeletetopicpartitionfromassignment)               Delete pairs of topic and partition from the current assignment for a client
-  [.kafka.getBrokerTopicConfig](#kafkabrokertopicconfig)                Broker topic information.
-  [.kafka.getCommittedOffsetsForTopicPartition](#kafkagetcommittedoffsetsfortopicpartition)        Retrieve committed offsets for the given topics and partitions
-  [.kafka.getCurrentAssignment](#kafkagetcurrentassignment)              Return the current assignment for the consumer
-  [.kafka.getEarliestOffsetsForTimes](#kafkagetearliestoffsetsfortimes)  Query earliest offsets for given partitions whose timestamps are greater or equal to given offsets
-  [.kafka.getPrevailingOffsets](#kafkagetprevailingoffsets)         Get the prevailing offsets for given partitions (last consumed message+1)
+  .kafka.addTopicPartitionToAssignment            Add pairs of topic and partition to the current assignment for a client.
+  .kafka.assignNewOffsetsToTopicPartition         Set offsets on partitions of a given topic for a given client.
+  .kafka.assignNewTopicPartition                  Create a new assignment from which data will be consumed.
+  .kafka.commitOffsetsToTopicPartition            Commit new offsets on broker for partitions of a given topic for a given client.
+  .kafka.deleteTopicPartitionFromAssignment       Delete pairs of topic and partition from the current assignment for a client.
+  .kafka.getBrokerTopicConfig                     Broker topic information.
+  .kafka.getCommittedOffsetsForTopicPartition     Retrieve committed offsets for the given topics and partitions.
+  .kafka.getCurrentAssignment                     Return the current assignment for the consumer.
+  .kafka.getEarliestOffsetsForTimes               Query earliest offsets for given partitions whose timestamps are greater or equal to given offsets.
+  .kafka.getPrevailingOffsets                     Get the prevailing offsets for given partitions (last consumed message+1).
 
   // System infomation
-  [.kafka.getKafkaThreadCount](#kafkagetkafkathreadcount)             Get a number of threads being used by librdkafka
-  [.kafka.version](#kafkaversion)                 Librdkafka version
-  [.kafka.versionString](#kafkaversionstring)              Human readable librdkafka version
-
-</pre>
+  .kafka.getKafkaThreadCount                      Get a number of threads being used by librdkafka.
+  .kafka.version                                  Librdkafka version.
+  .kafka.versionString                            Human readable librdkafka version.
+```
 
 For simplicity in each of the examples below it should be assumed that the user’s system is configured correctly, unless otherwise specified. For example:
 
@@ -78,7 +74,7 @@ The following functions relate to the creation of consumers and producers and th
 
 ### `.kafka.deleteClient`
 
-_Close a consumer and destroy the associated Kafka handle to client._
+_Close a consumer and destroy the associated Kafka handle to client. All registered callback for this client are removed._
 
 Syntax: `.kafka.deleteClient[client_idx]`
 
@@ -137,39 +133,16 @@ q).kafka.getOutQueueLength[producer]
 5i
 ```
 
-### `.kafka.manualPoll`
-
-_Manually poll the messages from the message feed._
-
-Syntax: `.kafka.manualPoll[cid;timeout;max_messages]`
-
-Where
-
-- `client_idx` is an integer representing the index of a client.
-- `timeout` is a long. Possible values are:
-  - 0: non-blocking
-  - -1: wait indefinitely
-  - others: wait for this period in milliseconds
-- `max_poll_cnt` is a long denoting The maximum number of polls, in turn the number of messages to get.
-
-returns the number of messages polled within the allotted time.
-
-```q
-q).kafka.manualPoll[0i;5;100]
-0
-q).kafka.manualPoll[0i;100;100]
-10
-```
-
 ### `.kafka.newConsumer`
 
 _Create a consumer according to user-defined configuration._
 
-Syntax: `.kafka.newConsumer[config]`
+Syntax: `.kafka.newConsumer[config;timeout]`
 
 Where
 
 - `config` is a dictionary user-defined configuration.
+- `timeout` is an integer value denoting the timeout (in milliseconds) to wait for a response frm a kafka broker.
 
 returns an integer denoting the index of the consumer.
 
@@ -181,7 +154,7 @@ queue.buffering.max.ms| 1
 fetch.wait.max.ms     | 10
 statistics.interval.ms| 10000
 enable.auto.commit    | false
-q).kafka.newConsumer[kafka_cfg]
+q).kafka.newConsumer[kafka_cfg; 5000i]
 0i
 ```
 
@@ -189,11 +162,12 @@ q).kafka.newConsumer[kafka_cfg]
 
 _Create a producer according to user-defined configuration._
 
-Syntax: `.kafka.newProducer[config]`
+Syntax: `.kafka.newProducer[config;timeout]`
 
 Where
 
 - `config` is a user-defined dictionary configuration.
+- `timeout` is an integer value denoting the timeout (in milliseconds) to wait for a response frm a kafka broker.
 
 returns an integer denoting the index of the producer.
 
@@ -203,7 +177,7 @@ metadata.broker.list  | localhost:9092
 statistics.interval.ms| 10000
 queue.buffering.max.ms| 1
 fetch.wait.max.ms     | 10
-q).kafka.newProducer[kafka_cfg]
+q).kafka.newProducer[kafka_cfg; 5000i]
 0i
 ```
 
@@ -226,27 +200,6 @@ q)show client
 q).kafka.SetLogLevel[client;7]
 ```
 
-### `.kafka.setMaximumNumberOfPolling`
-
-_Set the maximum number of messages per poll._
-
-Syntax: `.kafka.setMaximumNumberOfPolling[max_messages]
-
-Where
-
-- `max_messages` is a long denoting the maximum number of polling at execution of `.kafka.manualPoll`.
-
-returns the set limit.
-
-```q
-q).kafka.setMaximumNumberOfPolling[100]
-100
-```
-
-!!! note "Upper limit set by `.kafka.setMaximumNumberOfPolling` vs max_messages in `.kafka.manualPoll`"
-
-    The argument `max_messages` passed to `.kafka.manualPoll` is preferred to the global limit of maximum number of messages set by `.kafka.setMaximumNumberOfPolling`. The latter limit is used only when `max_messages` passed to `.kafka.manualPoll` is 0.
-
 ## Producer functionality
 
 ### `.kafka.publish`
@@ -265,7 +218,7 @@ Where
 returns a null on successful publication.
 
 ```q
-q)producer:.kafka.newProducer[kafka_cfg]
+q)producer:.kafka.newProducer[kafka_cfg; 5000i]
 q)test_topic:.kafka.newTopic[producer;`test;()!()]
 // partition set as -1i denotes an unassigned partition
 q).kafka.publish[test_topic;-1i;string .z.p;""]
@@ -311,7 +264,7 @@ q).kafka.publishBatch[;0 1i;batchMsg;batchKeys]each(topic1;topic2)
 
 _Publish a message to a defined topic, with an associated header._
 
-Syntax: `.kafka.publishWithHeaders[producer_idx;tpcid;partid;data;keys;hdrs]`
+Syntax: `.kafka.publishWithHeaders[producer_idx;topic_idx;partition;data;keys;headers]`
 
 Where
 
@@ -326,13 +279,13 @@ returns a null on successful publication, errors if version conditions not met
 
 ```q
 // Create an appropriate producer
-q)producer:.kafka.newProducer[kafka_cfg]
+q)producer:.kafka.newProducer[kafka_cfg; 5000i]
 
 // Create a topic
 q)test_topic:.kafka.newTopic[producer;`test;()!()]
 
 // Define the target partition as unassigned
-part:-1i
+partition:.kafka.PARTITION_UA
 
 // Define an appropriate payload
 payload:"hello from a producer"
@@ -340,11 +293,8 @@ payload:"hello from a producer"
 // Define the headers to be added
 headers:`header1`header2!("test1";"test2")
 
-// Publish a message to client #0 with a header but no key
-q).kafka.publishWithHeaders[0i;test_topic;part;payload;"";headers]
-
-// Publish a message to client #1 with headers and a key
-q).kafka.publishWithHeaders[1i;test_topic;part;payload;"test_key";headers]
+// Publish a message
+q).kafka.publishWithHeaders[producer; test_topic; partition; payload; ""; headers]
 ```
 
 !!!Note "Support for functionality"
@@ -385,7 +335,7 @@ Where
 returns a table with the topic, partition, offset and metadata of the most recent subscription.
 
 ```q
-q)consumer:.kafka.newConsumer[kafka_cfg];
+q)consumer:.kafka.newConsumer[kafka_cfg; 5000i];
 q).kafka.subscribe[consumer;`test2]
 q).kafka.getCurrentSubscription[snsumer]
 topic partition offset metadata
@@ -415,7 +365,7 @@ returns a null on successful execution.
     As of v1.4.0 multiple calls to `.kafka.Sub` for a given client will allow for consumption from multiple topics rather than overwriting the subscribed topic.
 
 ```q
-q)client:.kafka.newConsumer[kafka_cfg]
+q)client:.kafka.newConsumer[kafka_cfg; 5000i]
 // List of topics to be subscribed to
 q)topic_list:`test`test1`test2
 q).kafka.subscribe[client] each topic_list
@@ -423,7 +373,7 @@ q).kafka.subscribe[client] each topic_list
 
 ### `.kafka.unsubscribe`
 
-_Unsubscribe from all topics associated with teh consumer._
+_Unsubscribe from all topics associated with the consumer and remove consume-topic callback._
 
 Syntax: `.kafka.unsubscribe[consumer_idx]`
 
@@ -459,19 +409,15 @@ returns a null on successful execution.
 
 ```q
 // Attempt to create a consumer which will fail
-q)consumer1: .kafka.newConsumer[`metadata.broker.list`group.id!`foobar`0]
+q)consumer1: .kafka.newConsumer[`metadata.broker.list`group.id!`foobar`0; 5000i]
 q)consumer1
 0i
 // Attempt to create another failing consumer
-q)consumer2: .kafka.Consumer[`metadata.broker.list`group.id!`foobar`0]
+q)consumer2: .kafka.Consumer[`metadata.broker.list`group.id!`foobar`0; 5000i]
 q)consumer2
 1i
-q)1i
--193i
-"foobar:9092/bootstrap: Failed to resolve 'foobar:9092': nodename nor servnam..
-1i
--187i
-"1/1 brokers are down"
+q)"(1i;-193i;\"foobar:9092/bootstrap: Failed to resolve 'foobar:9092': nodename nor servnam..
+"(1i;-187i;\"1/1 brokers are down\")"
 // Attempt to create a consumer that will fail
 q)consumer3:.kafka.newConsumer[`metadata.broker.list`group.id!`foobar`0]
 q).kafka.registerErrorCallback[consumer3;{[cid;error_code;reason] show error_code;}]
@@ -598,7 +544,7 @@ Where
 returns an integer denoting the value given to the assigned topic.
 
 ```q
-q)producer:.kafka.newProducer[kafka_cfg]
+q)producer:.kafka.newProducer[kafka_cfg; 5000i]
 q).kafka.newTopic[producer;`test1;()!()]
 0i
 q).kafka.newTopic[producer;`test2;()!()]
@@ -760,16 +706,17 @@ q).kafka.deleteTopicPartitionFromAssignment[consumer;`test1`test2!1 1i]
 
 _Information about configuration of brokers and topics._
 
-Syntax: `.kafka.getBrokerTopicConfig[client_idx]`
+Syntax: `.kafka.getBrokerTopicConfig[client_idx;timeout]`
 
 Where
 
 - `client_idx` is the integer denoting the index of a client.
+- `timeout` is an integer value denoting the timeout (in milliseconds) to wait for a response frm a kafka broker.
 
 returns a dictionary with information about the brokers and topics.
 
 ```q
-q)show producer_meta:.kafka.getBrokerTopicConfig[producer]
+q)show producer_meta:.kafka.getBrokerTopicConfig[producer; 5000i]
 orig_broker_id  | 0i
 orig_broker_name| `localhost:9092/0
 brokers         | ,`id`host`port!(0i;`localhost;9092i)
@@ -880,7 +827,7 @@ Where
 returns a table containing the current offset and partition for the topic of interest.
 
 ```q
-q)consumer:.kafka.newConsumer[kafka_cfg];
+q)consumer:.kafka.newConsumer[kafka_cfg; 5000i];
 q)topic:`test
 q).kafka.PositionOffsets[client;topic;0 1i]
 topic partition offset metadata

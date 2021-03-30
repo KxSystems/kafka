@@ -147,10 +147,11 @@
 // @param config {dictionary}: Dictionary containing a configuration.
 //  - key: symbol
 //  - value: symbol
+// @param timeout {int}: Timeout (milliseconds) for querying.
 // @return
 // - error: If passing client type which is neither of "p" or "c". 
 // - int: Client index in `CLIENTS`.
-.kafka.newClient_impl:LIBPATH_ (`new_client; 2);
+.kafka.newClient_impl:LIBPATH_ (`new_client; 3);
 
 // @private
 // @kind function
@@ -163,12 +164,13 @@
 // @param config {dictionary}: Dictionary containing a configuration.
 //  - key: symbol
 //  - value: symbol
+// @param timeout {int}: Timeout (milliseconds) for querying.
 // @return
 // - error: If passing client type which is neither of "p" or "c". 
 // - int: Client index in `CLIENTS`.
-.kafka.newClient:{[client_type;config]
+.kafka.newClient:{[client_type;config;timeout]
   if[(not `group.id in key config) and client_type="c"; '"consumer must define 'group.id' within the config"];
-  client:.kafka.newClient_impl[client_type; config];
+  client:.kafka.newClient_impl[client_type; config; timeout];
   .kafka.CLIENT_TYPE_MAP,: enlist[client]!enlist[`$client_type];
   client
  };
@@ -179,6 +181,22 @@
 // @brief Destroy client handle and remove from `CLIENTS`.
 // @param client_idx {int}: Index of client in `CLIENTS`.
 .kafka.deleteClient_impl:LIBPATH_ (`delete_client;1);
+
+//%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+// @private
+// @kind function
+// @category Poll
+// @brief Start polling client in background.
+// @param client_idx {int}: Client index in `CLIENTS`.
+.kafka.startBackgroundPoll:LIBPATH_ (`start_background_poll; 1);
+
+// @private
+// @kind function
+// @category Poll
+// @brief Stop polling client in background.
+// @param client_idx {int}: Client index in `CLIENTS`.
+.kafka.stopBackgroundPoll:LIBPATH_ (`stop_background_poll; 1);
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Public Interface                   //
@@ -197,7 +215,7 @@
 // Change output destination by `level`
 .kafka.log_cb:{[level;fac;buf]
   // Change if you wish
-  show -3!(level; fac; buf);
+  -1 .Q.s1 (level; fac; buf);
  };
 
 // @kind function
@@ -214,9 +232,9 @@
 // @kind function
 // @category Callback
 // @brief Callback function for delivery report set by `rd_kafka_conf_set_dr_msg_cb`.
-// @param consumer_idx {int}: Index of client (consumer).
+// @param producer_idx {int}: Index of client (producer).
 // @param message {dictionary}: Information conatined in delivery report.
-.kafka.dr_msg_cb:{[consumer_idx;message]
+.kafka.dr_msg_cb:{[producer_idx;message]
   // Change if you wish
  };
 
@@ -228,7 +246,7 @@
 // @param reason {string}: Reason for the error.
 .kafka.default_error_cb:{[client_idx;error_code;reason]
   // Change if you wish
-  -2 -3!(client_idx; error_code; reason);
+  -1 .Q.s1 (client_idx; error_code; reason);
  };
 
 // @kind function
@@ -248,13 +266,17 @@
 // @param message {dictionary}: Dictionary containing a message returned by `rd_kafka_consumer_poll()`.
 .kafka.default_consume_topic_cb:{[message]
   // Change if you wish
+  -1 .Q.s1 message;
  };
 
 // @kind function
 // @category Callback
 // @brief Register error callback function for a given client.
 // @param client_idx {int}: Index of client in `CLIENTS`.
-// @param callback {function}: Callback function.
+// @param callback {function}: Callback function which has following parametrers:
+// - `client_idx` {int}: Same client index as the parent function.
+// - `error_code` {int}: Error code.
+// - `reason` {string}: Reason of the error.
 // @note
 // Replacement of `.kfk.errcbreg`.
 .kafka.registerErrorCallback:{[client_idx;callback]
@@ -265,7 +287,11 @@
 // @category Callback
 // @brief Register throttle callback function for a given client.
 // @param client_idx {int}: Index of client in `CLIENTS`.
-// @param callback {function}: Callback function.
+// @param callback {function}: Callback function which has following parameters:
+// - `client_idx` {int}: Same client index as the parent function.
+// - `broker_name` {string}: Name of broker.
+// - `broker_id` {int}: ID of broker.
+// - `throttle_time_ms` {int}: Broker throttle time in milliseconds.
 // @note
 // Replacement of `.kfk.throttlecbreg`.
 .kafka.registerThrottleCallback:{[client_idx;callback]
@@ -277,39 +303,12 @@
 // @brief Register callback at message consumption for a given client and topic.
 // @param consumer_idx {int}: Index of client (consumer) in `CLIENTS`.
 // @param topic {symbol}: Topic for which calback is to be set.
-// @param callback {function}: Callback function.
+// @param callback {function}: Callback function which has following parameters:
+// - `consumer_idx` {int}: Same consumer index as the parent function.
+// - `message` {dictionary}: Dictionary containing a message returned by `rd_kafka_consumer_poll()`.
 .kafka.registerConsumeTopicCallback:{[consumer_idx; topic; callback]
   .kafka.CONSUME_TOPIC_CALLBACK_PER_CONSUMER[consumer_idx],: enlist[topic]!enlist callback;
  };
-
-//%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-// @kind function
-// @category Poll
-// @brief Poll client manually.
-// @param client_idx {int}: Client index in `CLIENTS`.
-// @param timeout {long}: The maximum amount of time (in milliseconds) that the call will block waiting for events.
-// - 0: non-blocking
-// - -1: wait indefinitely
-// - others: wait for this period
-// @param max_poll_cnt {long}: The maximum number of polls, in turn the number of messages to get.
-// @return
-// - long: The number of messages retrieved (poll count).
-// @note
-// Replacement of `.kfk.Poll`
-.kafka.manualPoll:LIBPATH_ (`manual_poll; 3);
-
-// @kind function
-// @category Poll
-// @brief Set maximum number of polling at execution of `.kafka.manualPoll` function or C function `poll_client`.
-//  This number coincides with the number of maximum number of messages to retrieve.
-// @param n {long}: The maximum number of polling at execution of `.kafka.manualPoll` function.
-// @return
-// - long: The number set as upper limit of polling.
-// @note
-// - In order for this threshold to make effect, `max_poll_cnt` parameter for `manualPoll` must be 0.
-// Replacement of `.kfk.MaxMsgsPerPoll`.
-.kafka.setMaximumNumberOfPolling:LIBPATH_ (`set_maximum_number_of_polling; 1);
 
 // %% Create/Delete %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
@@ -319,10 +318,12 @@
 // @param config {dictionary}: Dictionary containing a configuration.
 // - key: symbol
 // - value: symbol
+// @param timeout {int}: Timeout (milliseconds) for querying.
 // @return
 // - int: Client index in `CLIENTS`.
-.kafka.newProducer:{[config]
-  .kafka.newClient["p"; config]
+.kafka.newProducer:{[config;timeout]
+  producer: .kafka.newClient["p"; config; timeout];
+  .kafka.startBackgroundPoll[producer]
  };
 
 // @kind function
@@ -331,35 +332,47 @@
 // @param config {dictionary}: Dictionary containing a configuration.
 // - key: symbol
 // - value: symbol
+// @param timeout {int}: Timeout (milliseconds) for querying.
 // @return
 // - int: Client index in `CLIENTS`.
-.kafka.newConsumer:{[config]
-  .kafka.newClient["c"; config]
+.kafka.newConsumer:{[config;timeout]
+  consumer: .kafka.newClient["c"; config; timeout];
+  .kafka.startBackgroundPoll[consumer]
  };
 
 // @kind function
 // @category Create/Delete
 // @brief Destroy client handle and remove from `CLIENTS`.
+//  All registered callback for this client are removed.
 // @param client_idx {int}: Index of client in `CLIENTS`.
 // @note
 // Replacement of `.kfk.ClientDel`. 
 .kafka.deleteClient:{[client_idx]
-  $[`c ~ .kafka.CLIENT_TYPE_MAP client_idx;
+  if[is_consumer: `c ~ .kafka.CLIENT_TYPE_MAP client_idx;
     // Consumer has not unsubscribed.
-    if[not count .kafka.getCurrentSubscription client_idx; .kafka.unsubscribe client_idx];
-    [
-      // Get topics of this producer
-      topics: .kafka.PRODUCER_TOPIC_MAP client_idx;
-      // Delete the producer from client-topic map
-      .kafka.PRODUCER_TOPIC_MAP:client_idx _ .kafka.PRODUCER_TOPIC_MAP;
-    ]
+    if[count .kafka.getCurrentSubscription client_idx; .kafka.unsubscribe client_idx]
+  ];
+
+  // Stop polling
+  .kafka.stopBackgroundPoll[client_idx];
+  // Delete the client from kafka ecosystem.
+  .kafka.deleteClient_impl[client_idx];
+
+  if[not is_consumer;
+    // Get topics of this producer
+    topics: .kafka.PRODUCER_TOPIC_MAP client_idx;
+    // Delete the producer from client-topic map
+    .kafka.PRODUCER_TOPIC_MAP:client_idx _ .kafka.PRODUCER_TOPIC_MAP
   ];
 
   // Delete the client from client-type map
   .kafka.CLIENT_TYPE_MAP _: client_idx;
 
-  // Delete the client from kafka ecosystem.
-  .kafka.deleteClient_impl[client_idx];
+  // Delete error callback.
+  .kafka.ERROR_CALLBACK_PER_CLIENT _: client_idx;
+
+  // Delete throttle callback.
+  .kafka.THROTTLE_CALLBACK_PER_CLIENT _: client_idx;
  };
 
 //%% Setting %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/

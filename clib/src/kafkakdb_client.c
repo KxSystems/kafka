@@ -4,27 +4,18 @@
 
 #include "kafkakdb_utility.h"
 #include "kafkakdb_client.h"
+#include "kafkakdb_configuration.h"
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Global Variables                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-
-//%% Utility %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-/**
- * @brief Error type of K object
- */
-static const I KR = -128;
-
 //%% Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
- * @brief Maximum number of polling at execution of `poll_client`. Set `0` by default.
- * @note
- * In order to make this parameter effective, pass `0` for `max_poll_cnt` in `poll_client`.
+ * @brief Thread pool for polling client.
  */
-static J MAXIMUM_NUMBER_OF_POLLING = 0;
+static K ALL_THREADS = 0;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
@@ -110,7 +101,9 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
   // Convert it to kdb+ timestamp
   K msgtime= ktj(-KP, (timestamp > 0)? millis_to_kdb_nanos(timestamp): nj);
 
-  return build_dictionary_n(9,
+  K error=msg->err? kp((S) rd_kafka_err2str(msg->err)): kp("");
+
+  return build_dictionary_n(10,
             "mtype", msg->err? ks((S) rd_kafka_err2name(msg->err)): r1(S0), 
             "topic", msg->rkt? ks((S) rd_kafka_topic_name(msg->rkt)): r1(S0),
             "client", ki(handle_to_index(handle)),
@@ -120,33 +113,11 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
             "data", payload,
             "key", key,
             "headers", k_headers,
+            "error", error,
             (S) 0);
 }
 
 //%% Callback Functions %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-/**
- * @brief Print error if any and release K object.
- * @note
- * Return 0 to indicate mem free to kafka where needed in callback
- */
-I printr0(K response){
-  if(!response){
-    // null object (success). Nothing to do.
-    return 0;
-  }
-  else if(KR == response->t){
-    // execution error)
-    // print error message
-    fprintf(stderr, "%s\n", response->s);
-  }
-  else{
-    // Not sure what case is this.
-    // nothing to do.
-  }
-  r0(response);
-  return 0;
-}
 
 /**
  * @brief Callback function for statistics set by `rd_kafka_conf_set_stats_cb` and triggered from `rd_kafka_poll()` every `statistics.interval.ms`.
@@ -157,7 +128,13 @@ I printr0(K response){
 static I stats_cb(rd_kafka_t *UNUSED(handle), S json, size_t json_len, V *UNUSED(opaque)){
   // Pass string statistics to q
   // Return 0 to indicate mem free to kafka
-  return printr0(k(0, (S) ".kafka.stats_cb", kpn(json, json_len), KNULL));
+  K stats_message=knk(2, kp((S) ".kafka.stats_cb"), kpn(json, json_len), KNULL);
+  // Must be processed in the main thread.
+  // stats_message will be freed in the main thread.
+  // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
+  // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
+  send(spair[1], &stats_message, sizeof(K), 0);
+  return 0;
 }
 
 /**
@@ -167,7 +144,12 @@ static I stats_cb(rd_kafka_t *UNUSED(handle), S json, size_t json_len, V *UNUSED
  * @param buf: WHAT IS THIS??
  */
 static void log_cb(const rd_kafka_t *UNUSED(handle), int level, const char *fac, const char *buf){
-  printr0(k(0, (S) ".kafka.log_cb", ki(level), kp((S) fac), kp((S) buf), KNULL));
+  K log_message=knk(4, kp((S) ".kafka.log_cb"), ki(level), kp((S) fac), kp((S) buf), KNULL);
+  // Must be processed in the main thread.
+  // stats_message will be freed in the main thread.
+  // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
+  // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
+  send(spair[1], &log_message, sizeof(K), 0);
 }
 
 /**
@@ -179,7 +161,12 @@ static void log_cb(const rd_kafka_t *UNUSED(handle), int level, const char *fac,
  */
 static void offset_commit_cb(rd_kafka_t *handle, rd_kafka_resp_err_t error_code, rd_kafka_topic_partition_list_t *offsets, V *UNUSED(opaque)){
   // Pass client (consumer) index, error message and a list of topic-partition information dictionaries
-  printr0(k(0, (S) ".kafka.offset_commit_cb", ki(handle_to_index(handle)), kp((S) rd_kafka_err2str(error_code)), decode_topic_partition_list(offsets), KNULL));
+  K offset_commit_message=knk(4, kp((S) ".kafka.offset_commit_cb"), ki(handle_to_index(handle)), kp((S) rd_kafka_err2str(error_code)), decode_topic_partition_list(offsets), KNULL);
+  // Must be processed in the main thread.
+  // stats_message will be freed in the main thread.
+  // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
+  // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
+  send(spair[1], &offset_commit_message, sizeof(K), 0);
 }
 
 /**
@@ -193,7 +180,12 @@ static void offset_commit_cb(rd_kafka_t *handle, rd_kafka_resp_err_t error_code,
  */
 static V dr_msg_cb(rd_kafka_t *handle, const rd_kafka_message_t *msg, V *UNUSED(opaque)){
   // Pass client (producer) index and dictionary of delivery report information
-  printr0(k(0, (S) ".kafka.dr_msg_cb", ki(handle_to_index(handle)), decode_message(handle, msg), KNULL));
+  K dr_msg_message=knk(3, kp((S) ".kafka.dr_msg_cb"), ki(handle_to_index(handle)), decode_message(handle, msg), KNULL);
+  // Must be processed in the main thread.
+  // stats_message will be freed in the main thread.
+  // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
+  // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
+  send(spair[1], &dr_msg_message, sizeof(K), 0);
 }
 
 /**
@@ -207,7 +199,12 @@ static V dr_msg_cb(rd_kafka_t *handle, const rd_kafka_message_t *msg, V *UNUSED(
  */
 static V error_cb(rd_kafka_t *handle, int error_code, const char *reason, V *UNUSED(opaque)){
   // Pass client index, error code and reson for the error.
-  printr0(k(0, (S) ".kafka.error_cb", ki(handle_to_index(handle)), ki(error_code), kp((S)reason), KNULL));
+  K error_message=knk(4, kp((S) ".kafka.error_cb"), ki(handle_to_index(handle)), ki(error_code), kp((S)reason), KNULL);
+  // Must be processed in the main thread.
+  // stats_message will be freed in the main thread.
+  // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
+  // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
+  send(spair[1], &error_message, sizeof(K), 0);
 }
 
 /**
@@ -222,10 +219,35 @@ static V error_cb(rd_kafka_t *handle, int error_code, const char *reason, V *UNU
  */
 static V throttle_cb(rd_kafka_t *handle, const char *brokername, int32_t brokerid, int throttle_time_ms, V *UNUSED(opaque)){
   // Pass client index, brker name, broker ID and throttle time
-  printr0(k(0,(S) ".kafka.throttle_cb", ki(handle_to_index(handle)), kp((S) brokername), ki(brokerid), ki(throttle_time_ms), KNULL));
+  K throttle_message=knk(5, kp((S) ".kafka.throttle_cb"), ki(handle_to_index(handle)), kp((S) brokername), ki(brokerid), ki(throttle_time_ms), KNULL);
+  // Must be processed in the main thread.
+  // stats_message will be freed in the main thread.
+  // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
+  // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
+  send(spair[1], &throttle_message, sizeof(K), 0);
 }
 
 //%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+static void flush(J socket, const void *ptr, J len_bytes) {
+	J sent;
+  while(sent = send(socket, ptr, len_bytes, 0)){
+    if(sent < 0) {
+      if(errno == EINTR){
+        continue;
+      }
+      else{
+        perror("send");
+        exit(255);
+      }
+    }
+    if(sent < len_bytes) {
+      ptr = ((const char *)ptr) + sent;
+      len_bytes -= sent;
+      // keep going until everything is written
+    }
+  }
+}
 
 /**
  * @brief Poll producer or consumer with timeout (and a limitation of the number of polling for consumer).
@@ -234,11 +256,10 @@ static V throttle_cb(rd_kafka_t *handle, const char *brokername, int32_t brokeri
  * - 0: non-blocking
  * - -1: wait indefinitely
  * - others: wait for this period
- * @param max_poll_cnt: The maximum number of polls, in turn the number of messages to get.
  * @return 
  * - int: The number of messages retrieved (poll count).
  */
-J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt){
+J poll_client(rd_kafka_t *handle, I timeout){
   if(rd_kafka_type(handle) == RD_KAFKA_PRODUCER){
     // Main poll for producer
     return rd_kafka_poll(handle, timeout);
@@ -249,33 +270,69 @@ J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt){
     J n= 0;
     // Holder of message from polling
     rd_kafka_message_t *message;
-    // Holder of q message converted from message
-    K q_message;
+
+    // Holder of q message converted from message.
+    // Store one mesage in each box in one loop.
+    //K buffer[16];
+    //int buf_cursor=0;
 
     while((message= rd_kafka_consumer_poll(handle, timeout))){
       // Poll and retrieve message while message is not empty
-      q_message= decode_message(handle, message);
-      // Call `.kfk.consume_topic_cb` passing client index and message information dictionary
-      printr0(k(0, ".kafka.consume_topic_cb", ki(handle_to_index(handle)), q_message, KNULL));
+      // Store tuple of (client index; data)
+      K q_message=knk(2, ki(handle_to_index(handle)), decode_message(handle, message), KNULL);
+      // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
+      // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
+      send(spair[1], &q_message, sizeof(K), 0);
+      
+      /*
+      K data=knk(2, ki(handle_to_index(handle)), decode_message(handle, message), KNULL); 
+      buffer[buf_cursor++]=&data;
+      if(buf_cursor==(sizeof(buffer)/sizeof(K))){
+        // Buffer became full.
+        flush(spair[1], buffer, sizeof(buffer));
+        buf_cursor=0;
+      }
+      */
+      
       // Discard message which is not necessary any more
       rd_kafka_message_destroy(message);
 
       // Increment the poll counter
       ++n;
-
-      // Argument `max_poll_cnt` has priority over MAXIMUM_NUMBER_OF_POLLING
-      if ((n == max_poll_cnt) || (n == MAXIMUM_NUMBER_OF_POLLING && max_poll_cnt==0)){
-        // The counter of polling reacched specified `max_poll_cnt` or globally set `MAX_MESSAGES_PER_POLL`.
-        char data = 'Z';
-        send(spair[1], &data, 1, 0);
-        // Return the number of mesasges
-        return n;
-      }
     }
+
+    /*
+    if(buf_cursor){
+      flush(spair[1], buffer, buf_cursor*sizeof(K));
+    }
+    */
     // Return the number of mesasges
     return n;
   }
-  
+}
+
+/**
+ * @brief Poller executed in the background.
+ * @param handle: Kafka client handle.
+ */
+static void background_thread(void* handle) {
+  rd_kafka_t *client = handle;
+  while(1){
+    // Poll forever.
+    poll_client(client, -1);
+  }
+}
+
+/**
+ * @brief Generate thread ID from a memory location for controlling.
+ * @param 
+ */
+static J make_thread_id(osthread_t thread) {
+	void *id = malloc(sizeof(osthread_t));
+  // Use memory location as an ID.
+	memcpy(id, &thread, sizeof(osthread_t));
+  // works because sizeof(J) == sizeof(id)
+	return (J) id;
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -290,18 +347,19 @@ J poll_client(rd_kafka_t *handle, I timeout, J max_poll_cnt){
  * - "p": Producer
  * - "c": Consumer
  * @param q_config: Dictionary containing a configuration.
+ * @param timeout: Timeout (milliseconds) for querying.
  * @return 
  * - error: If passing client type which is neither of "p" or "c". 
  * - int: Client index.
  */
-EXP K new_client(K client_type, K q_config){
+EXP K new_client(K client_type, K q_config, K timeout){
 
   // Buffer for error message
   char error_message[512];
 
-  if(!check_qtype("c!", client_type, q_config)){
+  if(!check_qtype("c!i", client_type, q_config, timeout)){
     // Argument type does not match char and dictionary
-    return krr("client type and config must be (char; dictionary) type.");
+    return krr("client type, config and timeout must be (char; dictionary; int) type.");
   }
     
   if('p' != client_type->g && 'c' != client_type->g){
@@ -347,19 +405,23 @@ EXP K new_client(K client_type, K q_config){
     return krr(error_message);
   }
 
+  // Check status with the new handle.
+  // Holder of configuration
+  const struct rd_kafka_metadata *meta;  
+  rd_kafka_resp_err_t error= rd_kafka_metadata(handle, 1, NULL, &meta, timeout->i);
+  if(error!=KFK_OK){
+    // Error in getting metadata
+    // Destroy the client handle
+    rd_kafka_destroy(handle);
+    return krr((S) rd_kafka_err2str(error));
+  }
+
   // Redirect logs to main queue
   rd_kafka_set_log_queue(handle, NULL);
 
   if(type == RD_KAFKA_CONSUMER){
-    // Redirect `rd_kafka_poll()` to `consumer_poll()`
+    // Redirect `rd_kafka_poll()` to `consumer_poll()`. (Producer gets from main queue).
     rd_kafka_poll_set_consumer(handle);
-    // create a separate file-descriptor to which librdkafka will write payload (of size size) whenever a new element is enqueued on a previously empty queue.
-    // Consumer gets from consumer queue
-    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_consumer(handle), spair[1], "X", 1);
-  }
-  else{
-    // Producer gets from main queue
-    rd_kafka_queue_io_event_enable(rd_kafka_queue_get_main(handle), spair[1], "X", 1);
   }
 
   // Store client hande as symbol
@@ -389,12 +451,6 @@ EXP K delete_client(K client_idx){
     return (K) handle;
   }
 
-  /*
-  while(rd_kafka_outq_len(handle)){
-    // Spin wait until it is confirmed that there is no remained message to this client.
-  }
-  */
-
   if(rd_kafka_type(handle) == RD_KAFKA_CONSUMER){
     // For consumer, close first.
     rd_kafka_consumer_close(handle);
@@ -413,49 +469,57 @@ EXP K delete_client(K client_idx){
 //%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
- * @brief Poll client manually.
- * @param client_idx: Client index in `CLIENTS`.
- * @param timeout: The maximum amount of time (in milliseconds) that the call will block waiting for events.
- * - 0: non-blocking
- * - -1: wait indefinitely
- * - others: wait for this period
- * @param max_poll_cnt: The maximum number of polls, in turn the number of messages to get.
- * @return 
- * - long: The number of messages retrieved (poll count).
+ * @brief Start polling for a given client in background.
+ * @param client_idx: Index of the client in `CLIENTS`.
  */
-EXP K manual_poll(K client_idx, K timeout, K max_poll_cnt){
-  
-  if(!check_qtype("ijj", client_idx, timeout, max_poll_cnt)){
-    // The argument types do not match (int; long; long)
-    return krr("cient index, timeout and maximum poll count must be (int; long; long) type.");
+EXP K start_background_poll(K client_idx) {
+  if(!check_qtype("i", client_idx)){
+    // The argument type does not match int
+    return krr("cient index must be int type.");
+  }
+  if(ALL_THREADS && (ALL_THREADS->n > client_idx->i)) {
+    if(kJ(ALL_THREADS)[client_idx->i]){
+      return krr("already_running");
+    }
+  } else {
+    ALL_THREADS=k(0,"{[threads; idx] first[idx + 1]#threads}", (ALL_THREADS? ALL_THREADS: ktn(KJ, 0)), r1(client_idx), KNULL);
   }
   
   rd_kafka_t *handle=index_to_handle(client_idx);
-  if(!handle){
-    // Null pointer from `krr`. Error happened in `index_to_handle`.
-    // Return the error.
-    return (K) handle;
+  osthread_t task;
+  kJ(ALL_THREADS)[client_idx->i] = make_thread_id(task);
+  int ok=osthread_create(&task, NULL, background_thread, handle);
+  if(ok){
+    return krr("Failed to create a thread.");
   }
-    
-  // Poll producer or consumer
-  J n=poll_client(handle, timeout->j, max_poll_cnt->j);
-  // Return the number of messages (poll count)
-  return kj(n);
+  else{
+    return r1(client_idx);
+  } 
 }
 
 /**
- * @brief Set a new number on `MAXIMUM_NUMBER_OF_POLLING`.
- * @param n: The maximum number of polling at execution of `poll_client()` or `manual_poll()`.
+ * @brief Stop polling for a given client in background.
+ * @param client_idx: Index of the client in `CLIENTS`.
+ * @return
+ * - bool: true for successful termination.
  */
-EXP K set_maximum_number_of_polling(K n){
-  if(!check_qtype("j", n)){
-    // Return error for non-long type
-    return krr("limit must be long type.");
+EXP K stop_background_poll(K client_idx) {
+  if(!check_qtype("i", client_idx)){
+    // The argument type does not match
+    return krr("cient index must be int type.");
   }
-  // Set new upper limit
-  MAXIMUM_NUMBER_OF_POLLING=n->j;
-  // Return the new value
-  return kj(MAXIMUM_NUMBER_OF_POLLING);
+  if(ALL_THREADS && ALL_THREADS->n > client_idx->i) {
+    // Thread ID
+    J id = kJ(ALL_THREADS)[client_idx->i];
+    if(!id){
+      return krr("not running in background");
+    }
+    osthread_t task;
+    memcpy(&task, (void*) id, sizeof(osthread_t));
+    osthread_kill(&task);
+    kJ(ALL_THREADS)[client_idx->i] = 0;
+  }
+  return kb(1);
 }
 
 /**

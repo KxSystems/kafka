@@ -6,26 +6,19 @@
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 #include "kafkakdb_utility.h"
+#include <signal.h>
+#include "osthread.h"
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Global Variables                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-//%% Utility %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-/**
- * @brief Error type of K object
- */
-static const I KR;
-
 //%% Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
- * @brief Maximum number of polling at execution of `poll_client`. Set `0` by default.
- * @note
- * In order to make this parameter effective, pass `0` for `max_poll_cnt` in `poll_client`.
+ * @brief Thread pool for polling client.
  */
-static J MAXIMUM_NUMBER_OF_POLLING;
+static K ALL_THREADS;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
@@ -56,13 +49,6 @@ static K load_config(rd_kafka_conf_t* conf, K q_config);
 K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t* msg);
 
 //%% Callback Functions %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-/**
- * @brief Print error if any and release K object.
- * @note
- * Return 0 to indicate mem free to kafka where needed in callback
- */
-I printr0(K response);
 
 /**
  * @brief Callback function for statistics set by `rd_kafka_conf_set_stats_cb` and triggered from `rd_kafka_poll()` every `statistics.interval.ms`.
@@ -123,6 +109,32 @@ static V error_cb(rd_kafka_t* handle, int error_code, const char* reason, V* UNU
  */
 static V throttle_cb(rd_kafka_t* handle, const char* brokername, int32_t brokerid, int throttle_time_ms, V* UNUSED(opaque));
 
+//%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Poll producer or consumer with timeout (and a limitation of the number of polling for consumer).
+ * @param handle: Client handle.
+ * @param timeout: The maximum amount of time (in milliseconds) that the call will block waiting for events.
+ * - 0: non-blocking
+ * - -1: wait indefinitely
+ * - others: wait for this period
+ * @return 
+ * - int: The number of messages retrieved (poll count).
+ */
+J poll_client(rd_kafka_t *handle, I timeout);
+
+/**
+ * @brief Poller executed in the background.
+ * @param handle: Kafka client handle.
+ */
+static void background_thread(void* handle);
+
+/**
+ * @brief Generate thread ID from a memory location for controlling.
+ * @param 
+ */
+static J make_thread_id(osthread_t thread);
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                      Interface                        //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -135,11 +147,12 @@ static V throttle_cb(rd_kafka_t* handle, const char* brokername, int32_t brokeri
  * - "p": Producer
  * - "c": Consumer
  * @param q_config: Dictionary containing a configuration.
+ * @param timeout: Timeout (milliseconds) for querying.
  * @return 
  * - error: If passing client type which is neither of "p" or "c". 
  * - int: Client index.
  */
-EXP K new_client(K client_type, K q_config);
+EXP K new_client(K client_type, K q_config, K timeout);
 
 /**
  * @brief Destroy client handle and remove from `CLIENTS`.
@@ -148,19 +161,6 @@ EXP K new_client(K client_type, K q_config);
 EXP K delete_client(K client_idx);
 
 //%% Poll %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-/**
- * @brief Poll client manually.
- * @param client_idx: Client index in `CLIENTS`.
- * @param timeout: The maximum amount of time (in milliseconds) that the call will block waiting for events.
- * - 0: non-blocking
- * - -1: wait indefinitely
- * - others: wait for this period
- * @param max_poll_cnt: The maximum number of polls, in turn the number of messages to get.
- * @return
- * - long: The number of messages retrieved (poll count).
- */
-EXP K manual_poll(K client_idx, K timeout, K max_poll_cnt);
 
 /**
  * @brief Set a new number on `MAXIMUM_NUMBER_OF_POLLING`.

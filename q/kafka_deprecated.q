@@ -25,20 +25,19 @@
 .kfk.Producer: .kafka.newProducer;
 .kfk.SetLoggerLevel: .kafka.setLogLevel;
 .kfk.CommitOffsets: .kafka.commitOffsetsToTopicPartition;
-.kfk.PositionOffsets: .kafka.setOffsetsToEnd;
+.kfk.PositionOffsets: .kafka.getPrevailingOffsets;
 .kfk.CommittedOffsets: .kafka.getCommittedOffsetsForTopicPartition;
 .kfk.AssignOffsets: .kafka.assignNewOffsetsToTopicPartition;
+.kfk.offsetForTimes: .kafka.getEarliestOffsetsForTimes;
 .kfk.BatchPub: .kafka.publishBatch;
 .kfk.Pub: .kafka.publish;
-.kfk.PubWithHeaders: .kafka.publishWithHeaders;
+.kfk.PubWithHeaders:.kafka.publishWithHeaders;
 .kfk.OutQLen: .kafka.getOutQueueLength;
 .kfk.Sub:{[consumer_idx;topic;partition_to_offset_]
   .kafka.subscribe[consumer_idx; topic]
  };
 .kfk.Subscription: .kafka.getCurrentSubscription;
 .kfk.Unsub: .kafka.unsubscribe;
-.kfk.MaxMsgsPerPoll: .kafka.setMaximumNumberOfPolling;
-.kfk.Poll: .kafka.manualPoll;
 .kfk.Assign:{[consumer_idx;topic_to_partiton]
   // convert partitions from long to int
   topic_to_partiton: key[topic_to_partiton]!`int$value topic_to_partiton;
@@ -71,29 +70,36 @@
 /
 * Use `.kafka.log_cb`.
 \
-// logcb
+// .kfk.logcb
 
 /
 * Use `.kafka.dr_msg_cb`.
 \
-// drcb
+// .kfk.drcb
 
 /
 * Use `.kafka.offset_commit_cb`.
 \
-// offsetcb
+// .kfk.offsetcb
 
 /
 * Use `.kafka.default_consume_topic_cb`.
 \
-// consumetopic
+// .kfk.consumetopic
 
 /
 * Use `.kafka.default_error_cb`.
 \
-// errcbreg
+// .kfk.errcbreg
 
 /
 * Use .kafka.default_throttle_cb
 \
-// throttlecbreg
+// .kfk.throttlecbreg
+
+/
+* Manuall polling is not provided as polling is done in background. 
+\
+// .kfk.MaxMsgsPerPoll
+// .kfk.Poll: .kafka.manualPoll
+ 

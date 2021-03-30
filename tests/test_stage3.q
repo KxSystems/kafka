@@ -15,7 +15,8 @@
 // Unsubscribe
 .kafka.unsubscribe[consumer];
 
-.test.ASSERT_EQ["unsubscribe"; .kafka.getCurrentSubscription consumer; ()]
+.test.ASSERT_EQ["unsubscribe - subscription"; .kafka.getCurrentSubscription consumer; ()]
+.test.ASSERT_EQ["unsubscribe - callback"; count .kafka.CONSUME_TOPIC_CALLBACK_PER_CONSUMER consumer; 0]
 
 // Get current client type map
 current_client_map: .kafka.CLIENT_TYPE_MAP;
@@ -24,6 +25,8 @@ current_client_map: .kafka.CLIENT_TYPE_MAP;
 .kafka.deleteClient[consumer];
 
 .test.ASSERT_EQ["delete consumer"; .kafka.CLIENT_TYPE_MAP; consumer _ .kafka.CLIENT_TYPE_MAP]
+// Map was not affected
+.test.ASSERT_EQ["delete consumer - callback"; count .kafka.ERROR_CALLBACK_PER_CLIENT; 2]
 
 // Get current client type map
 current_client_topic_map: .kafka.PRODUCER_TOPIC_MAP;
@@ -37,6 +40,7 @@ current_client_topic_map: .kafka.PRODUCER_TOPIC_MAP;
 .kafka.deleteClient[producer];
 
 .test.ASSERT_EQ["delete producer"; .kafka.PRODUCER_TOPIC_MAP; producer _ current_client_topic_map]
+.test.ASSERT_EQ["delete producer - callback"; count .kafka.ERROR_CALLBACK_PER_CLIENT; 1]
 
 // Delete topic2
 .kafka.deleteTopic[topic2];
