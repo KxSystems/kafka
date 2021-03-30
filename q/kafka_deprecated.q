@@ -36,6 +36,10 @@
 .kfk.Sub:{[consumer_idx;topic;partition_to_offset_]
   .kafka.subscribe[consumer_idx; topic]
  };
+.kfk.Subscribe:{[consumer_idx;topic;partition_to_offset_;callback]
+  .kafka.subscribe[consumer_idx; topic];
+  .kafka.registerConsumeTopicCallback[consumer_idx; topic; callback];
+ }
 .kfk.Subscription: .kafka.getCurrentSubscription;
 .kfk.Unsub: .kafka.unsubscribe;
 .kfk.Assign:{[consumer_idx;topic_to_partiton]
@@ -50,8 +54,23 @@
 .kfk.Version: .kafka.version;
 .kfk.VersionSym:{[]
   `$.kafka.versionString[]
- }
+ };
 .kfk.ThreadCount: .kafka.getKafkaThreadCount;
+
+//%% Callback %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+// Simply redirect to old nameed functions.
+.kafka.log_cb::.kfk.logcb;
+.kafka.dr_msg_cb::.kfk.drcb;
+.kafka.offset_commit_cb::.kfk.offsetcb;
+.kafka.default_consume_topic_cb::.kfk.consumetopic.;
+.kafka.default_error_cb::.kfk.errclient.;
+.kafka.default_throttle_cb::.kfk.throttleclient.;
+
+/
+* As `.kfk.statcb` is private, KX are reluctant to redirect. Only its artefact
+*  `.kfk.stats` is available to users.
+\
 
 //%% Table %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
@@ -60,42 +79,6 @@
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                 Unsupported Functions                 //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-
-/
-* Callback funtion for a topic is tied with the client in an internal mapping.
-*  Use `.kafka.registerConsumeTopicCallback` to set a callback for the client-topic pair.
-\
-// .kfk.Subscribe
-
-/
-* Use `.kafka.log_cb`.
-\
-// .kfk.logcb
-
-/
-* Use `.kafka.dr_msg_cb`.
-\
-// .kfk.drcb
-
-/
-* Use `.kafka.offset_commit_cb`.
-\
-// .kfk.offsetcb
-
-/
-* Use `.kafka.default_consume_topic_cb`.
-\
-// .kfk.consumetopic
-
-/
-* Use `.kafka.default_error_cb`.
-\
-// .kfk.errcbreg
-
-/
-* Use .kafka.default_throttle_cb
-\
-// .kfk.throttlecbreg
 
 /
 * Manuall polling is not provided as polling is done in background. 
