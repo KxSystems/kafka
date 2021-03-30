@@ -12,58 +12,56 @@ As outlined in the overview for this API, the kdb+/Kafka interface is a thin wra
 
 The following functions are those exposed within the `.kafka` namespace allowing users to interact with Kafka from a kdb+ instance.
 
-<pre markdown="1" class="language-text">
-
+```txt
 Kafka interface functionality
 
   // client functionality 
-  [.kafka.deleteClient](#kafkadeleteclient)               Close consumer and destroy Kafka handle to client. All registered callback for this client are removed.
-  [.kafka.getClientName](#kafkagetclientname)              Get a name of client from client index.
-  [.kafka.getOutQueueLength](#kafkagetoutqueuelength)                 Current out queue length.
-  [.kafka.newConsumer](#kafkanewconsumer)                 Create a consumer according to defined configuration.
-  [.kafka.newProducer](#kafkanewproducer)                Create a producer according to defined configuration.
-  [.kafka.setLogLevel](#kafkasetloglevel)          Set the maximum logging level for a client.
+  .kafka.deleteClient                             Close consumer and destroy Kafka handle to client. All registered callback for this client are removed.
+  .kafka.getClientName                            Get a name of client from client index.
+  .kafka.getOutQueueLength                        Current out queue length.
+  .kafka.newConsumer                              Create a consumer according to defined configuration.
+  .kafka.newProducer                              Create a producer according to defined configuration.
+  .kafka.setLogLevel                              Set the maximum logging level for a client.
 
   // Producer functionality
-  [.kafka.flushProducerHandle](#kafkaflushproducerhandle)   Flush a handle of a producer.
-  [.kafka.publish](#kafkapublish)                     Publish a message to a defined topic.
-  [.kafka.publishBatch](#kafkapublishbatch)                Publish a batch of data to a defined topic.
-  [.kafka.publishWithHeaders](#kafkapublishwithheaders)          Publish a message to a defined topic with a header.
+  .kafka.flushProducerHandle                      Flush a handle of a producer.
+  .kafka.publish                                  Publish a message to a defined topic.
+  .kafka.publishBatch                             Publish a batch of data to a defined topic.
+  .kafka.publishWithHeaders                       Publish a message to a defined topic with a header.
 
   // Consumer functionality
-  [.kafka.getConsumerGroupMemberID](getconsumergroupmemberid)  Get a broker-assigned member ID.
-  [.kafka.getCurrentSubscription](#kafkagetcurrentsubscription)            Get current topic subscription information for the consumer.
-  [.kafka.subscribe](#kafkasubscribe)                     Subscribe to a defined topic.
-  [.kafka.unsubscribe](#kafkaunsubscribe)                   Unsubscribe from a topic and remove consume-topic callback.
+  .kafka.getConsumerGroupMemberID                 Get a broker-assigned member ID.
+  .kafka.getCurrentSubscription                   Get current topic subscription information for the consumer.
+  .kafka.subscribe](#kafkasubscribe)              Subscribe to a defined topic.
+  .kafka.unsubscribe                              Unsubscribe from a topic and remove consume-topic callback.
 
   // Callback registration
-  [.kafka.registerErrorCallback](#kafkaregistererrorcallback)                Register an error callback associated with a specific client.
-  [.kafka.registerThrottleCallback](#kafkaregisterthrottlecallback)           Register a throttle callback associated with a specific client.
-  [.kafka.registerConsumeTopicCallback](#kafkaregistconsumetopiccallback)      Register a topic consumption callback associated with a specific client-topic pair.
+  .kafka.registerErrorCallback                    Register an error callback associated with a specific client.
+  .kafka.registerThrottleCallback                 Register a throttle callback associated with a specific client.
+  .kafka.registerConsumeTopicCallback             Register a topic consumption callback associated with a specific client-topic pair.
 
   // Topic functionality
-  [.kafka.deleteTopic](#kafkadeletetopic)                Delete a defined topic.
-  [.kafka.getTopicName](#kafkagettopicname)               Get a topic namefrom a topic index.
-  [.kafka.newTopic](#kafkanewtopic)                   Create a new topic on which messages can be sent.
+  .kafka.deleteTopic                              Delete a defined topic.
+  .kafka.getTopicName                             Get a topic namefrom a topic index.
+  .kafka.newTopic                                 Create a new topic on which messages can be sent.
 
   // Offsets/Topic-partition functionality
-  [.kafka.addTopicPartitionToAssignment](#kafkaaddtopicpartitiontoassignment)               Add pairs of topic and partition to the current assignment for a client.
-  [.kafka.assignNewOffsetsToTopicPartition](#kafkaassignnewoffsetstotopicpartition)           Set offsets on partitions of a given topic for a given client.
-  [.kafka.assignNewTopicPartition](#kafkaassignnewtopicpartition)                  Create a new assignment from which data will be consumed.
-  [.kafka.commitOffsetsToTopicPartition](#kafkacommitoffsetstotopicpartition)           Commit new offsets on broker for partitions of a given topic for a given client.
-  [.kafka.deleteTopicPartitionFromAssignment](#kafkadeletetopicpartitionfromassignment)               Delete pairs of topic and partition from the current assignment for a client.
-  [.kafka.getBrokerTopicConfig](#kafkabrokertopicconfig)                Broker topic information.
-  [.kafka.getCommittedOffsetsForTopicPartition](#kafkagetcommittedoffsetsfortopicpartition)        Retrieve committed offsets for the given topics and partitions.
-  [.kafka.getCurrentAssignment](#kafkagetcurrentassignment)              Return the current assignment for the consumer.
-  [.kafka.getEarliestOffsetsForTimes](#kafkagetearliestoffsetsfortimes)  Query earliest offsets for given partitions whose timestamps are greater or equal to given offsets.
-  [.kafka.getPrevailingOffsets](#kafkagetprevailingoffsets)         Get the prevailing offsets for given partitions (last consumed message+1).
+  .kafka.addTopicPartitionToAssignment            Add pairs of topic and partition to the current assignment for a client.
+  .kafka.assignNewOffsetsToTopicPartition         Set offsets on partitions of a given topic for a given client.
+  .kafka.assignNewTopicPartition                  Create a new assignment from which data will be consumed.
+  .kafka.commitOffsetsToTopicPartition            Commit new offsets on broker for partitions of a given topic for a given client.
+  .kafka.deleteTopicPartitionFromAssignment       Delete pairs of topic and partition from the current assignment for a client.
+  .kafka.getBrokerTopicConfig                     Broker topic information.
+  .kafka.getCommittedOffsetsForTopicPartition     Retrieve committed offsets for the given topics and partitions.
+  .kafka.getCurrentAssignment                     Return the current assignment for the consumer.
+  .kafka.getEarliestOffsetsForTimes               Query earliest offsets for given partitions whose timestamps are greater or equal to given offsets.
+  .kafka.getPrevailingOffsets                     Get the prevailing offsets for given partitions (last consumed message+1).
 
   // System infomation
-  [.kafka.getKafkaThreadCount](#kafkagetkafkathreadcount)             Get a number of threads being used by librdkafka.
-  [.kafka.version](#kafkaversion)                 Librdkafka version.
-  [.kafka.versionString](#kafkaversionstring)              Human readable librdkafka version.
-
-</pre>
+  .kafka.getKafkaThreadCount                      Get a number of threads being used by librdkafka.
+  .kafka.version                                  Librdkafka version.
+  .kafka.versionString                            Human readable librdkafka version.
+```
 
 For simplicity in each of the examples below it should be assumed that the user’s system is configured correctly, unless otherwise specified. For example:
 
