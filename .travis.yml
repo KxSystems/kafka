@@ -1,90 +1,13 @@
-jobs:
-  include:
-  - dist: xenial
-    os: linux
-  - dist: bionic
-    os: linux
-  - os: osx
-  - os: windows
 language: c
-compiler: gcc
-os: linux
-dist: xenial
+dist: trusty
+os:
+- linux
 
 before_install:
-  - export FILE_ROOT="kafkakdb"
-  - export TESTS="False"
-  - export BUILD="True"
-  # Install rdkafka
-  - mkdir cbuild
-  - ./travis_setup.sh
-  - export KAFKA_INSTALL_DIR=$TRAVIS_BUILD_DIR/cbuild/librdkafka/install
-  - export LD_LIBRARY_PATH=${KAFKA_INSTALL_DIR}/lib:${LD_LIBRARY_PATH};
-  - export DYLD_LIBRARY_PATH=${KAFKA_INSTALL_DIR}/lib:${LD_LIBRARY_PATH};
-  - export PATH=${KAFKA_INSTALL_DIR}/bin:$PATH;
-  - if [[ $TRAVIS_OS_NAME == "linux" ]]; then
-      QLIBDIR=l64;
-      OD=$L64;
-    elif [[ $TRAVIS_OS_NAME == "osx" ]]; then
-      QLIBDIR=m64;
-      OD=$M64;
-    elif [[ $TRAVIS_OS_NAME == "windows" ]]; then
-      QLIBDIR=w64;
-      OD=$W64;
-    else
-      echo "unknown OS ('$TRAVIS_OS_NAME')" >&2; exit 1;
-    fi
-  # Set up q directory
-  - export QLIBDIR
-  - mkdir qhome;
-  - export QHOME=$(pwd)/qhome;
-  - export PATH=$QHOME/$QLIBDIR:$PATH;
-  # Set up q for testing and execute tests on multiple 
-  - if [[ $TESTS == "True" && "x$OD" != "x" && "x$QLIC_KC" != "x" ]]; then
-      curl -o ${QHOME}/q.zip -L $OD;
-      unzip -d ${QHOME} ${QHOME}/q.zip;
-      rm ${QHOME}/q.zip;
-      echo -n $QLIC_KC |base64 --decode > ${QHOME}/kc.lic;
-    else
-      echo No kdb+, no tests;
-    fi
-  # Prepare package
-  - if [[ $TRAVIS_OS_NAME == "windows" ]]; then
-      export FILE_TAIL="zip";
-    else
-      export FILE_TAIL="tgz";
-    fi
-  - export FILE_NAME=${FILE_ROOT}-${TRAVIS_OS_NAME}-${TRAVIS_BRANCH}.${FILE_TAIL}
-  # Build package
-  - mkdir build
-  - if [[ $BUILD == "True" && $TRAVIS_OS_NAME == "windows" ]]; then
-      cd build;
-      cmake -G "Visual Studio 15 2017 Win64" --config Release .. -DENABLE_SSL:BOOL=OFF;
-      cmake --build . --config Release --target install;
-      cd ..;
-    elif [[ $BUILD == "True" && ( $TRAVIS_OS_NAME == "linux" || $TRAVIS_OS_NAME == "osx" ) ]]; then
-      cd build;
-      cmake .. -DENABLE_SSL:BOOL=OFF;
-      cmake --build . --target install;
-      cd ..;
-    fi
+  - wget -qO - http://packages.confluent.io/deb/3.3/archive.key | sudo apt-key add - # Use the confluent repository
+  - sudo add-apt-repository "deb http://packages.confluent.io/deb/3.3 stable main"
+  - sudo apt-get update -qq # Update quietly.
+  - sudo apt-get install -y gcc-multilib librdkafka-dev librdkafka1
 
 script:
-  - if [[ $TESTS == "True" && "x$OD" != "x" && "x$QLIC_KC" != "x" ]]; then
-      curl -fsSL -o test.q https://github.com/KxSystems/hdf5/raw/master/test.q;
-      q test.q tests/ -q;
-    fi
-  - if [[ $TRAVIS_OS_NAME == "windows" ]]; then
-      7z a -tzip -r $FILE_NAME ./build/$FILE_ROOT/*;
-    else
-      tar -zcvf $FILE_NAME -C build/$FILE_ROOT .;
-    fi
-
-deploy:
-  provider: releases
-  token: "$GITHUB_APIKEY"
-  file: "$FILE_NAME"
-  on:
-    tags: true
-    condition: $TRAVIS_OS_NAME = windows || $TRAVIS_OS_NAME = osx || ($TRAVIS_DIST = xenial && $TRAVIS_OS_NAME = linux) 
-  skip_cleanup: 'true' #  prevent Travis CI from resetting your working directory and deleting all changes made during the build 
+- make all

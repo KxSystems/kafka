@@ -1,4 +1,4 @@
-\l ../q/kafka.q
+\l ../kfk.q
 
 kfk_cfg:(!) . flip(
     (`metadata.broker.list;`localhost:9092);
@@ -9,54 +9,40 @@ kfk_cfg:(!) . flip(
     (`enable.auto.commit;`false);
     (`enable.auto.offset.store;`false)
     );
-consumer:.kafka.newConsumer[kfk_cfg];
+client:.kfk.Consumer[kfk_cfg];
 
 // Topics to be published to
 topic1:`test1
 topic2:`test2
 data:();
 
-// Overwrite default offset callback functionality triggered by consumer-poll.
-.kafka.offset_commit_cb:{[consumer_idx;err;offsets]
-  show (consumer_idx;err;offsets);
- };
-
-// Assign partitions to consume from specified offsets
-show .kafka.assignNewOffsetsToTopicPartition[consumer; ; (1#0i)!1#.kafka.OFFSET_END] each (topic1; topic2);
-
-// Subscribe to relevant topics from a defined client
-.kafka.subscribe[consumer; ; (1#0i)!1#.kafka.OFFSET_END] each (topic1;topic2);
-
-// Callback function for consumption from all topics
-consume_callback:{[msg]
+// Default callback function overwritten for managing of consumption from all topics
+.kfk.consumetopic[`]:{[msg]
     msg[`data]:"c"$msg[`data];
     msg[`rcvtime]:.z.p;
-    data,::enlist msg;
- };
+    data,::enlist msg;}
+// Define Offset callback functionality
+.kfk.offsetcb:{[cid;err;offsets]show (cid;err;offsets);}
 
-.kafka.registerConsumeTopicCallback[consumer; consume_callback] each (topic1;topic2);
+// Assign partitions to consume from specified offsets
+show .kfk.AssignOffsets[client;;(1#0i)!1#.kfk.OFFSET.END]each (topic1;topic2)
 
-start:.z.t;
+// Subscribe to relevant topics from a defined client
+.kfk.Sub[client;;(1#0i)!1#.kfk.OFFSET.END]each (topic1;topic2)
 
+strt:.z.t
 // The following example has been augmented to display and commit offsets for each of
 // the available topics every 10 seconds
-.z.ts:{
-  n+:1;
-  topic:$[n mod 2; topic1; topic2];
-  if[(5000 < "i"$.z.t-start) & 1 < count data;
+\t 5000
+.z.ts:{n+:1;topic:$[n mod 2;topic1;topic2];
+  if[(5000<"i"$.z.t-strt)&1<count data;
     -1 "\nPublishing information from topic :",string topic;
     show seen:exec last offset by partition from data where topic=topic;
-    
     show "Position:";
-    show .kafka.setOffsetsToEnd[consumer; topic; seen];
-    
+    show .kfk.PositionOffsets[client;topic;seen];
     show "Before commited:";
-    show .kafka.getCommittedOffsetsForTopicPartition[consumer; topic; seen];
-
-    .kafka.commitNewOffsetsToTopicPartition[consumer; topic; seen; 0b];
-    
+    show .kfk.CommittedOffsets[client;topic;seen];
+    .kfk.CommitOffsets[client;topic;seen;0b];
     show "After commited:";
-    show .kafka.getCommittedOffsetsForTopicPartition[consumer; topic; seen];]
- };
-
-\t 5000
+    show .kfk.CommittedOffsets[client;topic;seen];]
+  }
