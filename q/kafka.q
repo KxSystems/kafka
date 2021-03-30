@@ -10,8 +10,6 @@
 //                     Initial Setting                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-//if[0 = system "s"; '"thread?"];
-
 LIBPATH_:$[
   (`kafkakdb.so in key hsym `$getenv[`QHOME], (1#string .z.o), "64") or `kafkakdb.so in key hsym `$getenv `LD_LIBRARY_PATH;
   // Exist under QHOME/[os]64 or LD_LIBRARY_PATH
@@ -22,14 +20,6 @@ LIBPATH_:$[
   // Default location
   `:kafkakdb 2:
  ];
-
-QLIBPATH_: (::);
-LOAD_Q_FILE_:{[file]
-  if[(::) ~ QLIBPATH_;
-     QLIBPATH_:: $["" ~ path:getenv[`Q_LIBRARY_PATH]; $[(wd: first system "pwd") like "*/q"; wd; wd, "/q"]; path], "/"
-  ];
-  system "l ", QLIBPATH_, file;
- }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Global Variable                   //
