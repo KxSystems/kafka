@@ -94,10 +94,12 @@ q).kafka.getClientName[0i]
 q).kafka.deleteClient[0i]
 q).kafka.ClientName[0i]
 'unknown client
-/Client can no longer be deleted
+q)// Client can no longer be deleted
 q).kafka.deleteClient[0i]
 'unknown client
 ```
+
+[*] Replacement of `.kfk.ClientDel`.
 
 ### `.kafka.getClientName`
 
@@ -114,10 +116,12 @@ returns assigned client name.
 ```q
 q).kafka.getClientName[0i]
 `rdkafka#producer-1
-/Client removed
+q)// Client removed
 q).kafka.getClientName[1i]
 'unknown client
 ```
+
+[*] Replacement of `.kfk.ClientName`.
 
 ### `.kafka.getOutQueueLength`
 
@@ -135,6 +139,8 @@ returns as an int the number of messages in the queue.
 q).kafka.getOutQueueLength[producer]
 5i
 ```
+
+[*] Replacement of `.kfk.OutQLen`.
 
 ### `.kafka.newConsumer`
 
@@ -161,6 +167,8 @@ q).kafka.newConsumer[kafka_cfg; 5000i]
 0i
 ```
 
+[*] Replacement of `.kfk.Consumer`.
+
 ### `.kafka.newProducer`
 
 _Create a producer according to user-defined configuration._
@@ -184,6 +192,8 @@ q).kafka.newProducer[kafka_cfg; 5000i]
 0i
 ```
 
+[*] Replacement of `.kfk.Producer`.
+
 ### `.kafka.SetLogLevel`
 
 _Set the maximum logging level for a client._
@@ -202,6 +212,8 @@ q)show client
 0i
 q).kafka.SetLogLevel[client;7]
 ```
+
+[*] Replacement of `.kfk.SetLoggerLevel`.
 
 ## Producer functionality
 
@@ -228,6 +240,8 @@ q).kafka.publish[test_topic;-1i;string .z.p;""]
 q).kafka.publish[test_topic;-1i;string .z.p;"test_key"]
 ```
 
+[*] Replacement of `.kfk.Pub`.
+
 ### `.kafka.publishBatch`
 
 _Publish a batch of messages to a defined topic._
@@ -246,22 +260,15 @@ returns an integer list denoting the status for each message (zero indicating su
 ```q
 q)batchMsg :("test message 1";"test message 2")
 q)batchKeys:("Key 1";"Key 2")
-
-// Send two messages to any partition using default key
+q)// Send two messages to any partition using default key
 q).kafka.publishBatch[;.kafka.PARTITION_UA;batchMsg;""] each (topic1; topic2)
-0 0
-0 0
-
-// Send 2 messages to partition 0 for each topic using default key
+q)// Send 2 messages to partition 0 for each topic using default key
 q).kafka.publishBatch[;0i;batchMsg;""]each(topic1;topic2)
-0 0
-0 0
-
-// Send 2 messages the first to separate partitions using generated keys
+q)// Send 2 messages the first to separate partitions using generated keys
 q).kafka.publishBatch[;0 1i;batchMsg;batchKeys]each(topic1;topic2)
-0 0
-0 0
 ```
+
+[*] Replacement of `.kfk.BatchPub`.
 
 ### `.kafka.publishWithHeaders`
 
@@ -281,28 +288,25 @@ Where
 returns a null on successful publication, errors if version conditions not met
 
 ```q
-// Create an appropriate producer
+q)// Create an appropriate producer
 q)producer:.kafka.newProducer[kafka_cfg; 5000i]
-
-// Create a topic
+q)// Create a topic
 q)test_topic:.kafka.newTopic[producer;`test;()!()]
-
-// Define the target partition as unassigned
-partition:.kafka.PARTITION_UA
-
-// Define an appropriate payload
-payload:"hello from a producer"
-
-// Define the headers to be added
-headers:`header1`header2!("test1";"test2")
-
-// Publish a message
+q)// Define the target partition as unassigned
+q)partition:.kafka.PARTITION_UA
+q)// Define an appropriate payload
+q)payload:"hello from a producer"
+q)// Define the headers to be added
+q)headers:`header1`header2!("test1";"test2")
+q)// Publish a message
 q).kafka.publishWithHeaders[producer; test_topic; partition; payload; ""; headers]
 ```
 
 !!!Note "Support for functionality"
 	
 	This functionality is only available for versions of librdkafka >= 0.11.4, use of a version less than this does not allow this 
+
+[*] Replacement of `.kfk.PubWithHeaders`.
 
 ## Consumer functionality
 
@@ -325,6 +329,8 @@ q).kafka.getConsumerGroupMemberID[1i]
 'unknown client
 ```
 
+[*] Replacement of `.kfk.ClientMemberId`.
+
 ### `.kafka.getCurrentSubscription`
 
 _Get current topic subscription information for the consumer._
@@ -345,6 +351,8 @@ topic partition offset metadata
 -------------------------------
 test2 -1        -1001  ""
 ```
+
+[*] Replacement of `.kfk.Subscription`.
 
 ### `.kafka.subscribe`
 
@@ -369,10 +377,12 @@ returns a null on successful execution.
 
 ```q
 q)client:.kafka.newConsumer[kafka_cfg; 5000i]
-// List of topics to be subscribed to
+q)// List of topics to be subscribed to
 q)topic_list:`test`test1`test2
 q).kafka.subscribe[client] each topic_list
 ```
+
+[*] Replacement of `.kfk.Sub`.
 
 ### `.kafka.unsubscribe`
 
@@ -391,6 +401,8 @@ q)consumer
 0i
 q).kafka.unsubscribe[consumer]
 ```
+
+[*] Replacement of `.kfk.Unsub`.
 
 ## Callback Registration
 
@@ -411,22 +423,24 @@ Where
 returns a null on successful execution.
 
 ```q
-// Attempt to create a consumer which will fail
+q)// Attempt to create a consumer which will fail
 q)consumer1: .kafka.newConsumer[`metadata.broker.list`group.id!`foobar`0; 5000i]
 q)consumer1
 0i
-// Attempt to create another failing consumer
+q)// Attempt to create another failing consumer
 q)consumer2: .kafka.Consumer[`metadata.broker.list`group.id!`foobar`0; 5000i]
 q)consumer2
 1i
 q)"(1i;-193i;\"foobar:9092/bootstrap: Failed to resolve 'foobar:9092': nodename nor servnam..
 "(1i;-187i;\"1/1 brokers are down\")"
-// Attempt to create a consumer that will fail
+q)// Attempt to create a consumer that will fail
 q)consumer3:.kafka.newConsumer[`metadata.broker.list`group.id!`foobar`0]
 q).kafka.registerErrorCallback[consumer3;{[cid;error_code;reason] show error_code;}]
 q)-193i
 -187i
 ```
+
+[*] Replacement of `.kfk.errcbreg`.
 
 ### `.kafka.registerThrottleCallback`
 
@@ -449,10 +463,12 @@ o callback
 ```q
 q)client
 0i
-// Add a throttle client associated specifically with client 0
+q)// Add a throttle client associated specifically with client 0
 q).kafka.throttlecbreg[client;{[client_idx;broker_name;broker_id;throttle_time] -2 -3!(client_idx; throttle_time);}]
-// Display the updated throttle callback logic
+q)// Display the updated throttle callback logic
 ```
+
+[*] Replacement of `.kfk.throttlecbreg`.
 
 ### `.kafka.registerConsumeTopicCallback`
 
@@ -499,11 +515,13 @@ Exemple implementation is below:
 ```q
 
 LOG: ();
-.kfk.logcb:{[level;fac;buf]
+.kafka.log_cb:{[level;fac;buf]
   LOG,: `level`fac`buf!(level; fac; buf);
  }
 
 ```
+
+[*] Replacement of `.kfk.logcb`.
 
 ### `.kafka.offset_commit_cb`
 
@@ -531,6 +549,8 @@ Example implementation is below:
 
 ```
 
+[*] Replacement of `.kfk.offsetcb`.
+
 ### `.kafka.dr_msg_cb`
 
 _User custom callback for message delivery notification._
@@ -554,6 +574,8 @@ Example implementation is below:
  }
 
 ```
+
+[*] Replacement of `.kfk.drcb`.
 
 ## Topic functionality
 
@@ -580,6 +602,8 @@ q).kafka.getTopicName[topic2]
 `test2
 ```
 
+[*] Replacement of `.kfk.TopicName`.
+
 ### `.kafka.deleteTopic`
 
 _Delete a currently defined topic._
@@ -600,10 +624,12 @@ q).kafka.newTopic[producer;`test;()!()]
 q)topic
 0i
 q).kafka.deleteTopic[topic]
-// topic now no longer available for deletion
+q)// topic now no longer available for deletion
 q).kafka.deleteTopic[topic]
 'unknown topic
 ```
+
+[*] Replacement of `.kfk.TopicDel`.
 
 ### `.kafka.newTopic`
 
@@ -626,6 +652,8 @@ q).kafka.newTopic[producer;`test1;()!()]
 q).kafka.newTopic[producer;`test2;()!()]
 1i
 ```
+
+[*] Replacement of `.kfk.Topic`.
 
 ## Offset/Topic-partition functionality
 
@@ -651,9 +679,9 @@ returns a null on successful execution, will display inappropriate assignments i
 ```q
 q)consumer
 0i
-// Create a new assignment
+q)// Create a new assignment
 q).kafka.assignNewTopicPartition[consumer;`test1`test2!0 0i]
-// Retrieve the current assignment
+q)// Retrieve the current assignment
 q).kafka.getCurrentAssignment[consumer]
 topic partition offset metadata
 -------------------------------
@@ -661,7 +689,7 @@ test1 0         -1001  ""
 test2 0         -1001  ""      
 // Add new assignments to the current assignment
 q).kafka.addTopicPartitionToAssignment[consumer;`test1`test2!1 1i]
-// Retrieve the current assignment
+q)// Retrieve the current assignment
 q).kafka.getCurrentAssignment[consumer]
 topic partition offset metadata
 -------------------------------
@@ -669,12 +697,14 @@ test1 1         -1001  ""
 test1 0         -1001  ""      
 test1 1         -1001  ""      
 test2 0         -1001  ""      
-// Attempt to assign an already assigned topic partition pair
+q)// Attempt to assign an already assigned topic partition pair
 q).kafka.addTopicPartitionToAssignment[cid;`test1`test2!1 1i]
 `test1 1i
 `test2 1i
 'The above topic-partition pairs already exist, please modify dictionary
 ```
+
+[*] Replacement of `.kfk.AssignAdd`.
 
 ### `.kafka.assignNewOffsetsToTopicPartition`
 
@@ -700,6 +730,7 @@ q).kafka.assignNewOffsetsToTopicPartition[client; `test; enlist[0i]!enlist .kafk
 
   	In the above examples an offset of -1001 is a special value. It indicates the offset could not be determined and the consumer will read from the last-committed offset once one becomes available.
 
+[*] Replacement of `.kfk.AssignOffsets`.
 
 ### `.kafka.assignNewTopicPartition`
 
@@ -720,6 +751,8 @@ q)consumer
 q).kafka.assignNewTopicPartition[consumer; `test1`test2!0 1i]
 ```
 
+[*] Replacement of `.kfk.Assign`.
+
 ### `.kafka.commitOffsetsToTopicPartition`
 
 _Commit offsets on broker for provided partitions and offsets._
@@ -737,6 +770,8 @@ returns a null on successful commit of offsets.
 
 See the example of [`.kafka.registerConsumeTopicCallback`](#kafkaregistconsumetopiccallback).
 
+[*] Replacement of `.kfk.CommitOffsets`.
+
 ### `.kafka.deleteTopicPartitionFromAssignment`
 
 _Delete pairs of topic and partition from the current assignment for a client._
@@ -753,9 +788,9 @@ returns a null on successful execution, will display inappropriate assignment de
 ```q
 q)consumer
 0i
-// Create a new assignment
+q)// Create a new assignment
 q).kafka.assignNewTopicPartition[consumer;`test1`test1`test2`test2!0 1 0 1i]
-// Retrieve the current assignment
+q)// Retrieve the current assignment
 q).kafka.getCurrentAssignment[consumer]
 topic partition offset metadata
 -------------------------------
@@ -763,20 +798,22 @@ test1 0         -1001  ""
 test2 1         -1001  ""
 test2 0         -1001  ""
 test2 1         -1001  ""
-// Add new assignments to the current assignment
+q)// Add new assignments to the current assignment
 q).kafka.deleteTopicPartitionFromAssignment[consumer;`test1`test2!1 1]
-// Retrieve the current assignment
+q)// Retrieve the current assignment
 q).kafka.getCurrentAssignment[cid]
 topic partition offset metadata
 -------------------------------
 test1 0         -1001  ""
 test2 0         -1001  ""
-// Attempt to assign an already unassigned topic partition pair
+q)// Attempt to assign an already unassigned topic partition pair
 q).kafka.deleteTopicPartitionFromAssignment[consumer;`test1`test2!1 1i]
 `test1 1i
 `test2 1i
 'The above topic-partition pairs cannot be deleted as they are not assigned
 ```
+
+[*] Replacement of `.kfk.AssignDel`.
 
 ### `.kafka.getBrokerTopicConfig`
 
@@ -803,6 +840,8 @@ topic              err     partitions                                        ..
 test               Success ,`id`err`leader`replicas`isrs!(0i;`Success;0i;,0i;..
 __consumer_offsets Success (`id`err`leader`replicas`isrs!(0i;`Success;0i;,0i;..
 ```
+
+[*] Replacement of `.kfk.Metadata`.
 
 ### `.kafka.getCommittedOffsetsForTopicPartition`
 
@@ -835,6 +874,8 @@ test  0         26481  ""
 test  1         -1001  ""
 ```
 
+[*] Replacement of `.kfk.CommittedOffsets`.
+
 ### `.kafka.getCurrentAssignment`
 
 _Retrieve the current assignment for a specified client._
@@ -850,19 +891,21 @@ returns a list of dictionaries describing the current assignment for the specifi
 ```q
 q)consumer
 0i
-// Attempt to retrieve assignment without a current assignment
+q)// Attempt to retrieve assignment without a current assignment
 q).kafka.getCurrentAssignment[consumer]
 topic partition offset metadata
 -------------------------------
-// Create a new assignment
+q)// Create a new assignment
 q).kafka.assignNewTopicPartition[consumer;`test1`test2!0 1i]
-// Retrieve the new current assignment
+q)// Retrieve the new current assignment
 q).kafka.getCurrentAssignment[consumer]
 topic partition offset metadata
 -------------------------------
 test1 0         -1001  ""
 test2 1         -1001  ""
 ```
+
+[*] Replacement of `.kfk.Assignment`.
 
 ### `.kafka.getEarliestOffsetsForTimes`
 
@@ -887,6 +930,8 @@ topic  partition offset metadata
 --------------------------------
 topic1 1         20     ""      
 ```
+
+[*] Replacement of `.kfk.offsetForTimes`.
 
 ### `.kafka.getPrevailingOffsets`
 
@@ -916,6 +961,8 @@ test  1         -1001  ""
 
     As this function sets the current position to the last consumed offset+1, you will see -1001 from the second execution unless a new mesage is consumed.
 
+[*] Replacement of `.kfk.PositionOffsets`.
+
 ## System information
 
 ### `.kafka.getKafkaThreadCount`
@@ -931,6 +978,8 @@ q).kafka.getKafkaThreadCount[]
 5i
 ```
 
+[*] Replacement of `.kfk.ThreadCount`.
+
 ### `.kafka.version`
 
 _Integer value of the librdkafka version._
@@ -944,6 +993,8 @@ q).kafka.version[]
 16777471i
 ```
 
+[*] Replacement of `.kfk.Version`.
+
 ### `.kafka.versionString`
 
 _Human readable librdkafka version._
@@ -956,3 +1007,5 @@ Returns a string denoting the version of `librdkafka` that is being used within 
 q).kafka.versionString[]
 "1.1.0"
 ```
+
+[*] Replacement of `.kfk.VersionSym`.
