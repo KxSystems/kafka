@@ -82,10 +82,8 @@
     statistics[`ts]:(`timestamp$statistics[`ts]*1000) - .kafka.KDB_DAY_OFFSET;
     statistics[`time]:(`timestamp$1e9*statistics[`time]) - .kafka.KDB_DAY_OFFSET;
   ];
-  if[not `cgrp in key statistics; statistics[`cgrp]:()];
-
   // Insert the new record
-  .kafka.STATISTICS,:enlist statistics;
+  .kafka.STATISTICS: .kafka.STATISTICS uj enlist statistics;
   // Keep only 100 records
   delete from `.kafka.STATISTICS where i < count[.kafka.STATISTICS]-100;
  };
