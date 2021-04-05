@@ -1,7 +1,7 @@
 OSFLAG :=
 MS :=
 
-ifeq ($(KAFKA_ROOT)),)
+ifeq ($(KAFKA_ROOT),)
         KFK_ROOT="${HOME}"
 else
         KFK_ROOT="${KAFKA_ROOT}"
