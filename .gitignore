@@ -1,3 +1,6 @@
+qpbuild/
 clib/include/k.h
 clib/build/
+clib/qpbuild/
+clib/kafkakdb.so
 tests/bench_producer.log

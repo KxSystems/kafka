@@ -21,6 +21,11 @@ LIBPATH_:$[
   `:kafkakdb 2:
  ];
 
+adjusted_l:{[file]
+  loaded: @[system; "l ", string file; `LOAD_ERROR];
+  if[loaded ~ `LOAD_ERROR; system "l q/", string file];
+ };
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Global Variable                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -61,13 +66,13 @@ LIBPATH_:$[
 //                      Load Modules                     //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-\l kafka_client.q
-\l kafka_configuration.q
-\l kafka_consumer.q
-\l kafka_info.q
-\l kafka_init.q
-\l kafka_producer.q
-\l kafka_topic.q
+adjusted_l `kafka_client.q;
+adjusted_l `kafka_configuration.q;
+adjusted_l `kafka_consumer.q;
+adjusted_l `kafka_info.q;
+adjusted_l `kafka_init.q;
+adjusted_l `kafka_producer.q;
+adjusted_l `kafka_topic.q;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Initialize State                   //
