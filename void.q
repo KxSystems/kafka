@@ -6,5 +6,5 @@
 *  `\l kfk.q`.
 \
 
-// \l kfk.q if you are using old functions.
-\l kafka.q
+// \l q/kfk.q if you are using old functions.
+\l q/kafka.q

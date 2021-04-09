@@ -17,6 +17,22 @@
  */
 static K ALL_THREADS = 0;
 
+/**
+ * @brief Decoding option of kafka message.
+ */
+enum Decoding{
+  plain,
+  ipc,
+  json,
+  protobuf
+};
+
+/**
+ * @brief Decoding method used for a consumer. This value will be initialized
+ *  at creation of consumer.
+ */
+static enum DECODER;
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -93,6 +109,8 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
   // Retrieve `payload` and `key`
   K payload= ktn(KG, msg->len);
   K key=ktn(KG, msg->key_len);
+  // TODO
+  // Convert message to K here. message can be JSON, q IPC bytes or protobuf.
   memmove(kG(payload), msg->payload, msg->len);
   memmove(kG(key), msg->key, msg->key_len);
 

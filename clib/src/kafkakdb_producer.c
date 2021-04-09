@@ -152,6 +152,9 @@ EXP K publish(K topic_idx, K partition, K payload, K key){
     return (K) topic_handle;
   }
   
+  // TODO
+  // Convert message from K to char*.
+  // Target format can be JSON, q IPC bytes or Protobuf.
   if(rd_kafka_produce(topic_handle, partition->i, RD_KAFKA_MSG_F_COPY, kG(payload), payload->n, kG(key), key->n, NULL)){
     // Error in sending a message
     return krr((S) rd_kafka_err2str(rd_kafka_last_error()));
