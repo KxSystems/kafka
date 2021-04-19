@@ -1,6 +1,6 @@
 {
   "default":{
-    "entry": ["void.q"],
-    "depends": ["clib"]
+    "depends": ["clib"],
+    "entry": ["q/kafka.q"]
   }
 }

@@ -32,7 +32,7 @@ Kafka interface functionality
   // Consumer functionality
   .kafka.getConsumerGroupMemberID                 Get a broker-assigned member ID.
   .kafka.getCurrentSubscription                   Get current topic subscription information for the consumer.
-  .kafka.subscribe](#kafkasubscribe)              Subscribe to a defined topic.
+  .kafka.subscribe              Subscribe to a defined topic.
   .kafka.unsubscribe                              Unsubscribe from a topic and remove consume-topic callback.
 
   // Callback registration
@@ -151,7 +151,7 @@ Syntax: `.kafka.newConsumer[config;timeout]`
 Where
 
 - `config` is a dictionary user-defined configuration.
-- `timeout` is an integer value denoting the timeout (in milliseconds) to wait for a response frm a kafka broker.
+- `timeout` is an integer value denoting the timeout (in milliseconds) to wait for a response from a kafka broker.
 
 returns an integer denoting the index of the consumer.
 
@@ -178,7 +178,7 @@ Syntax: `.kafka.newProducer[config;timeout]`
 Where
 
 - `config` is a user-defined dictionary configuration.
-- `timeout` is an integer value denoting the timeout (in milliseconds) to wait for a response frm a kafka broker.
+- `timeout` is an integer value denoting the timeout (in milliseconds) to wait for a response from a kafka broker.
 
 returns an integer denoting the index of the producer.
 
@@ -824,7 +824,7 @@ Syntax: `.kafka.getBrokerTopicConfig[client_idx;timeout]`
 Where
 
 - `client_idx` is the integer denoting the index of a client.
-- `timeout` is an integer value denoting the timeout (in milliseconds) to wait for a response frm a kafka broker.
+- `timeout` is an integer value denoting the timeout (in milliseconds) to wait for a response from a kafka broker.
 
 returns a dictionary with information about the brokers and topics.
 
