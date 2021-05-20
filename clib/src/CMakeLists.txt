@@ -5,6 +5,21 @@ if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
+# OS Specific
+if(APPLE)
+    set(OSFLAG m)
+elseif(WIN32)
+    set(OSFLAG w)
+else()
+    set(OSFLAG l)
+endif()
+
+# Check 32bit or 64bit
+set(BITNESS 32)
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  set(BITNESS 64)
+endif()
+
 # Download k.h
 file(DOWNLOAD "https://github.com/KxSystems/kdb/raw/master/c/c/k.h" "${PROJECT_SOURCE_DIR}/include/k.h" )
 
@@ -50,8 +65,8 @@ find_library(KAFKA_LIBRARY
 
 find_library(TRANSFORMER_LIBRARY
     REQUIRED
-    NAMES qtfm.a
-    HINTS ${PROJECT_SOURCE_DIR}/libs
+    NAMES qtfm.so
+    HINTS $ENV{QHOME}/${OSFLAG}${BITNESS}
 )
 
 if(MSVC)
@@ -64,8 +79,6 @@ endif()
 target_compile_options(${MY_LIBRARY_NAME} PRIVATE
     # kdb+ version
     -DKXVER=3 -std=c99
-
-    # -lrt for Linux??
 
     # Compiler option
     $<$<C_COMPILER_ID:MSVC>:${CMAKE_C_FLAGS} /W3 /D WIN32_LEAN_AND_MEAN>
@@ -100,21 +113,6 @@ target_link_libraries(${MY_LIBRARY_NAME} PRIVATE
 )
 
 ##%% Installation %%##vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-# OS Specific
-if(APPLE)
-    set(OSFLAG m)
-elseif(WIN32)
-    set(OSFLAG w)
-else()
-    set(OSFLAG l)
-endif()
-
-# Check 32bit or 64bit
-set(BITNESS 32)
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  set(BITNESS 64)
-endif()
 
 # Copy built shared object after build instead of during installation
 add_custom_command(TARGET ${MY_LIBRARY_NAME}

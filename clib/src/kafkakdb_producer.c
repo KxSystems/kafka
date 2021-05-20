@@ -5,6 +5,7 @@
 #include <kafkakdb_utility.h>
 #include <kafkakdb_producer.h>
 #include <qtfm.h>
+#include <string.h>
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                      Interface                        //
@@ -113,6 +114,8 @@ EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, 
       use_pipeline=1;
       char pipeline_name_buffer[16];
       strncpy(pipeline_name_buffer, (S) kG(hdrval), hdrval->n);
+      pipeline_name_buffer[hdrval->n]='\0';
+      pipeline_name=ks(pipeline_name_buffer);
     }
     // Add a pair of header key and value to headers
     rd_kafka_header_add(message_headers, kS(hdr_keys)[idx], -1, kG(hdrval), hdrval->n);

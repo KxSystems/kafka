@@ -23,7 +23,7 @@ const J KDB_DAY_OFFSET = 10957;
 /**
  * @brief Milliseconds in a day
  */
-const J ONEDAY_MILLIS = 86400000;
+//const J ONEDAY_MILLIS = 86400000;
 
 //%% Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 

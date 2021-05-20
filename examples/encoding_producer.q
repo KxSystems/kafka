@@ -59,7 +59,7 @@ n: 0b;
   n:: not n;
   $[n;
     .kafka.publishWithHeaders[producer; topic1; .kafka.PARTITION_UA; `name`age`body`pets!("John"; 21; 173.1 67.2; `locust`grasshopper`vulture); ""; `encoder`decoder!("jsonian"; "pomelanian")];
-    .kafka.publishWithHeaders[producer; topic2; .kafka.PARTITION_UA; `ID`First`Last`Phone`Age!(2; "Michael"; "Ford"; "0000A"; 33i); ""; `encoder`decoder!("avroer"; "eyeblow")]
+    .kafka.publishWithHeaders[producer; topic2; .kafka.PARTITION_UA; `ID`First`Last`Phone`Age!(2; "Michael"; "Ford"; "0000A"; 33i); ""; `encoder`decoder!("avroer"; "eyebrow")]
   ];
  }
 

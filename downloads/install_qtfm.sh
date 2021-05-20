@@ -17,7 +17,6 @@ cd transformer
 ./install.sh ${BUILD_TYPE} shared
 
 ## Copy artefact and other dependencies.
-cp clib/build/clib/q_message_transformer/lib/qtfm.so ../../clib/libs/
 cp clib/build/clib/q_message_transformer/q/transformer.q ../../q/
 cp clib/include/qtfm.h ../../clib/include/
 

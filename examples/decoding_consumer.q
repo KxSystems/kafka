@@ -34,15 +34,17 @@ data2:();
 //                     Initial Setting                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
+\c 25 200
+
 // Create pipelines used for encoding
 .qtfm.createNewPipeline[`pomelanian];
 .qtfm.addDeserializationLayer[`pomelanian; .qtfm.ZSTD; (::)];
 .qtfm.addDeserializationLayer[`pomelanian; .qtfm.JSON; (::)];
 .qtfm.compile[`pomelanian];
 
-.qtfm.createNewPipeline[`eyeblow];
-.qtfm.addDeserializationLayer[`eyeblow; .qtfm.AVRO; "../schema/person.avsc"];
-.qtfm.compile[`eyeblow];
+.qtfm.createNewPipeline[`eyebrow];
+.qtfm.addDeserializationLayer[`eyebrow; .qtfm.AVRO; "../schema/person.avsc"];
+.qtfm.compile[`eyebrow];
 
 
 // Create a consumer.
@@ -54,18 +56,16 @@ topic1:`test1; topic2:`test2;
 // Define datasets and topic callbacks for individual
 // topic subscriptions `topic1 and `topic2
 topic_cb1:{[consumer;msg]
-  msg[`data]:"c"$msg[`data];
   msg[`rcvtime]:.z.p;
   msg[`headers]:"c"$msg[`headers];
-  data1,::enlist msg;
+  if[type[msg `data] ~ 99h; data1,:: enlist msg];
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 
 topic_cb2:{[consumer;msg]
-  msg[`data]:"c"$msg[`data];
-  msg[`rcvtime]:.z.t;
+  msg[`rcvtime]:.z.p;
   msg[`headers]:"c"$msg[`headers];
-  data2,::enlist msg;
+  if[type[msg `data] ~ 99h; data2,:: enlist msg];
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 

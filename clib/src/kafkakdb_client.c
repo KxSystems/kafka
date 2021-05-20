@@ -6,6 +6,7 @@
 #include <kafkakdb_client.h>
 #include <kafkakdb_configuration.h>
 #include <qtfm.h>
+#include <string.h>
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Global Variables                   //
@@ -100,12 +101,13 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
     // length holder for value
     size_t size;
     while (!rd_kafka_header_get_all(hdrs, idx++, &name, &value, &size)){
-      if(!strcmp(name, "decoder")){
+      if(rd_kafka_type(handle) == RD_KAFKA_CONSUMER && !strcmp(name, "decoder")){
         // Use pipeline to decode payload
         use_pipeline=1;
         char pipeline_name_buffer[16];
         strncpy(pipeline_name_buffer, (S) value, size);
-        pipeline_name->s=pipeline_name_buffer;
+        pipeline_name_buffer[size]='\0';
+        pipeline_name=ks(pipeline_name_buffer);
       }
       // add key
       kS(header_keys)[idx-1]=ss((char*) name);
@@ -315,11 +317,6 @@ J poll_client(rd_kafka_t *handle, I timeout){
     // Holder of message from polling
     rd_kafka_message_t *message;
 
-    // Holder of q message converted from message.
-    // Store one mesage in each box in one loop.
-    //K buffer[16];
-    //int buf_cursor=0;
-
     while((message= rd_kafka_consumer_poll(handle, timeout))){
       // Poll and retrieve message while message is not empty
       // Store tuple of (client index; data)
@@ -328,16 +325,6 @@ J poll_client(rd_kafka_t *handle, I timeout){
       // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
       send(spair[1], &q_message, sizeof(K), 0);
       
-      /*
-      K data=knk(2, ki(handle_to_index(handle)), decode_message(handle, message), KNULL); 
-      buffer[buf_cursor++]=&data;
-      if(buf_cursor==(sizeof(buffer)/sizeof(K))){
-        // Buffer became full.
-        flush(spair[1], buffer, sizeof(buffer));
-        buf_cursor=0;
-      }
-      */
-      
       // Discard message which is not necessary any more
       rd_kafka_message_destroy(message);
 
@@ -345,11 +332,6 @@ J poll_client(rd_kafka_t *handle, I timeout){
       ++n;
     }
 
-    /*
-    if(buf_cursor){
-      flush(spair[1], buffer, buf_cursor*sizeof(K));
-    }
-    */
     // Return the number of mesasges
     return n;
   }
