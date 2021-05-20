@@ -36,7 +36,7 @@ data2:();
 
 \c 25 200
 
-// Create pipelines used for encoding
+// Create pipelines used for decoding
 .qtfm.createNewPipeline[`pomelanian];
 .qtfm.addDeserializationLayer[`pomelanian; .qtfm.ZSTD; (::)];
 .qtfm.addDeserializationLayer[`pomelanian; .qtfm.JSON; (::)];
@@ -45,7 +45,6 @@ data2:();
 .qtfm.createNewPipeline[`eyebrow];
 .qtfm.addDeserializationLayer[`eyebrow; .qtfm.AVRO; "../schema/person.avsc"];
 .qtfm.compile[`eyebrow];
-
 
 // Create a consumer.
 consumer:.kafka.newConsumer[kfk_cfg; 5000i];
