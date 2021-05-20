@@ -2,9 +2,10 @@
 //                     Load Libraries                    //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-#include "kafkakdb_utility.h"
-#include "kafkakdb_client.h"
-#include "kafkakdb_configuration.h"
+#include <kafkakdb_utility.h>
+#include <kafkakdb_client.h>
+#include <kafkakdb_configuration.h>
+#include <qtfm.h>
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Global Variables                   //
@@ -68,6 +69,8 @@ static K load_config(rd_kafka_conf_t *conf, K q_config){
  * @param msg: Message pointer returned from `rd_kafka_consume*()` family of functions.
  * @return 
  * - dictionary: Information contained in the message.
+ * @note If a key `decoder` is included in headers, payload is decoded in q consumer with a pipeline
+ *  whose name is the value of the `decoder`.
  */
 K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
 
@@ -76,6 +79,11 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
   rd_kafka_headers_t* hdrs = NULL;
   rd_kafka_message_headers(msg, &hdrs);
   K k_headers = NULL;
+
+  // Decide if using pipeline to encode payload. 
+  I use_pipeline=0;
+  K pipeline_name=ks("");
+
   if (hdrs==NULL){
     // Empty header. Empty dictionary
     k_headers = xD(ktn(KS, 0), ktn(KC, 0));
@@ -92,6 +100,13 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
     // length holder for value
     size_t size;
     while (!rd_kafka_header_get_all(hdrs, idx++, &name, &value, &size)){
+      if(!strcmp(name, "decoder")){
+        // Use pipeline to decode payload
+        use_pipeline=1;
+        char pipeline_name_buffer[16];
+        strncpy(pipeline_name_buffer, (S) value, size);
+        pipeline_name->s=pipeline_name_buffer;
+      }
       // add key
       kS(header_keys)[idx-1]=ss((char*) name);
       // add value
@@ -109,9 +124,20 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
   // Retrieve `payload` and `key`
   K payload= ktn(KG, msg->len);
   K key=ktn(KG, msg->key_len);
-  // TODO
-  // Convert message to K here. message can be JSON, q IPC bytes or protobuf.
+
   memmove(kG(payload), msg->payload, msg->len);
+  if(use_pipeline){
+    // Use pipeline to decode payload
+    payload=transform(pipeline_name, payload);
+    if(!payload){
+      // Error happenned in transformation
+      r0(pipeline_name);
+      return payload;
+    }
+  }
+  // Delete pipeline_name no longer necessary
+  r0(pipeline_name);
+
   memmove(kG(key), msg->key, msg->key_len);
 
   // Millisecond timestamp from epoch

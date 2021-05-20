@@ -1,6 +1,10 @@
 qpbuild/
 clib/include/k.h
+clib/include/qtfm.h
 clib/build/
 clib/qpbuild/
 clib/kafkakdb.so
+clib/libs/qtfm*
+downloads/transformer
+q/transformer.q
 tests/bench_producer.log

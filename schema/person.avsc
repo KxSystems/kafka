@@ -1,0 +1,11 @@
+{
+  "type":"record",
+  "name":"Person",
+  "fields":[
+    {"name": "ID", "type": "long"},
+    {"name": "First", "type": "string"},
+    {"name": "Last", "type": "string"},
+    {"name": "Phone", "type": "string"},
+    {"name": "Age", "type": "int"}
+  ]
+}

@@ -30,6 +30,8 @@ EXP K flush_producer_handle(K producer_idx, K q_timeout);
  * @param payload: Payload to be sent.
  * @param key: Message key.
  * @param headers: Message headers expressed in a map between header keys to header values (symbol -> string).
+ *  If a key `encoder` is included, payload is encoded with a pipeline whose name is the value of the `encoder`.
+ *  Likewise, if a key `decoder` is included, payload is decoded in q consumer with a pipeline whose name is the value of the `decoder`.
  */
 EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, K key, K headers);
 

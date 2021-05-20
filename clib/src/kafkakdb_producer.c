@@ -2,8 +2,9 @@
 //                     Load Libraries                    //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-#include "kafkakdb_utility.h"
-#include "kafkakdb_producer.h"
+#include <kafkakdb_utility.h>
+#include <kafkakdb_producer.h>
+#include <qtfm.h>
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                      Interface                        //
@@ -62,12 +63,14 @@ EXP K flush_producer_handle(K producer_idx, K q_timeout){
  * @param payload: Payload to be sent.
  * @param key: Message key.
  * @param headers: Message headers expressed in a map between header keys to header values (symbol -> string).
+ *  If a key `encoder` is included, payload is encoded with a pipeline whose name is the value of the `encoder`.
+ *  Likewise, if a key `decoder` is included, payload is decoded in q consumer with a pipeline whose name is the value of the `decoder`.
  */
 EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, K key, K headers){
   
-  if(!check_qtype("iii[CG][CG]!", producer_idx, topic_idx, partition, payload, key, headers)){
+  if(!check_qtype("iii[CG]!", producer_idx, topic_idx, partition, key, headers)){
     // Error in check type.
-    return krr((S) "producer_idx, topic_idx, partition, payload, key and headers must be (int; int; int; string; string; dictionary) type.");
+    return krr((S) "producer_idx, topic_idx, partition, payload, key and headers must be (int; int; int; string; dictionary) type.");
   }
     
   rd_kafka_t *handle=index_to_handle(producer_idx);
@@ -84,6 +87,7 @@ EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, 
     
   K hdr_keys = (kK(headers)[0]);
   K hdr_values = (kK(headers)[1]);
+
   // Type check of headers
   if (hdr_keys->t != KS || hdr_values->t != 0){
     // headers contain wrong type
@@ -97,14 +101,34 @@ EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, 
     }
   }
 
+  // Decide if using pipeline to encode payload. 
+  I use_pipeline=0;
+  K pipeline_name=ks("");
+
   rd_kafka_headers_t* message_headers = rd_kafka_headers_new((int) hdr_keys->n);
   for (int idx=0; idx < hdr_keys->n; ++idx){
     K hdrval = kK(hdr_values)[idx];
-    if (hdrval->t == KG || hdrval->t == KC){
-      // Add a pair of header key and value to headers
-      rd_kafka_header_add(message_headers, kS(hdr_keys)[idx], -1, kG(hdrval), hdrval->n);
+    if(!strcmp(kS(hdr_keys)[idx], "encoder")){
+      // Use pipeline to encode payload
+      use_pipeline=1;
+      char pipeline_name_buffer[16];
+      strncpy(pipeline_name_buffer, (S) kG(hdrval), hdrval->n);
+    }
+    // Add a pair of header key and value to headers
+    rd_kafka_header_add(message_headers, kS(hdr_keys)[idx], -1, kG(hdrval), hdrval->n);
+  }
+
+  if(use_pipeline){
+    // Use pipeline to encode payload
+    payload=transform(pipeline_name, payload);
+    if(!payload){
+      // Error happenned in transformation
+      r0(pipeline_name);
+      return payload;
     }
   }
+  // Delete pipeline_name no longer necessary
+  r0(pipeline_name);
 
   rd_kafka_resp_err_t err = rd_kafka_producev(
                         handle,

@@ -75,6 +75,7 @@ adjusted_l `kafka_init.q;
 adjusted_l `kafka_producer.q;
 adjusted_l `kafka_topic.q;
 adjusted_l `kafka_deprecated.q;
+adjusted_l `transformer.q;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Initialize State                   //

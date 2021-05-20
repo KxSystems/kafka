@@ -48,6 +48,12 @@ find_library(KAFKA_LIBRARY
     HINTS $ENV{KAFKA_INSTALL_DIR}/lib
 )
 
+find_library(TRANSFORMER_LIBRARY
+    REQUIRED
+    NAMES qtfm.a
+    HINTS ${PROJECT_SOURCE_DIR}/libs
+)
+
 if(MSVC)
     # q library
     file(DOWNLOAD "https://github.com/KxSystems/kdb/raw/master/w64/q.lib" "${CMAKE_BINARY_DIR}/q.lib" )
@@ -90,6 +96,7 @@ target_link_libraries(${MY_LIBRARY_NAME} PRIVATE
     ${Q_LIBRARY}
     ${KAFKA_LIBRARY}
     ${OPENSSL_LIBRARY}
+    ${TRANSFORMER_LIBRARY}
 )
 
 ##%% Installation %%##vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/

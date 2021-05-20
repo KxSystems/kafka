@@ -45,6 +45,8 @@ static K load_config(rd_kafka_conf_t* conf, K q_config);
  * @param msg: Message pointer returned from `rd_kafka_consume*()` family of functions.
  * @return 
  * - dictionary: Information contained in the message.
+ * @note If a key `decoder` is included in headers, payload is decoded in q consumer with a pipeline
+ *  whose name is the value of the `decoder`.
  */
 K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t* msg);
 
