@@ -63,11 +63,16 @@ find_library(KAFKA_LIBRARY
     HINTS $ENV{KAFKA_INSTALL_DIR}/lib
 )
 
-find_library(TRANSFORMER_LIBRARY
-    REQUIRED
-    NAMES qtfm.so
-    HINTS $ENV{QHOME}/${OSFLAG}${BITNESS}
-)
+# Flag -DUSE_TRANSFORMER:BOOL=ON
+if(USE_TRANSFORMER)
+    find_library(TRANSFORMER_LIBRARY
+        REQUIRED
+        NAMES qtfm.so
+        HINTS $ENV{QHOME}/${OSFLAG}${BITNESS}
+    )
+else()
+    set(TRANSFORMER_LIBRARY "")
+endif()
 
 if(MSVC)
     # q library
@@ -79,6 +84,8 @@ endif()
 target_compile_options(${MY_LIBRARY_NAME} PRIVATE
     # kdb+ version
     -DKXVER=3 -std=c99
+
+    $<$<BOOL:${USE_TRANSFORMER}>: -DUSE_TRANSFORMER=1>
 
     # Compiler option
     $<$<C_COMPILER_ID:MSVC>:${CMAKE_C_FLAGS} /W3 /D WIN32_LEAN_AND_MEAN>

@@ -2,8 +2,8 @@
 //                     Load Libraries                    //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-#include "kafkakdb_utility.h"
-#include "kafkakdb_configuration.h"
+#include <kafkakdb_utility.h>
+#include <kafkakdb_client.h>
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //

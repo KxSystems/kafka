@@ -42,12 +42,13 @@ data2:();
 .qtfm.addDeserializationLayer[`pomelanian; .qtfm.JSON; (::)];
 .qtfm.compile[`pomelanian];
 
-.qtfm.createNewPipeline[`eyebrow];
-.qtfm.addDeserializationLayer[`eyebrow; .qtfm.AVRO; "../schema/person.avsc"];
-.qtfm.compile[`eyebrow];
-
 // Create a consumer.
-consumer:.kafka.newConsumer[kfk_cfg; 5000i];
+consumer:.kafka.newConsumer[kfk_cfg; 5000i; `pomelanian];
+
+// Get pipeline map
+pipeline_map: .kafka.getPipelinePerClient[];
+show pipeline_map;
+
 
 // Topics to subscribe to
 topic1:`test1; topic2:`test2;
@@ -83,6 +84,10 @@ topic_cb2:{[consumer;msg]
 // Register callback functions for the topic.
 .kafka.registerConsumeTopicCallback[consumer; topic1; topic_cb1 consumer];
 .kafka.registerConsumeTopicCallback[consumer; topic2; topic_cb2 consumer];
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                     Start Process                     //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 client_meta:.kafka.getBrokerTopicConfig[consumer; 5000i];
 

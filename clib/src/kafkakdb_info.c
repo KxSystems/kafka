@@ -2,8 +2,7 @@
 //                     Load Libraries                    //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-#include "kafkakdb_utility.h"
-#include "kafkakdb_info.h"
+#include <kafkakdb_utility.h>
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                      Interface                        //

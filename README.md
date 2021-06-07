@@ -107,7 +107,6 @@ $ make install
 2. If using OpenSSL, remove `--disable-ssl` from configure command below
 3. On macOS with OpenSSL you might need to set `export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl` before proceeding
 
-
 #### Windows
 
 ##### Install rdkafka
@@ -209,6 +208,10 @@ w64> MKLINK rdkafka.dll %KAFKA_INSTALL_DIR%\bin\rdkafka.dll
 
 ```
 
+### Install qtfm (optional)
+
+Message transformer is supported only for Linux. If you intend to use transformer with kafkakdb, you need to install it to a location where q can serach it (for eaxmple, under `${QOME}/[os]64`). After installing qtfm.so you need to copy `qtfm.h` to `clib/include`.
+
 ### Install kafkakdb
 
 To use OpenSSL set `OPENSSL_ROOT_DIR` to the install directory of OpenSSL.
@@ -228,6 +231,9 @@ build]$ cmake --build . --target install
 **Notes:**
 1. `cmake --build . --target install` as used in the Linux/MacOS builds installs the required share object and q files to the `QHOME/[ml]64` and `QHOME` directories respectively. If you do not wish to install these files directly, you can execute `cmake --build .` instead of `cmake --build . --target install` and move the files from their build location at `build/kafkakdb`.
 2. If you use TLS remove the flag `-DENABLE_SSL:BOOL=OFF`.
+3. If you use a transformer library, use a flag `-DUSE_TRANSFORMER:BOOL=ON`, i.e., the build phase may become:
+
+        cmake ../../ -DUSE_TRANSFORMER:BOOL=ON
 
 #### Windows
 
@@ -247,6 +253,7 @@ build> cmake --build . --config Release --target install
 1. `cmake --build . --config Release --target install` installs the required share object and q files to the `QHOME\w64` and `QHOME` directories respectively. If you do not wish to install these files directly, you can execute `cmake --build . --config Release` instead of `cmake --build . --config Release --target install` and move the files from their build location at `build/kafkakdb`.
 2. You can use flag `cmake -G "Visual Studio 16 2019" -A Win32` if building 32-bit version.
 3. If you use TLS remove the flag `-DENABLE_SSL:BOOL=OFF`.
+4. Windows does not support transformer library.
 
 ## Quick Start
 

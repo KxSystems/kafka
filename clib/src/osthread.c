@@ -1,4 +1,4 @@
-#include "osthread.h"
+#include <osthread.h>
 
 int osthread_attr_init (osthread_attr_t* attr) {
     attr->stack_size = 0;

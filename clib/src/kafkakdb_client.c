@@ -2,11 +2,15 @@
 //                     Load Libraries                    //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
+#include <string.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <osthread.h>
 #include <kafkakdb_utility.h>
 #include <kafkakdb_client.h>
-#include <kafkakdb_configuration.h>
+#ifdef USE_TRANSFORMER
 #include <qtfm.h>
-#include <string.h>
+#endif
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Global Variables                   //
@@ -20,20 +24,14 @@
 static K ALL_THREADS = 0;
 
 /**
- * @brief Decoding option of kafka message.
+ * @brief Client handles expressed in symbol list
  */
-enum Decoding{
-  plain,
-  ipc,
-  json,
-  protobuf
-};
+static K CLIENTS = 0;
 
 /**
- * @brief Decoding method used for a consumer. This value will be initialized
- *  at creation of consumer.
+ * @brief Pipeline name used by a client.
  */
-static enum DECODER;
+static K CLIENT_PIPELINES=0;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
@@ -61,6 +59,49 @@ static K load_config(rd_kafka_conf_t *conf, K q_config){
   return knk(0);
 }
 
+//%% Index Conversion %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Retrieve client handle from a given index.
+ * @param client_idx: Index of client.
+ * @return 
+ * - symbol: client handle if index is valid
+ * - null: error message if index is not valid
+ */
+rd_kafka_t *index_to_handle(K client_idx){
+  if(((UI) client_idx->i < CLIENTS->n) && kS(CLIENTS)[client_idx->i]){
+    // Valid client index.
+    // Return client handle
+    return (rd_kafka_t *) kS(CLIENTS)[client_idx->i];
+  }
+  else{
+    // Index out of range or unregistered client index.
+    // Return error.
+    char error_message[32];
+    sprintf(error_message, "unknown client: %di", client_idx->i);
+    return (rd_kafka_t *) krr(error_message);
+  }
+}
+
+/**
+ * @brief Retrieve index from a given client handle.
+ * @param handle: Client handle.
+ * @return 
+ * - int: Index of the given client in `CLIENTS`.
+ * - null int: if the client handle is not a registered one.
+ */
+I handle_to_index(const rd_kafka_t *handle){
+  for (int i = 0; i < CLIENTS->n; ++i){
+    // Handle is stored as symbol in `CLIENTS` (see `new_client`)
+    // Re-cast as handle
+    if(handle==(rd_kafka_t *)kS(CLIENTS)[i])
+      return i;
+  }
+  
+  // If there is no matched client for the handle, return 0Ni
+  return ni;
+}
+
 //%% Message %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
@@ -68,22 +109,17 @@ static K load_config(rd_kafka_conf_t *conf, K q_config){
  *  for the given client handle.
  * @param handle: Client handle
  * @param msg: Message pointer returned from `rd_kafka_consume*()` family of functions.
+ * @param client_idx: Client index within `CLIENTS`.
  * @return 
  * - dictionary: Information contained in the message.
- * @note If a key `decoder` is included in headers, payload is decoded in q consumer with a pipeline
- *  whose name is the value of the `decoder`.
  */
-K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
+K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg, int client_idx) {
 
 #if (RD_KAFKA_VERSION >= 0x000b04ff)
   // Retrieve message headers
   rd_kafka_headers_t* hdrs = NULL;
   rd_kafka_message_headers(msg, &hdrs);
   K k_headers = NULL;
-
-  // Decide if using pipeline to encode payload. 
-  I use_pipeline=0;
-  K pipeline_name=ks("");
 
   if (hdrs==NULL){
     // Empty header. Empty dictionary
@@ -101,14 +137,6 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
     // length holder for value
     size_t size;
     while (!rd_kafka_header_get_all(hdrs, idx++, &name, &value, &size)){
-      if(rd_kafka_type(handle) == RD_KAFKA_CONSUMER && !strcmp(name, "decoder")){
-        // Use pipeline to decode payload
-        use_pipeline=1;
-        char pipeline_name_buffer[16];
-        strncpy(pipeline_name_buffer, (S) value, size);
-        pipeline_name_buffer[size]='\0';
-        pipeline_name=ks(pipeline_name_buffer);
-      }
       // add key
       kS(header_keys)[idx-1]=ss((char*) name);
       // add value
@@ -128,17 +156,25 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg) {
   K key=ktn(KG, msg->key_len);
 
   memmove(kG(payload), msg->payload, msg->len);
-  if(use_pipeline){
+
+#ifdef USE_TRANSFORMER
+
+  if(rd_kafka_type(handle) == RD_KAFKA_CONSUMER){
     // Use pipeline to decode payload
+    K pipeline_name=ks(kS(CLIENT_PIPELINES)[client_idx]);
+    printf("transform!! %s\n", pipeline_name->s);
+    fflush(stdout);
     payload=transform(pipeline_name, payload);
     if(!payload){
       // Error happenned in transformation
       r0(pipeline_name);
       return payload;
     }
-  }
-  // Delete pipeline_name no longer necessary
-  r0(pipeline_name);
+    // Delete pipeline no longer used.
+    r0(pipeline_name);
+  } 
+
+#endif
 
   memmove(kG(key), msg->key, msg->key_len);
 
@@ -226,7 +262,7 @@ static void offset_commit_cb(rd_kafka_t *handle, rd_kafka_resp_err_t error_code,
  */
 static V dr_msg_cb(rd_kafka_t *handle, const rd_kafka_message_t *msg, V *UNUSED(opaque)){
   // Pass client (producer) index and dictionary of delivery report information
-  K dr_msg_message=knk(3, kp((S) ".kafka.dr_msg_cb"), ki(handle_to_index(handle)), decode_message(handle, msg), KNULL);
+  K dr_msg_message=knk(3, kp((S) ".kafka.dr_msg_cb"), ki(handle_to_index(handle)), decode_message(handle, msg, handle_to_index(handle)), KNULL);
   // Must be processed in the main thread.
   // stats_message will be freed in the main thread.
   // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
@@ -320,7 +356,7 @@ J poll_client(rd_kafka_t *handle, I timeout){
     while((message= rd_kafka_consumer_poll(handle, timeout))){
       // Poll and retrieve message while message is not empty
       // Store tuple of (client index; data)
-      K q_message=knk(2, ki(handle_to_index(handle)), decode_message(handle, message), KNULL);
+      K q_message=knk(2, ki(handle_to_index(handle)), decode_message(handle, message, handle_to_index(handle)), KNULL);
       // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
       // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
       send(spair[1], &q_message, sizeof(K), 0);
@@ -361,6 +397,84 @@ static J make_thread_id(osthread_t thread) {
 	return (J) id;
 }
 
+//%% Pipeline %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Set a pipeline to a client specified with an index.
+ * @param client_idx: Index of a client within `CLIENTS`.
+ * @param pipeline_name: Name of pipeline to use.
+ */ 
+void set_pipeline_to_client(int client_idx, K pipeline_name){
+  if(!CLIENT_PIPELINES){
+    // Initialize with the first pipeline.
+    // The first one is assured to be 0 because pipeline is set at the creation of a client.
+    CLIENT_PIPELINES=ktn(KS, 1);
+    kS(CLIENT_PIPELINES)[client_idx]=ss(pipeline_name->s);
+  }
+  else{
+    if(!kS(CLIENT_PIPELINES)[client_idx]){
+      // Reuse the 0 hole.
+      kS(CLIENT_PIPELINES)[client_idx]=ss(pipeline_name->s);
+    }
+    else{
+      // There was no 0 hole
+      // Append the new one to the tail.
+      js(&CLIENT_PIPELINES, ss(pipeline_name->s));
+    }
+  }
+}
+
+/**
+ * @brief Remove a pipeline for a client specified with an index.
+ * @param client_idx: Index of a client within `CLIENTS`.
+ */ 
+void delete_pipeline(K client_idx){
+  // Fill the hole with 0.
+  kS(CLIENT_PIPELINES)[client_idx->i]=0;
+}
+
+//%% Create Client %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Set kafka client handle to a new client.
+ * @param handle: Kafka client handle.
+ * @param pipeline_name: Name of a pipeline to set for the client.
+ */
+K set_handle_to_client(rd_kafka_t *handle, K pipeline_name){
+
+  // Store client hande as symbol
+  // Why symbol rather than integer?
+  if(!CLIENTS){
+    // Initialize with the first pipeline.
+    // The first one is assured to be 0 because pipeline is set at the creation of a client.
+    CLIENTS=ktn(KS, 1);
+    kS(CLIENTS)[0]=(S) handle;
+    set_pipeline_to_client(0, pipeline_name);
+    return ki(0);
+  }
+  else{
+    int idx=0;
+    while (idx!=CLIENTS->n){
+      if(kS(CLIENTS)[idx] == 0){
+        // Reuse 0 hole.
+        kS(CLIENTS)[idx]=(S) handle;
+        // Set a pipeline
+        set_pipeline_to_client(idx, pipeline_name);
+        // Return client index as int
+        return ki(idx);
+      }
+      ++idx;
+    }
+
+    // There is no 0 hole. Append a new one.
+    js(&CLIENTS, (S) handle);
+    // Set a pipeline
+    set_pipeline_to_client(idx, pipeline_name);
+    // Return client index as int
+    return ki(idx);
+  }
+}
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                      Interface                        //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -374,18 +488,19 @@ static J make_thread_id(osthread_t thread) {
  * - "c": Consumer
  * @param q_config: Dictionary containing a configuration.
  * @param timeout: Timeout (milliseconds) for querying.
+ * @param pipeline_name: Name of pipeline to use.
  * @return 
  * - error: If passing client type which is neither of "p" or "c". 
  * - int: Client index.
  */
-EXP K new_client(K client_type, K q_config, K timeout){
+EXP K new_client(K client_type, K q_config, K timeout, K pipeline_name){
 
   // Buffer for error message
   char error_message[512];
 
-  if(!check_qtype("c!i", client_type, q_config, timeout)){
+  if(!check_qtype("c!is", client_type, q_config, timeout, pipeline_name)){
     // Argument type does not match char and dictionary
-    return krr("client type, config and timeout must be (char; dictionary; int) type.");
+    return krr("client type, config, timeout and pipeline must be (char; dictionary; int; symbol) type.");
   }
     
   if('p' != client_type->g && 'c' != client_type->g){
@@ -451,14 +566,7 @@ EXP K new_client(K client_type, K q_config, K timeout){
   }
 
   // Store client hande as symbol
-  // IS THIS SAFE? Use `ss`?
-  // Why symbol rather than integer?
-  // TODO
-  // Must reuse 0 hole instead of appending tpo the tail
-  js(&CLIENTS, (S) handle);
-
-  // Return client index as int
-  return ki(CLIENTS->n - 1);
+  return set_handle_to_client(handle, pipeline_name);
 }
 
 /**
@@ -484,9 +592,9 @@ EXP K delete_client(K client_idx){
   // Destroy client handle
   rd_kafka_destroy(handle);
 
+  // Delete pipeline.
+  delete_pipeline(client_idx);
   // Fill hole with 0
-  // TODO
-  // This hole must be resused.
   kS(CLIENTS)[client_idx->i]= (S) 0;
 
   return KNULL;
@@ -501,26 +609,57 @@ EXP K delete_client(K client_idx){
 EXP K start_background_poll(K client_idx) {
   if(!check_qtype("i", client_idx)){
     // The argument type does not match int
-    return krr("cient index must be int type.");
+    return krr("client index must be int type.");
   }
   if(ALL_THREADS && (ALL_THREADS->n > client_idx->i)) {
+    // Index is not a new one
     if(kJ(ALL_THREADS)[client_idx->i]){
+      // thread ID exists
       return krr("already_running");
     }
-  } else {
-    ALL_THREADS=k(0,"{[threads; idx] first[idx + 1]#threads}", (ALL_THREADS? ALL_THREADS: ktn(KJ, 0)), r1(client_idx), KNULL);
+    else{
+      // 0 hole
+      rd_kafka_t *handle=index_to_handle(client_idx);
+      osthread_t task;
+      // Reuse 0 hole and store the new thread ID
+      kJ(ALL_THREADS)[client_idx->i] = make_thread_id(task);
+      // Create a thread
+      int ok=osthread_create(&task, NULL, background_thread, handle);
+      if(ok){
+        return krr("Failed to create a thread.");
+      }
+      else{
+        return r1(client_idx);
+      } 
+    }
   }
-  
-  rd_kafka_t *handle=index_to_handle(client_idx);
-  osthread_t task;
-  kJ(ALL_THREADS)[client_idx->i] = make_thread_id(task);
-  int ok=osthread_create(&task, NULL, background_thread, handle);
-  if(ok){
-    return krr("Failed to create a thread.");
+  else {
+    // New index
+    rd_kafka_t *handle=index_to_handle(client_idx);
+    osthread_t task;
+    // Append the thread to the tail
+    J thread_id=make_thread_id(task);
+    if(!ALL_THREADS){
+      // Initialize therads
+      ALL_THREADS=ktn(KJ, 1);
+      printf("new... index {}", client_idx->i);
+      fflush(stdout);
+      kJ(ALL_THREADS)[client_idx->i]=thread_id;
+    }
+    else{
+      printf("exists... index {}", client_idx->i);
+      fflush(stdout);
+      ja(&ALL_THREADS, (V*) &thread_id);
+    }
+    // Create a thread.
+    int ok=osthread_create(&task, NULL, background_thread, handle);
+    if(ok){
+      return krr("Failed to create a thread.");
+    }
+    else{
+      return r1(client_idx);
+    } 
   }
-  else{
-    return r1(client_idx);
-  } 
 }
 
 /**
@@ -543,6 +682,8 @@ EXP K stop_background_poll(K client_idx) {
     osthread_t task;
     memcpy(&task, (void*) id, sizeof(osthread_t));
     osthread_kill(&task);
+    // Fill the box with 0.
+    // This 0 hole is reused.
     kJ(ALL_THREADS)[client_idx->i] = 0;
   }
   return kb(1);
@@ -564,6 +705,23 @@ EXP K get_out_queue_length(K client_idx){
   return ki(rd_kafka_outq_len(handle));
 }
 
+//%% Pipeline %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Get a map from client indices to pipelines.
+ * @return 
+ * - dictionary with client indices as keys and a pipeline names as values.
+ */
+EXP K get_pipeline_per_client(K UNUSED(x)){
+  J size=CLIENT_PIPELINES->n;
+  K keys=ktn(KI, size);
+  K values=ktn(KS, size);
+  for(int idx=0; idx!=size; ++idx){
+    kI(keys)[idx]=idx;
+    kS(values)[idx]=ss(kS(CLIENT_PIPELINES)[idx]);
+  }
+  return xD(keys, values);
+}
 
 //%% Setting %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 

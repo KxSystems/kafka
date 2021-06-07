@@ -3,9 +3,10 @@
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 #include <fcntl.h>
-#include "kafkakdb_utility.h"
-#include "kafkakdb_client.h"
-#include "kafkakdb_init.h"
+#include <stdlib.h>
+#include <kafkakdb_utility.h>
+#include <kafkakdb_client.h>
+#include <kafkakdb_topic.h>
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
@@ -44,8 +45,7 @@ static void detach(void){
 
   if(CLIENTS){
     for(int i= 0; i < CLIENTS->n; i++){
-      // TODO
-      // 0 hole must be reused at generating a new client
+      // If detached after delete_client there is a 0 hole.
       if(((S)0) != kS(CLIENTS)[i]){
         // Delete if the client is not null pointer
         delete_client(ki(i));

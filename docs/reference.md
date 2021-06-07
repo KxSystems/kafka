@@ -19,6 +19,7 @@ Kafka interface functionality
   .kafka.deleteClient                             Close consumer and destroy Kafka handle to client. All registered callback for this client are removed.
   .kafka.getClientName                            Get a name of client from client index.
   .kafka.getOutQueueLength                        Current out queue length.
+  .kafka.getPipelinePerClient                     Get a map from client indices to pipelines.
   .kafka.newConsumer                              Create a consumer according to defined configuration.
   .kafka.newProducer                              Create a producer according to defined configuration.
   .kafka.setLogLevel                              Set the maximum logging level for a client.
@@ -142,16 +143,33 @@ q).kafka.getOutQueueLength[producer]
 
 [*] Replacement of `.kfk.OutQLen`.
 
+### `.kafka.getPipelinePerClient`
+
+_Get a map from client indices to pipelines._
+
+Syntax: `.kafka.getPipelinePerClient[]`
+
+```q
+q).kafka.newConsumer[kafka_cfg; 5000i; `myExcellentAvroDecoder]
+0i
+q).kafka.newProducer[kafka_cfg; 5000i; `myAmazingEncoder]
+1i
+q).kafka.getPipelinePerClient[]
+0| myExcellentAvroDecoder
+1| myAmazingEncoder
+```
+
 ### `.kafka.newConsumer`
 
 _Create a consumer according to user-defined configuration._
 
-Syntax: `.kafka.newConsumer[config;timeout]`
+Syntax: `.kafka.newConsumer[config;timeout;pipeline_name]`
 
 Where
 
 - `config` is a dictionary user-defined configuration.
 - `timeout` is an integer value denoting the timeout (in milliseconds) to wait for a response from a kafka broker.
+- `pipeline_name` is a symbol denotiing a name of a pipeline to use for decoding a message.
 
 returns an integer denoting the index of the consumer.
 
@@ -163,7 +181,7 @@ queue.buffering.max.ms| 1
 fetch.wait.max.ms     | 10
 statistics.interval.ms| 10000
 enable.auto.commit    | false
-q).kafka.newConsumer[kafka_cfg; 5000i]
+q).kafka.newConsumer[kafka_cfg; 5000i; `myExcellentAvroDecoder]
 0i
 ```
 
@@ -173,12 +191,13 @@ q).kafka.newConsumer[kafka_cfg; 5000i]
 
 _Create a producer according to user-defined configuration._
 
-Syntax: `.kafka.newProducer[config;timeout]`
+Syntax: `.kafka.newProducer[config;timeout;pipeline_name]`
 
 Where
 
 - `config` is a user-defined dictionary configuration.
 - `timeout` is an integer value denoting the timeout (in milliseconds) to wait for a response from a kafka broker.
+- `pipeline_name` is a symbol denotiing a name of a pipeline to use for encoding a message.
 
 returns an integer denoting the index of the producer.
 
@@ -188,7 +207,7 @@ metadata.broker.list  | localhost:9092
 statistics.interval.ms| 10000
 queue.buffering.max.ms| 1
 fetch.wait.max.ms     | 10
-q).kafka.newProducer[kafka_cfg; 5000i]
+q).kafka.newProducer[kafka_cfg; 5000i; `myAmazingEncoder]
 0i
 ```
 

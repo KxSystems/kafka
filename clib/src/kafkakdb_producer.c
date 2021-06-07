@@ -2,10 +2,14 @@
 //                     Load Libraries                    //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-#include <kafkakdb_utility.h>
-#include <kafkakdb_producer.h>
-#include <qtfm.h>
 #include <string.h>
+#include <stdlib.h>
+#include <kafkakdb_utility.h>
+#include <kafkakdb_topic.h>
+#include <kafkakdb_client.h>
+#ifdef USE_TRANSFORMER
+#include <qtfm.h>
+#endif
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                      Interface                        //
@@ -64,8 +68,6 @@ EXP K flush_producer_handle(K producer_idx, K q_timeout){
  * @param payload: Payload to be sent.
  * @param key: Message key.
  * @param headers: Message headers expressed in a map between header keys to header values (symbol -> string).
- *  If a key `encoder` is included, payload is encoded with a pipeline whose name is the value of the `encoder`.
- *  Likewise, if a key `decoder` is included, payload is decoded in q consumer with a pipeline whose name is the value of the `decoder`.
  */
 EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, K key, K headers){
   
@@ -102,36 +104,27 @@ EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, 
     }
   }
 
-  // Decide if using pipeline to encode payload. 
-  I use_pipeline=0;
-  K pipeline_name=ks("");
-
   rd_kafka_headers_t* message_headers = rd_kafka_headers_new((int) hdr_keys->n);
   for (int idx=0; idx < hdr_keys->n; ++idx){
     K hdrval = kK(hdr_values)[idx];
-    if(!strcmp(kS(hdr_keys)[idx], "encoder")){
-      // Use pipeline to encode payload
-      use_pipeline=1;
-      char pipeline_name_buffer[16];
-      strncpy(pipeline_name_buffer, (S) kG(hdrval), hdrval->n);
-      pipeline_name_buffer[hdrval->n]='\0';
-      pipeline_name=ks(pipeline_name_buffer);
-    }
     // Add a pair of header key and value to headers
     rd_kafka_header_add(message_headers, kS(hdr_keys)[idx], -1, kG(hdrval), hdrval->n);
   }
 
-  if(use_pipeline){
-    // Use pipeline to encode payload
-    payload=transform(pipeline_name, payload);
-    if(!payload){
-      // Error happenned in transformation
-      r0(pipeline_name);
-      return payload;
-    }
+#ifdef USE_TRANSFORMER
+
+  K pipeline_name=ks(kS(CLIENT_PIPELINES)[producer_idx -> i]);
+  // Use pipeline to encode payload
+  payload=transform(pipeline_name, payload);
+  if(!payload){
+    // Error happenned in transformation
+    r0(pipeline_name);
+    return payload;
   }
   // Delete pipeline_name no longer necessary
   r0(pipeline_name);
+
+#endif
 
   rd_kafka_resp_err_t err = rd_kafka_producev(
                         handle,
@@ -161,16 +154,18 @@ EXP K publish_with_headers(K UNUSED(client_idx), K UNUSED(topic_idx), K UNUSED(p
 
 /**
  * @brief Send a message with a specified topic to a specified partition.
+ * @param producer_idx: Index of client (producer) in `CLIENTS`.
  * @param topic_idx: Index of topic in `TOPICS`.
  * @param partition: Topic partition.
  * @param payload: Message to send.
  * @key: Message key. `""` for auto-generated key.
  */
-EXP K publish(K topic_idx, K partition, K payload, K key){
+EXP K publish(K producer_idx, K topic_idx, K partition, K payload, K key){
   
-  if(!check_qtype("ii[CG][CG]", topic_idx, partition, payload, key)){
+  // No longer check type of a payload.
+  if(!check_qtype("iii[CG]", producer_idx, topic_idx, partition, key)){
     // Wrong argument types
-    return krr((S) "topic index, partition, payload and key must be (int; int; string; string) type.");
+    return krr((S) "producer index, topic index, partition and key must be (int; int; int; string; string) type.");
   }
     
   rd_kafka_topic_t *topic_handle=index_to_topic_handle(topic_idx);
@@ -179,9 +174,21 @@ EXP K publish(K topic_idx, K partition, K payload, K key){
     return (K) topic_handle;
   }
   
-  // TODO
-  // Convert message from K to char*.
-  // Target format can be JSON, q IPC bytes or Protobuf.
+#ifdef USE_TRANSFORMER
+
+  K pipeline_name=ks(kS(CLIENT_PIPELINES)[producer_idx -> i]);
+  // Use pipeline to encode payload
+  payload=transform(pipeline_name, payload);
+  if(!payload){
+    // Error happenned in transformation
+    r0(pipeline_name);
+    return payload;
+  }
+  // Delete pipeline_name no longer necessary
+  r0(pipeline_name);
+  
+#endif
+
   if(rd_kafka_produce(topic_handle, partition->i, RD_KAFKA_MSG_F_COPY, kG(payload), payload->n, kG(key), key->n, NULL)){
     // Error in sending a message
     return krr((S) rd_kafka_err2str(rd_kafka_last_error()));
@@ -208,11 +215,12 @@ EXP K publish(K topic_idx, K partition, K payload, K key){
  * @note
  * https://github.com/edenhill/librdkafka/blob/master/src/rdkafka.h (rd_kafka_resp_err_t)
  */
-EXP K publish_batch(K topic_idx, K partitions, K payloads, K keys){
+EXP K publish_batch(K producer_idx, K topic_idx, K partitions, K payloads, K keys){
   
-  if(!check_qtype("i[iI]*[CG*]", topic_idx, partitions, payloads, keys)){
+  // No longer check type of a payload.
+  if(!check_qtype("ii[iI][CG*]", producer_idx, topic_idx, partitions, keys)){
     // Wrong argumrent types
-    return krr((S) "topic index, partitions, payloads and keys must be (int; int|list of int; list of string; null or list of string) type.");
+    return krr((S) "producer index, topic index, partitions, payloads and keys must be (int; int; int|list of int; list of string; null or list of string) type.");
   }
     
   int num_messages = payloads->n;
@@ -262,9 +270,27 @@ EXP K publish_batch(K topic_idx, K partitions, K payloads, K keys){
   // Reserve a space for `num_messages` of messages
   messages = calloc(sizeof(*messages), num_messages);
 
+#ifdef USE_TRANSFORMER
+
+  K pipeline_name=ks(kS(CLIENT_PIPELINES)[producer_idx -> i]);
+  
+#endif
+
   for(int i = 0 ; i < num_messages ; i++){
     
     K payload = kK(payloads)[i];
+
+#ifdef USE_TRANSFORMER
+  
+    // Use pipeline to encode payload
+    payload=transform(pipeline_name, payload);
+    if(!payload){
+      // Error happenned in transformation
+      r0(pipeline_name);
+      return payload;
+    }
+
+#endif
 
     K key;
     if (keys->t == 0){
@@ -284,6 +310,13 @@ EXP K publish_batch(K topic_idx, K partitions, K payloads, K keys){
     messages[i].partition = kI(partitions)[i]; 
 
   }
+
+#ifdef USE_TRANSFORMER
+
+  // Delete pipeline_name no longer necessary
+  r0(pipeline_name);
+
+#endif
 
   // Send a batch of messages
   rd_kafka_produce_batch(topic_handle, default_partition, message_flags, messages, num_messages);

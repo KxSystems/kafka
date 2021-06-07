@@ -23,7 +23,7 @@
  *   add argument make_overlapped
  */
 
-#include "socketpair.h"
+#include <socketpair.h>
 
 #ifdef _WIN32
 

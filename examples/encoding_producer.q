@@ -34,12 +34,12 @@ kfk_cfg:(!) . flip(
 .qtfm.addSerializationLayer[`jsonian; .qtfm.ZSTD; 3i];
 .qtfm.compile[`jsonian];
 
-.qtfm.createNewPipeline[`avroer];
-.qtfm.addSerializationLayer[`avroer; .qtfm.AVRO; "../schema/person.avsc"];
-.qtfm.compile[`avroer];
-
 // Create a producer.
-producer:.kafka.newProducer[kfk_cfg; 5000i]
+producer:.kafka.newProducer[kfk_cfg; 5000i; `jsonian];
+
+// Get pipeline map
+pipeline_map: .kafka.getPipelinePerClient[];
+show pipeline_map;
 
 // Create topics.
 topic1:.kafka.newTopic[producer;`test1;()!()]
@@ -56,12 +56,13 @@ topic2:.kafka.newTopic[producer;`test2;()!()]
 // Timer to publish messages.
 n: 0b;
 .z.ts:{
-  n:: not n;
+  show "fire";
+  n::not n;
   $[n;
-    .kafka.publishWithHeaders[producer; topic1; .kafka.PARTITION_UA; `name`age`body`pets!("John"; 21; 173.1 67.2; `locust`grasshopper`vulture); ""; `encoder`decoder!("jsonian"; "pomelanian")];
-    .kafka.publishWithHeaders[producer; topic2; .kafka.PARTITION_UA; `ID`First`Last`Phone`Age!(2; "Michael"; "Ford"; "0000A"; 33i); ""; `encoder`decoder!("avroer"; "eyebrow")]
+    .kafka.publish[producer; topic1; .kafka.PARTITION_UA; `name`age`body`pets!("John"; 21; 173.1 67.2; `locust`grasshopper`vulture); ""];
+    .kafka.publish[producer; topic2; .kafka.PARTITION_UA; `title`ISBN`year`obsolete!("MyKDB+"; first 0Ng; 2021; 0b); ""]
   ];
- }
+ };
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Start Process                     //

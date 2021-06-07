@@ -2,7 +2,7 @@
 //                     Load Libraries                    //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-#include "kafkakdb_utility.h"
+#include <kafkakdb_utility.h>
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Global Variables                   //
@@ -23,7 +23,7 @@ const J KDB_DAY_OFFSET = 10957;
 /**
  * @brief Milliseconds in a day
  */
-//const J ONEDAY_MILLIS = 86400000;
+const J ONEDAY_MILLIS = 86400000;
 
 //%% Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
@@ -31,16 +31,6 @@ const J KDB_DAY_OFFSET = 10957;
  * @brief WHAT IS THIS??
  */
 K S0 = 0;
-
-/**
- * @brief Client handles expressed in symbol list
- */
-K CLIENTS = 0;
-
-/**
- * @brief Topic names expressed in symbol list
- */
-K TOPICS = 0;
 
 /**
  * @brief Type indicators sorted in ascending order by underlying integer values.
@@ -171,70 +161,6 @@ I check_qtype(const C* types, ...){
  * - long: kdb+ timestamp (nanoseconds)
  */
 J millis_to_kdb_nanos(J timestamp_millis){return 1000000LL*(timestamp_millis - KDB_DAY_OFFSET * ONEDAY_MILLIS);}
-
-//%% Index Conversion %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-/**
- * @brief Retrieve client handle from a given index.
- * @param client_idx: Index of client.
- * @return 
- * - symbol: client handle if index is valid
- * - null: error message if index is not valid
- */
-rd_kafka_t *index_to_handle(K client_idx){
-  if(((UI) client_idx->i < CLIENTS->n) && kS(CLIENTS)[client_idx->i]){
-    // Valid client index.
-    // Return client handle
-    return (rd_kafka_t *) kS(CLIENTS)[client_idx->i];
-  }
-  else{
-    // Index out of range or unregistered client index.
-    // Return error.
-    char error_message[32];
-    sprintf(error_message, "unknown client: %di", client_idx->i);
-    return (rd_kafka_t *) krr(error_message);
-  }
-}
-
-/**
- * @brief Retrieve index from a given client handle.
- * @param handle: Client handle.
- * @return 
- * - int: Index of the given client in `CLIENTS`.
- * - null int: if the client handle is not a registered one.
- */
-I handle_to_index(const rd_kafka_t *handle){
-  for (int i = 0; i < CLIENTS->n; ++i){
-    // Handle is stored as symbol in `CLIENTS` (see `new_client`)
-    // Re-cast as handle
-    if(handle==(rd_kafka_t *)kS(CLIENTS)[i])
-      return i;
-  }
-  
-  // If there is no matched client for the handle, return 0Ni
-  return ni;
-}
-
-/**
- * @brief Retrieve topic object by topic index
- * @param index: Index of topic
- * @return 
- * - symbol: Topic
- * - error if index is out of range or topic for the index is null
- */
-rd_kafka_topic_t *index_to_topic_handle(K topic_idx){
-  if(((UI) topic_idx->i < TOPICS->n) && kS(TOPICS)[topic_idx->i]){
-    // Valid topic index.
-    // Return topic object.
-    return (rd_kafka_topic_t *) kS(TOPICS)[topic_idx->i];
-  }else{
-    // Index out of range or unregistered topic index.
-    // Return error.
-    char error_message[32];
-    sprintf(error_message, "unknown topic: %di", topic_idx->i);
-    return (rd_kafka_topic_t *) krr(error_message);
-  }
-}
 
 //%% Topic Partition Utility Functions %%//vvvvvvvvvvvvvvv/
 

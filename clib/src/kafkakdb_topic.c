@@ -2,8 +2,18 @@
 //                     Load Libraries                    //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-#include "kafkakdb_utility.h"
-#include "kafkakdb_topic.h"
+#include <kafkakdb_utility.h>
+#include <kafkakdb_topic.h>
+#include <kafkakdb_client.h>
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                    Global Variables                   //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+/**
+ * @brief Topic names expressed in symbol list
+ */
+K TOPICS = 0;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
@@ -26,6 +36,27 @@ static K load_topic_config(rd_kafka_topic_conf_t *tpc_conf, K q_tpc_config){
   }
   // Arbitrary value `()` other than nullptr so that caller of this function can tell error(`krr`) and success
   return knk(0);
+}
+
+/**
+ * @brief Retrieve topic object by topic index
+ * @param index: Index of topic
+ * @return 
+ * - symbol: Topic
+ * - error if index is out of range or topic for the index is null
+ */
+rd_kafka_topic_t *index_to_topic_handle(K topic_idx){
+  if(((UI) topic_idx->i < TOPICS->n) && kS(TOPICS)[topic_idx->i]){
+    // Valid topic index.
+    // Return topic object.
+    return (rd_kafka_topic_t *) kS(TOPICS)[topic_idx->i];
+  }else{
+    // Index out of range or unregistered topic index.
+    // Return error.
+    char error_message[32];
+    sprintf(error_message, "unknown topic: %di", topic_idx->i);
+    return (rd_kafka_topic_t *) krr(error_message);
+  }
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -60,12 +91,24 @@ EXP K new_topic(K client_idx, K topic, K q_config){
 
   rd_kafka_topic_t *new_topic = rd_kafka_topic_new(handle, topic->s, config);
 
-  // Store new topic handle at the tail of `TOPICS`
+  // Store topic index
   // Why symbol rather than int?
-  js(&TOPICS, (S) new_topic);
+  int idx=0;
+  while(idx!=TOPICS->n){
+    if(kS(TOPICS)[idx] == 0){
+      // Reuse 0 hole
+      kS(TOPICS)[idx]=ss((S) new_topic);
+      // Return topic handle as int
+      return ki(idx);
+    }
+    ++idx;
+  }
 
+  // There was no 0 hole
+  // Append new one to the tail
+  js(&TOPICS, (S) new_topic);
   // Return topic handle as int
-  return ki(TOPICS->n - 1);
+  return ki(idx);
 }
 
 /**
