@@ -11,7 +11,7 @@ kfk_cfg:(!) . flip(
   );
 
 // Create a consumer.
-consumer:.kafka.newConsumer[kfk_cfg; 5000i];
+consumer:.kafka.newConsumer[kfk_cfg; 5000i; `];
 
 // Topics to subscribe to
 topic1:`test1; topic2:`test2;

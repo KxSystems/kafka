@@ -73,7 +73,12 @@ adjusted_l `kafka_info.q;
 adjusted_l `kafka_init.q;
 adjusted_l `kafka_producer.q;
 adjusted_l `kafka_topic.q;
-adjusted_l `transformer.q;
+
+USE_TRANSFORMER_: @[LIBPATH_; (`create_new_pipeline; 1); {0b}];
+if[not USE_TRANSFORMER_ ~ 0b;
+  // Using tarnsformer library.
+  adjusted_l `transformer.q
+ ];
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Initialize State                   //

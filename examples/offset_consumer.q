@@ -10,7 +10,7 @@ kfk_cfg:(!) . flip(
     (`enable.auto.offset.store;`false);
     (`api.version.request; `true)
   );
-consumer:.kafka.newConsumer[kfk_cfg; 5000i];
+consumer:.kafka.newConsumer[kfk_cfg; 5000i; `];
 
 // Topics to be published to
 topic1:`test1

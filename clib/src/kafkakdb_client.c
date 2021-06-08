@@ -159,7 +159,7 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg, int cl
 
 #ifdef USE_TRANSFORMER
 
-  if(rd_kafka_type(handle) == RD_KAFKA_CONSUMER){
+  if(rd_kafka_type(handle) == RD_KAFKA_CONSUMER && !msg->err){
     // Use pipeline to decode payload
     K pipeline_name=ks(kS(CLIENT_PIPELINES)[client_idx]);
     payload=transform(pipeline_name, payload);
