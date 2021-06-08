@@ -1,5 +1,6 @@
 {
   "default": {
+    "depends": ["transformer"],
     "entry": [ "kafkakdb.so" ]
   }
 }
