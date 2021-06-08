@@ -169,7 +169,7 @@ Where
 
 - `config` is a dictionary user-defined configuration.
 - `timeout` is an integer value denoting the timeout (in milliseconds) to wait for a response from a kafka broker.
-- `pipeline_name` is a symbol denotiing a name of a pipeline to use for decoding a message.
+- `pipeline_name` is a symbol denotiing a name of a pipeline to use for decoding a message. If you are not using transformer library, this value is ignored.
 
 returns an integer denoting the index of the consumer.
 
@@ -181,6 +181,10 @@ queue.buffering.max.ms| 1
 fetch.wait.max.ms     | 10
 statistics.interval.ms| 10000
 enable.auto.commit    | false
+q)// Only if you are using transformer library
+q).qtfm.createNewPipeline[`myExcellentAvroDecoder];
+q).qtfm.addDeserializationLayer[`myExcellentAvroDecoder; .qtfm.AVRO; "../schema/excellent.avsc"];
+q).qtfm.compile[`myExcellentAvroDecoder];
 q).kafka.newConsumer[kafka_cfg; 5000i; `myExcellentAvroDecoder]
 0i
 ```
@@ -197,7 +201,7 @@ Where
 
 - `config` is a user-defined dictionary configuration.
 - `timeout` is an integer value denoting the timeout (in milliseconds) to wait for a response from a kafka broker.
-- `pipeline_name` is a symbol denotiing a name of a pipeline to use for encoding a message.
+- `pipeline_name` is a symbol denotiing a name of a pipeline to use for encoding a message. If you are not using transformer library, this value is ignored.
 
 returns an integer denoting the index of the producer.
 
@@ -207,6 +211,10 @@ metadata.broker.list  | localhost:9092
 statistics.interval.ms| 10000
 queue.buffering.max.ms| 1
 fetch.wait.max.ms     | 10
+q)// Only if you are using transformer library
+q).qtfm.createNewPipeline[`myAmazingEncoder];
+q).qtfm.addSerializationLayer[`myAmazingEncoder; .qtfm.AVRO; "../schema/excellent.avsc"];
+q).qtfm.compile[`myAmazingEncoder];
 q).kafka.newProducer[kafka_cfg; 5000i; `myAmazingEncoder]
 0i
 ```

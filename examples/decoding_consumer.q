@@ -49,7 +49,6 @@ consumer:.kafka.newConsumer[kfk_cfg; 5000i; `pomelanian];
 pipeline_map: .kafka.getPipelinePerClient[];
 show pipeline_map;
 
-
 // Topics to subscribe to
 topic1:`test1; topic2:`test2;
 

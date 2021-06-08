@@ -113,8 +113,8 @@ EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, 
 
 #ifdef USE_TRANSFORMER
 
-  K pipeline_name=ks(kS(CLIENT_PIPELINES)[producer_idx -> i]);
   // Use pipeline to encode payload
+  K pipeline_name=ks(kS(CLIENT_PIPELINES)[producer_idx->i]);
   payload=transform(pipeline_name, payload);
   if(!payload){
     // Error happenned in transformation
@@ -176,14 +176,15 @@ EXP K publish(K producer_idx, K topic_idx, K partition, K payload, K key){
   
 #ifdef USE_TRANSFORMER
 
-  K pipeline_name=ks(kS(CLIENT_PIPELINES)[producer_idx -> i]);
   // Use pipeline to encode payload
+  K pipeline_name=ks(kS(CLIENT_PIPELINES)[producer_idx->i]);
   payload=transform(pipeline_name, payload);
   if(!payload){
     // Error happenned in transformation
     r0(pipeline_name);
     return payload;
   }
+  k(0, "{show x}", r1(payload), KNULL);
   // Delete pipeline_name no longer necessary
   r0(pipeline_name);
   
@@ -234,13 +235,8 @@ EXP K publish_batch(K producer_idx, K topic_idx, K partitions, K payloads, K key
     return krr((S) "length of partitions does not match the length of payoads");
   }
   
-  // Type check for each key and payload
+  // Type check for each key
   for(int i = 0 ; i < num_messages ; i++){
-
-    if((kK(payloads)[i]->t != KG) && (kK(payloads)[i]->t != KC)){
-      // Payload is neither of string nor bytes
-      return krr((S) "payload must be string type.");
-    }
       
     if((keys->t ==0) && (kK(keys)[i]->t != KG) && (kK(keys)[i]->t !=KC)){
       // Key is neither of string nor bytes

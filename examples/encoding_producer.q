@@ -56,7 +56,6 @@ topic2:.kafka.newTopic[producer;`test2;()!()]
 // Timer to publish messages.
 n: 0b;
 .z.ts:{
-  show "fire";
   n::not n;
   $[n;
     .kafka.publish[producer; topic1; .kafka.PARTITION_UA; `name`age`body`pets!("John"; 21; 173.1 67.2; `locust`grasshopper`vulture); ""];

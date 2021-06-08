@@ -26,12 +26,12 @@ static K ALL_THREADS = 0;
 /**
  * @brief Client handles expressed in symbol list
  */
-static K CLIENTS = 0;
+K CLIENTS = 0;
 
 /**
  * @brief Pipeline name used by a client.
  */
-static K CLIENT_PIPELINES=0;
+K CLIENT_PIPELINES=0;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
@@ -162,8 +162,6 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg, int cl
   if(rd_kafka_type(handle) == RD_KAFKA_CONSUMER){
     // Use pipeline to decode payload
     K pipeline_name=ks(kS(CLIENT_PIPELINES)[client_idx]);
-    printf("transform!! %s\n", pipeline_name->s);
-    fflush(stdout);
     payload=transform(pipeline_name, payload);
     if(!payload){
       // Error happenned in transformation
@@ -355,7 +353,7 @@ J poll_client(rd_kafka_t *handle, I timeout){
 
     while((message= rd_kafka_consumer_poll(handle, timeout))){
       // Poll and retrieve message while message is not empty
-      // Store tuple of (client index; data)
+      // Store tuple of (client index; data) for invoking `.kafka.consume_topic_cb` in the main thread.
       K q_message=knk(2, ki(handle_to_index(handle)), decode_message(handle, message, handle_to_index(handle)), KNULL);
       // If buffer is implemented for `poll_client` the flag must be MSG_DONTWAIT for Linux/Mac.
       // Then 0 for Windows. This change must corrspond to setting sockets non-blocking in `init` function.
@@ -611,55 +609,37 @@ EXP K start_background_poll(K client_idx) {
     // The argument type does not match int
     return krr("client index must be int type.");
   }
-  if(ALL_THREADS && (ALL_THREADS->n > client_idx->i)) {
-    // Index is not a new one
-    if(kJ(ALL_THREADS)[client_idx->i]){
-      // thread ID exists
-      return krr("already_running");
-    }
-    else{
-      // 0 hole
-      rd_kafka_t *handle=index_to_handle(client_idx);
-      osthread_t task;
-      // Reuse 0 hole and store the new thread ID
-      kJ(ALL_THREADS)[client_idx->i] = make_thread_id(task);
-      // Create a thread
-      int ok=osthread_create(&task, NULL, background_thread, handle);
-      if(ok){
-        return krr("Failed to create a thread.");
-      }
-      else{
-        return r1(client_idx);
-      } 
-    }
+
+  rd_kafka_t *handle=index_to_handle(client_idx);
+  osthread_t task;
+  
+  if(!ALL_THREADS){
+    // Initialize threads
+    ALL_THREADS=ktn(KJ, 1);
+    kJ(ALL_THREADS)[client_idx->i]=make_thread_id(task);
   }
-  else {
-    // New index
-    rd_kafka_t *handle=index_to_handle(client_idx);
-    osthread_t task;
-    // Append the thread to the tail
+  else{
     J thread_id=make_thread_id(task);
-    if(!ALL_THREADS){
-      // Initialize therads
-      ALL_THREADS=ktn(KJ, 1);
-      printf("new... index {}", client_idx->i);
-      fflush(stdout);
-      kJ(ALL_THREADS)[client_idx->i]=thread_id;
+    if(!kJ(ALL_THREADS)[client_idx->i]){
+      // 0 hole
+      // Reuse 0 hole and store the new thread ID
+      kJ(ALL_THREADS)[client_idx->i] = thread_id;
     }
     else{
-      printf("exists... index {}", client_idx->i);
-      fflush(stdout);
+      // There was no 0 hole.
+      // Append the new ID to the tail.
       ja(&ALL_THREADS, (V*) &thread_id);
     }
-    // Create a thread.
-    int ok=osthread_create(&task, NULL, background_thread, handle);
-    if(ok){
-      return krr("Failed to create a thread.");
-    }
-    else{
-      return r1(client_idx);
-    } 
   }
+
+  // Create a thread
+  int ok=osthread_create(&task, NULL, background_thread, handle);
+  if(ok){
+    return krr("Failed to create a thread.");
+  }
+  else{
+    return r1(client_idx);
+  } 
 }
 
 /**

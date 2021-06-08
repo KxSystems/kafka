@@ -36,25 +36,6 @@ EXP K subscribe(K consumer_idx, K topic){
     return krr((S)rd_kafka_err2str(error));
   }
   
-  /*
-  if(partition_to_offset->t == XD){
-    // Map from topic partition to offset was provided
-    if(!check_qtype("IJ", kK(partition_to_offset)[0], kK(partition_to_offset)[1])){
-      // Map has wrong types
-      return krr((S) "map from partition to offset must have (int; long) type.");
-    }
-    // Add given topic and partitions to existing list and set offsets 
-    extend_topic_partition_list_and_set_offset_for_topic(topic->s, partition_to_offset, topic_partitions);
-  }
-  else{
-    // Topic partitions were provided
-    for(J i= 0; i < partition_to_offset->n; ++i){
-      // Add topic partitions to existing list
-      rd_kafka_topic_partition_list_add(topic_partitions, topic->s, kI(partition_to_offset)[i]);
-    }
-  }
-  */
-  
   // Add topic partitions to existing list. Only topic makes an effect to subscribe.
   rd_kafka_topic_partition_list_add(topic_partitions, topic->s, 0);
 

@@ -247,7 +247,7 @@
 // @note
 // Replacement of `.kfk.PositionOffsets`.
 .kafka.getPrevailingOffsets:{[consumer_idx;topic;partitions]
-  .kafka.getPrevailingOffets_impl[consumer_idx; topic; partitions!count[partitions]#0]
+  .kafka.getPrevailingOffsets_impl[consumer_idx; topic; partitions!count[partitions]#0]
  };
 
 // @kind function

@@ -24,10 +24,10 @@
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 #ifdef _WIN32
-static SOCKET spair[2];
+SOCKET spair[2];
 #else
 #define SOCKET_ERROR -1
-static I spair[2];
+I spair[2];
 #endif
 
 /**
@@ -38,12 +38,12 @@ static K ALL_THREADS;
 /**
  * @brief Client handles expressed in symbol list
  */
-static K CLIENTS;
+K CLIENTS;
 
 /**
  * @brief Pipeline name used by a client.
  */
-static K CLIENT_PIPELINES;
+K CLIENT_PIPELINES;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
