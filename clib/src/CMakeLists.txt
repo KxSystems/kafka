@@ -68,7 +68,7 @@ if(USE_TRANSFORMER)
     find_library(TRANSFORMER_LIBRARY
         REQUIRED
         NAMES qtfm.so
-        HINTS $ENV{QHOME}/${OSFLAG}${BITNESS}
+        HINTS $ENV{QHOME}/${OSFLAG}${BITNESS} ${PROJECT_SOURCE_DIR}/transformer/src
     )
 else()
     set(TRANSFORMER_LIBRARY "")

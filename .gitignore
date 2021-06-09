@@ -1,4 +1,5 @@
 qpbuild/
+clib/transformer.qpk
 clib/include/k.h
 clib/include/qtfm.h
 clib/build/
