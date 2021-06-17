@@ -77,7 +77,7 @@ adjusted_l `kafka_topic.q;
 adjusted_l `kafka_deprecated.q;
 
 USE_TRANSFORMER_: @[LIBPATH_; (`create_new_pipeline; 1); {0b}];
-if[not USE_TRANSFORMER_ ~ 0b;
+if[(not USE_TRANSFORMER_ ~ 0b) and `transformer.q in distinct raze (key `:.; key `:q);
   // Using tarnsformer library.
   adjusted_l `transformer.q
  ];
