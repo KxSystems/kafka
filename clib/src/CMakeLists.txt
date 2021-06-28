@@ -65,10 +65,11 @@ find_library(KAFKA_LIBRARY
 
 # Flag -DUSE_TRANSFORMER:BOOL=ON
 if(USE_TRANSFORMER)
+    message("Hey ${PROJECT_SOURCE_DIR}/transformer/src")
     find_library(TRANSFORMER_LIBRARY
         REQUIRED
         NAMES qtfm.so
-        HINTS $ENV{QHOME}/${OSFLAG}${BITNESS} ${PROJECT_SOURCE_DIR}/transformer/src
+        HINTS ${PROJECT_SOURCE_DIR}/transformer/src
     )
 else()
     set(TRANSFORMER_LIBRARY "")

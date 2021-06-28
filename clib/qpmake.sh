@@ -21,11 +21,8 @@ cp /usr/include/librdkafka/rdkafka.h /usr/local/lib/librdkafka/include/librdkafk
 
 ## Install transformer ##vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv#
 
-#cp transformer/src/clib/include/qtfm.h include/qtfm.h
-#cd transformer/src
-#mkdir qpbuild
-#./qpmake.sh
-#cd ../..
+unzip transformer.*.qpk
+cp transformer/src/* /usr/local/lib/
 
 ## Install kafkakdb ##vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv#
 
@@ -34,7 +31,7 @@ cp /usr/include/librdkafka/rdkafka.h /usr/local/lib/librdkafka/include/librdkafk
 mkdir build
 cd build
 ## Build with USE_TRANSFORMER flag
-cmake ../
+cmake ../ -DUSE_TRANSFORMER:BOOL=ON
 cmake --build . --target install
 cd ../
 
