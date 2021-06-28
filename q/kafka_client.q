@@ -75,6 +75,7 @@
 // @note
 // This function is triggered from `rd_kafka_poll()` every `statistics.interval.ms`.
 .kafka.stats_cb:{[statistics]
+  show statistics;
   statistics:.j.k statistics;
 
   if[all `ts`time in key statistics;
