@@ -75,9 +75,7 @@
 // @note
 // This function is triggered from `rd_kafka_poll()` every `statistics.interval.ms`.
 .kafka.stats_cb:{[statistics]
-  show statistics;
   statistics:.j.k statistics;
-
   if[all `ts`time in key statistics;
     // Convert data to timestamp
     statistics[`ts]:(`timestamp$statistics[`ts]*1000) - .kafka.KDB_DAY_OFFSET;
