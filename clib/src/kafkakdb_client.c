@@ -603,8 +603,10 @@ EXP K delete_client(K client_idx){
   // Destroy client handle
   rd_kafka_destroy(handle);
 
+#ifdef USE_TRANSFORMER
   // Delete pipeline.
   delete_pipeline(client_idx);
+#endif
   // Fill hole with 0
   kS(CLIENTS)[client_idx->i]= (S) 0;
 

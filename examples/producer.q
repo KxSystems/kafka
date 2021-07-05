@@ -9,7 +9,7 @@ kfk_cfg:(!) . flip(
   );
 
 // Create a producer.
-producer:.kafka.newProducer[kfk_cfg; 5000i; `]
+producer:.kafka.newProducer[kfk_cfg; 5000i; (::)]
 
 // Create topics.
 topic1:.kafka.newTopic[producer;`test1;()!()]

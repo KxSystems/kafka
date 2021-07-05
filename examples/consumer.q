@@ -11,10 +11,11 @@ kfk_cfg:(!) . flip(
   );
 
 // Create a consumer.
-consumer:.kafka.newConsumer[kfk_cfg; 5000i; `];
+consumer:.kafka.newConsumer[kfk_cfg; 5000i; (::)];
 
 // Topics to subscribe to
-topic1:`test1; topic2:`test2;
+topic1:`test1;
+topic2:`test2;
 
 // Define datasets and topic callbacks for individual
 // topic subscriptions `topic1 and `topic2
@@ -22,7 +23,7 @@ data1:();
 topic_cb1:{[consumer;msg]
   msg[`data]:"c"$msg[`data];
   msg[`rcvtime]:.z.p;
-  msg[`headers]:"c"$msg[`headers];
+  if[`headers in msg; msg[`headers]: "c"$msg[`headers]];
   data1,::enlist msg;
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
@@ -31,7 +32,7 @@ data2:();
 topic_cb2:{[consumer;msg]
   msg[`data]:"c"$msg[`data];
   msg[`rcvtime]:.z.t;
-  msg[`headers]:"c"$msg[`headers];
+  if[`headers in msg; msg[`headers]: "c"$msg[`headers]];
   data2,::enlist msg;
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
