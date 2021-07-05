@@ -447,7 +447,9 @@ K set_handle_to_client(rd_kafka_t *handle, K pipeline_name){
     // The first one is assured to be 0 because pipeline is set at the creation of a client.
     CLIENTS=ktn(KS, 1);
     kS(CLIENTS)[0]=(S) handle;
+#ifdef USE_TRANSFORMER
     set_pipeline_to_client(0, pipeline_name);
+#endif
     return ki(0);
   }
   else{
@@ -456,8 +458,10 @@ K set_handle_to_client(rd_kafka_t *handle, K pipeline_name){
       if(kS(CLIENTS)[idx] == 0){
         // Reuse 0 hole.
         kS(CLIENTS)[idx]=(S) handle;
+#ifdef USE_TRANSFORMER
         // Set a pipeline
         set_pipeline_to_client(idx, pipeline_name);
+#endif
         // Return client index as int
         return ki(idx);
       }
@@ -466,8 +470,10 @@ K set_handle_to_client(rd_kafka_t *handle, K pipeline_name){
 
     // There is no 0 hole. Append a new one.
     js(&CLIENTS, (S) handle);
+#ifdef USE_TRANSFORMER
     // Set a pipeline
     set_pipeline_to_client(idx, pipeline_name);
+#endif
     // Return client index as int
     return ki(idx);
   }
@@ -486,7 +492,7 @@ K set_handle_to_client(rd_kafka_t *handle, K pipeline_name){
  * - "c": Consumer
  * @param q_config: Dictionary containing a configuration.
  * @param timeout: Timeout (milliseconds) for querying.
- * @param pipeline_name: Name of pipeline to use.
+ * @param pipeline_name: Name of pipeline to use. If transformer library is not used, this parameter is ignored.
  * @return 
  * - error: If passing client type which is neither of "p" or "c". 
  * - int: Client index.
@@ -496,10 +502,17 @@ EXP K new_client(K client_type, K q_config, K timeout, K pipeline_name){
   // Buffer for error message
   char error_message[512];
 
+#ifdef USE_TRANSFORMER
   if(!check_qtype("c!is", client_type, q_config, timeout, pipeline_name)){
     // Argument type does not match char and dictionary
     return krr("client type, config, timeout and pipeline must be (char; dictionary; int; symbol) type.");
   }
+#else
+  if(!check_qtype("c!i", client_type, q_config, timeout)){
+    // Argument type does not match char and dictionary
+    return krr("client type, config and timeout must be (char; dictionary; int) type.");
+  }
+#endif
     
   if('p' != client_type->g && 'c' != client_type->g){
     // Neither of producer nor consumer

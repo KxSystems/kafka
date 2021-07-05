@@ -145,7 +145,7 @@
 //  - key: symbol
 //  - value: symbol
 // @param timeout {int}: Timeout (milliseconds) for querying.
-// @param pipeline_name {symbol}: Name of pipeline to use.
+// @param pipeline_name {symbol}: Name of pipeline to use. If transformer library is not used, this parameter is ignored.
 // @return
 // - error: If passing client type which is neither of "p" or "c". 
 // - int: Client index in `CLIENTS`.
@@ -163,7 +163,7 @@
 //  - key: symbol
 //  - value: symbol
 // @param timeout {int}: Timeout (milliseconds) for querying.
-// @param pipeline_name {symbol}: Name of pipeline to use.
+// @param pipeline_name {symbol}: Name of pipeline to use. If transformer library is not used, this parameter is ignored.
 // @return
 // - error: If passing client type which is neither of "p" or "c". 
 // - int: Client index in `CLIENTS`.
@@ -349,7 +349,7 @@
 // - key: symbol
 // - value: symbol
 // @param timeout {int}: Timeout (milliseconds) for querying.
-// @param pipeline_name {symol}: Name of pipeline to use for encoding a message.
+// @param pipeline_name {symol}: Name of pipeline to use for encoding a message. If transformer library is not used, this parameter is ignored.
 // @return
 // - int: Client index in `CLIENTS`.
 .kafka.newProducer:{[config;timeout;pipeline_name]
@@ -364,7 +364,7 @@
 // - key: symbol
 // - value: symbol
 // @param timeout {int}: Timeout (milliseconds) for querying.
-// @param pipeline_name {symbol}: Name of pipeline to use for decoding a message.
+// @param pipeline_name {symbol}: Name of pipeline to use for decoding a message. If transformer library is not used, this parameter is ignored.
 // @return
 // - int: Client index in `CLIENTS`.
 .kafka.newConsumer:{[config;timeout;pipeline_name]

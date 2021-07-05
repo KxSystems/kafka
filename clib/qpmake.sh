@@ -33,6 +33,7 @@ cp transformer/src/* /usr/local/lib/
 mkdir build
 cd build
 ## Build with USE_TRANSFORMER flag
+## TODO: Is there any way to parameterize this?
 cmake ../ -DUSE_TRANSFORMER:BOOL=ON
 cmake --build . --target install
 cd ../
