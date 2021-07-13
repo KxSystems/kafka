@@ -57,14 +57,14 @@ topic1:`test1; topic2:`test2;
 topic_cb1:{[consumer;msg]
   msg[`rcvtime]:.z.p;
   if[`headers in msg; msg[`headers]: "c"$msg[`headers]];
-  if[type[msg `data] ~ 99h; data1,:: enlist msg];
+  if[type[msg `data] ~ 99h; data1,: enlist msg];
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 
 topic_cb2:{[consumer;msg]
   msg[`rcvtime]:.z.p;
   if[`headers in msg; msg[`headers]: "c"$msg[`headers]];
-  if[type[msg `data] ~ 99h; data2,:: enlist msg];
+  if[type[msg `data] ~ 99h; data2,: enlist msg];
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 
