@@ -1,6 +1,7 @@
 {
   "type":"record",
   "name":"Person",
+  "namespace": "io.confluent.examples.person",
   "fields":[
     {"name": "ID", "type": "long"},
     {"name": "First", "type": "string"},

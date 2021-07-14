@@ -23,7 +23,8 @@ kfk_cfg:(!) . flip(
     (`fetch.wait.max.ms;`10);
     (`statistics.interval.ms;`10000);
     (`enable.auto.commit; `false);
-    (`api.version.request; `true)
+    (`api.version.request; `true);
+    (`auto.register.schemas; `false)
   );
 
 // Table to store received data.

@@ -21,7 +21,8 @@ kfk_cfg:(!) . flip(
   (`metadata.broker.list;`localhost:9092);
   (`statistics.interval.ms;`10000);
   (`queue.buffering.max.ms;`1);
-  (`api.version.request; `true)
+  (`api.version.request; `true);
+  (`auto.register.schemas; `false)
   );
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
