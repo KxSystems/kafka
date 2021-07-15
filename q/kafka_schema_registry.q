@@ -17,16 +17,18 @@
 
 // @private
 // @kind function
-// @category Schema Registry
-// @brief Build a HTTP POST message.
-// @param host {string}: Target host.
-// @param port {string}: Target port.
-// @param endpoint {string}: Target endpoint following the host. The endpoint must start siwth "/".
-// @param message {string}: HTTP message to post.
-.kafka.build_post:{[host;port;endpoint;message;schema_type]
-  text: "curl -X POST -H \"Content-Type: application/vnd.schemaregistry.v1+json\" --data '{\"schema\":\"", message, "\", \"schemaType\": \"", schema_type, "\"}' ";
-  text,: "http://", host, ":", port, endpoint;
-  text
+// @brief Remove comments and replace escape "\" with furher escape "\\\".
+// @param path {string}: Path to a file to read.
+// @return 
+// - string: Processed file contents.
+.kafka.process_file:{[path]
+  text: read0 hsym `$path;
+  // Remove lines which start from comment.
+  text: text where {[line] not any line like/: ("//*"; "  //*")} each text;
+  show text;
+  // Remove comment after an expression.
+  text: {[line] line til count[line] ^ first ss[line; "//"]} each text;
+  ssr[raze text; "\""; "\\\""]
  };
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -38,7 +40,9 @@
 // @brief Register a schema to Kafka schema registry.
 // @param host {symbol}: Schema-registry host.
 // @param port {number}: Schema-registry port.
-// @param topic {symbol}: Topic to which the schema is used.
+// @param topic {symbol}:
+// - non-null: Topic to which the schema is used.
+// - null: Schema is not tied with topic, i.e., independently uploaded.
 // @param message {path}: HTTP message to post.
 // @param schema_type_ {enum}: One of these value:
 //  - .qtfm.JSON
@@ -60,16 +64,25 @@
     // Other
     '"Unsupported format: ", last "$" vs .Q.s1 schema_type_
   ];
-  schema: ssr[raze read0 hsym `$path; "\""; "\\\""];
+
+  subjects: $[null topic;
+    last "/" vs path;
+    string[topic], "-value"
+  ];
+
+  schema: .kafka.process_file[path];
+  show schema;
 
   text: "curl -X POST -H \"Content-Type: application/vnd.schemaregistry.v1+json\" ";
   text,: "--data '{\"schema\":\"", schema, "\", \"schemaType\": \"", schema_type, "\"}' ";
   // Schema is registered against topic
-  text,: "http://", string[host], ":", string[port], "/subjects/", string[topic], "-value/versions";
+  text,: "http://", string[host], ":", string[port], "/subjects/", subjects, "/versions";
   
   result: .j.k first system text;
   $[`error_code in key result;
+    // Error
     'result `message;
+    // Globally unique ID of the new schema
     `long$result `id
   ]
  };
@@ -89,7 +102,9 @@
 
   result: .j.k first system text;
   $[`error_code in key result;
+    // Error
     'result `message;
+    // Schema
     result `schema
   ]
  };
@@ -106,7 +121,9 @@
 
   result: .j.k first system text;
   $[`error_code in key result;
+    // Error
     'result `message;
+    // Schema
     result `schema
   ]
  };
@@ -126,7 +143,9 @@
 
   result: .j.k first system text;
   $[not -9h ~ type result;
+    // Error
     'result `message;
+    // Version of deleted schema
     `long$result
   ]
  };

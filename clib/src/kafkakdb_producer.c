@@ -19,13 +19,13 @@
 /**
  * @brief Flush a handle of a producer.
  * @param producer_idx: Index of a client (producer) in `CLIENTS`.
- * @param q_timeout: Timeout (milliseconds) for waiting for flush.
+ * @param timeout: Timeout (milliseconds) for waiting for flush.
  */
-EXP K flush_producer_handle(K producer_idx, K q_timeout){
+EXP K flush_producer_handle(K producer_idx, K timeout){
   
-  if(!check_qtype("i[hij]", producer_idx, q_timeout)){
+  if(!check_qtype("i[hij]", producer_idx, timeout)){
     // Error in type check.
-    return krr((S) "producer_idx and q_timeout must be (int; short|int|long) type.");
+    return krr((S) "producer_idx and q_timeout must be (int; int) type.");
   }
 
   rd_kafka_t *handle=index_to_handle(producer_idx);
@@ -34,21 +34,8 @@ EXP K flush_producer_handle(K producer_idx, K q_timeout){
     return (K) handle;
   }
 
-  I timeout=0;
-  switch(q_timeout->t){
-    case -KH:
-      timeout=q_timeout->h;
-      break;
-    case -KI:
-      timeout=q_timeout->i;
-      break;
-    default:
-      timeout=q_timeout->j;
-      break;
-  }
-
   // Flush the handle of the producer
-  rd_kafka_resp_err_t error= rd_kafka_flush(handle, timeout);
+  rd_kafka_resp_err_t error= rd_kafka_flush(handle, timeout->i);
   if(error!=KFK_OK){
     // Timeout
     return krr((S) rd_kafka_err2str(error));

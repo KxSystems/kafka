@@ -5,6 +5,8 @@
 // @file kfk.q
 // @fileoverview
 // Entry point of kafkakdb library. This file is provided to support deprecated (named) functions.
+// @note
+// Deprecated version must NOT be linked with transformer library. Simply it is not supported.
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Initial Setting                   //
@@ -75,12 +77,6 @@ adjusted_l `kafka_init.q;
 adjusted_l `kafka_producer.q;
 adjusted_l `kafka_topic.q;
 adjusted_l `kafka_deprecated.q;
-
-USE_TRANSFORMER_: @[LIBPATH_; (`create_new_pipeline; 1); {0b}];
-if[(not USE_TRANSFORMER_ ~ 0b) and `transformer.q in distinct raze (key `:.; key `:q);
-  // Using tarnsformer library.
-  adjusted_l `transformer.q
- ];
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Initialize State                   //
