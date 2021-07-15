@@ -184,7 +184,6 @@ EXP K publish(K producer_idx, K topic_idx, K partition, K payload, K key){
     r0(pipeline_name);
     return payload;
   }
-  k(0, "{show x}", r1(payload), KNULL);
   // Delete pipeline_name no longer necessary
   r0(pipeline_name);
   

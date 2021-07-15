@@ -5,6 +5,9 @@
 // @file kafka_deprecated.q
 // @fileoverview
 // Define deprecated functions. These functions will be removed at v2.1.0.
+// @note
+// This file is assuming transformer is not linked to the kafkakdb, meaning we can pass
+//  `(::)` for `pipeline_name` when creating a client.
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Public Interface                   //
@@ -22,10 +25,10 @@
 .kfk.ClientName: .kafka.getClientName;
 .kfk.ClientMemberId: .kafka.getConsumerGroupMemberID;
 .kfk.Consumer:{[config]
-  .kafka.newConsumer[config; 5000i]
+  .kafka.newConsumer[config; 5000i; (::)]
  };
 .kfk.Producer:{[config]
-  .kafka.newProducer[config; 5000i]
+  .kafka.newProducer[config; 5000i; (::)]
  };
 .kfk.SetLoggerLevel: .kafka.setLogLevel;
 .kfk.CommitOffsets: .kafka.commitOffsetsToTopicPartition;

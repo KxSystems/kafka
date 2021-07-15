@@ -2,9 +2,9 @@
 //                    File Decription                    //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-// @file encoding_producer.q
+// @file idle_producer.q
 // @fileoverview
-// Example producer who encodes messages with pipelines.
+// Example producer who does not encode messages with pipelines.
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Load Library                      //
@@ -29,13 +29,12 @@ kfk_cfg:(!) . flip(
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 // Create pipelines used for encoding
-.qtfm.createNewPipeline[`jsonian];
-.qtfm.addSerializationLayer[`jsonian; .qtfm.JSON; (::)];
-.qtfm.addSerializationLayer[`jsonian; .qtfm.ZSTD; 3i];
-.qtfm.compile[`jsonian];
+.qtfm.createNewPipeline[`formalism];
+.qtfm.addSerializationLayer[`formalism; .qtfm.NONE; (::)];
+.qtfm.compile[`formalism];
 
 // Create a producer.
-producer:.kafka.newProducer[kfk_cfg; 5000i; `jsonian];
+producer:.kafka.newProducer[kfk_cfg; 5000i; `formalism];
 
 // Get pipeline map
 pipeline_map: .kafka.getPipelinePerClient[];
@@ -57,9 +56,10 @@ topic2:.kafka.newTopic[producer;`test2;()!()]
 n: 0b;
 .z.ts:{
   n::not n;
+  // The messages must be byte list or string. Here we use `.Q.s1` to communicate an image of what we want to send.
   $[n;
-    .kafka.publish[producer; topic1; .kafka.PARTITION_UA; `name`age`body`pets!("John"; 21; 173.1 67.2; `locust`grasshopper`vulture); ""];
-    .kafka.publish[producer; topic2; .kafka.PARTITION_UA; `title`ISBN`year`obsolete!("MyKDB+"; first 0Ng; 2021; 0b); ""]
+    .kafka.publish[producer; topic1; .kafka.PARTITION_UA; .Q.s1 `name`age`body`pets!("John"; 21; 173.1 67.2; `locust`grasshopper`vulture); ""];
+    .kafka.publish[producer; topic2; .kafka.PARTITION_UA; .Q.s1 `title`ISBN`year`obsolete!("MyKDB+"; first 0Ng; 2021; 0b); ""]
   ];
  };
 

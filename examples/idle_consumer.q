@@ -2,9 +2,9 @@
 //                    File Decription                    //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-// @file decoding_consumer.q
+// @file idle_consumer.q
 // @fileoverview
-// Example consumer who decodes messages with pipelines.
+// Example consumer who does not decode messages with pipelines.
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Load Library                      //
@@ -37,13 +37,12 @@ data2:();
 \c 25 200
 
 // Create pipelines used for decoding
-.qtfm.createNewPipeline[`pomelanian];
-.qtfm.addDeserializationLayer[`pomelanian; .qtfm.ZSTD; (::)];
-.qtfm.addDeserializationLayer[`pomelanian; .qtfm.JSON; (::)];
-.qtfm.compile[`pomelanian];
+.qtfm.createNewPipeline[`slowth];
+.qtfm.addDeserializationLayer[`slowth; .qtfm.NONE; (::)];
+.qtfm.compile[`slowth];
 
 // Create a consumer.
-consumer:.kafka.newConsumer[kfk_cfg; 5000i; `pomelanian];
+consumer:.kafka.newConsumer[kfk_cfg; 5000i; `slowth];
 
 // Get pipeline map
 pipeline_map: .kafka.getPipelinePerClient[];
@@ -58,14 +57,14 @@ topic2:`test2;
 topic_cb1:{[consumer;msg]
   msg[`rcvtime]:.z.p;
   if[`headers in msg; msg[`headers]: "c"$msg[`headers]];
-  if[type[msg `data] ~ 99h; data1,: enlist msg];
+  data1,: enlist msg;
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 
 topic_cb2:{[consumer;msg]
   msg[`rcvtime]:.z.p;
   if[`headers in msg; msg[`headers]: "c"$msg[`headers]];
-  if[type[msg `data] ~ 99h; data2,: enlist msg];
+  data2,: enlist msg;
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 

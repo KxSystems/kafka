@@ -1,4 +1,21 @@
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                    File Decription                    //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+// @file bare_consumer.q
+// @fileoverview
+// Example consumer for kafkakdb not linked with transformer. For consumer who does not convert messages
+//  using kafkakdb linked with transformer, see `idle_consumer.q`.
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                     Load Library                      //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
 \l ../q/kafka.q
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                     Global Variable                   //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 // Configuration
 kfk_cfg:(!) . flip(
@@ -10,7 +27,14 @@ kfk_cfg:(!) . flip(
     (`api.version.request; `true)
   );
 
-// Create a consumer.
+data1: ();
+data2: ();
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                     Initial Setting                   //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+// Create a consumer. WIthout transformer, pass `(::)` for the pipeline name.
 consumer:.kafka.newConsumer[kfk_cfg; 5000i; (::)];
 
 // Topics to subscribe to
@@ -19,7 +43,6 @@ topic2:`test2;
 
 // Define datasets and topic callbacks for individual
 // topic subscriptions `topic1 and `topic2
-data1:();
 topic_cb1:{[consumer;msg]
   msg[`data]:"c"$msg[`data];
   msg[`rcvtime]:.z.p;
@@ -28,7 +51,6 @@ topic_cb1:{[consumer;msg]
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 
-data2:();
 topic_cb2:{[consumer;msg]
   msg[`data]:"c"$msg[`data];
   msg[`rcvtime]:.z.t;
@@ -52,6 +74,10 @@ topic_cb2:{[consumer;msg]
 // Register callback functions for the topic.
 .kafka.registerConsumeTopicCallback[consumer; topic1; topic_cb1 consumer];
 .kafka.registerConsumeTopicCallback[consumer; topic2; topic_cb2 consumer];
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+//                     Start Process                     //
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 client_meta:.kafka.getBrokerTopicConfig[consumer; 5000i];
 

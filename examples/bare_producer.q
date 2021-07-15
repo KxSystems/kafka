@@ -2,9 +2,10 @@
 //                    File Decription                    //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-// @file encoding_producer.q
+// @file bare_producer.q
 // @fileoverview
-// Example producer who encodes messages with pipelines.
+// Example producer for kafkakdb not linked with transformer. For consumer who does not convert messages
+//  using kafkakdb linked with transformer, see `idle_producer.q`.
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Load Library                      //
@@ -28,18 +29,8 @@ kfk_cfg:(!) . flip(
 //                     Initial Setting                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-// Create pipelines used for encoding
-.qtfm.createNewPipeline[`jsonian];
-.qtfm.addSerializationLayer[`jsonian; .qtfm.JSON; (::)];
-.qtfm.addSerializationLayer[`jsonian; .qtfm.ZSTD; 3i];
-.qtfm.compile[`jsonian];
-
 // Create a producer.
-producer:.kafka.newProducer[kfk_cfg; 5000i; `jsonian];
-
-// Get pipeline map
-pipeline_map: .kafka.getPipelinePerClient[];
-show pipeline_map;
+producer:.kafka.newProducer[kfk_cfg; 5000i; (::)]
 
 // Create topics.
 topic1:.kafka.newTopic[producer;`test1;()!()]
@@ -54,13 +45,10 @@ topic2:.kafka.newTopic[producer;`test2;()!()]
  }
 
 // Timer to publish messages.
-n: 0b;
 .z.ts:{
-  n::not n;
-  $[n;
-    .kafka.publish[producer; topic1; .kafka.PARTITION_UA; `name`age`body`pets!("John"; 21; 173.1 67.2; `locust`grasshopper`vulture); ""];
-    .kafka.publish[producer; topic2; .kafka.PARTITION_UA; `title`ISBN`year`obsolete!("MyKDB+"; first 0Ng; 2021; 0b); ""]
-  ];
+  n+:1;topic:$[n mod 2;topic1;topic2];
+  .kafka.publish[topic;.kafka.PARTITION_UA; "Hello from producer";""];
+  .kafka.publishWithHeaders[producer; topic; .kafka.PARTITION_UA; "locusts"; ""; `header1`header2!("firmament"; "divided")];
  };
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -72,4 +60,3 @@ producer_meta:.kafka.getBrokerTopicConfig[producer; 5000i];
 
 show producer_meta `topics;
 -1 "Set timer with \\t 500 to publish a message each second to each topic.";
-
