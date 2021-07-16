@@ -28,18 +28,17 @@ kfk_cfg:(!) . flip(
 //                     Initial Setting                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
+// Query schema information to schema registry
+schemaInfo: .kafka.getSchemaInfoByTopic[`localhost; 8081; `test1; `latest];
+
 // Create pipelines used for encoding
-.qtfm.createNewPipeline[`jsonian];
-.qtfm.addSerializationLayer[`jsonian; .qtfm.JSON; (::)];
-.qtfm.addSerializationLayer[`jsonian; .qtfm.ZSTD; 3i];
-.qtfm.compile[`jsonian];
+pipeline_name: `$string schemaInfo `id;
+.qtfm.createNewPipeline[pipeline_name];
+.qtfm.addSerializationLayer[pipeline_name; .qtfm.AVRO; schemaInfo `schema];
+.qtfm.compile[pipeline_name];
 
 // Create a producer.
-producer:.kafka.newProducer[kfk_cfg; 5000i; `jsonian];
-
-// Get pipeline map
-pipeline_map: .kafka.getPipelinePerClient[];
-show pipeline_map;
+producer:.kafka.newProducer[kfk_cfg; 5000i];
 
 // Create topics.
 topic1:.kafka.newTopic[producer;`test1;()!()]
@@ -58,8 +57,8 @@ n: 0b;
 .z.ts:{
   n::not n;
   $[n;
-    .kafka.publish[producer; topic1; .kafka.PARTITION_UA; `name`age`body`pets!("John"; 21; 173.1 67.2; `locust`grasshopper`vulture); ""];
-    .kafka.publish[producer; topic2; .kafka.PARTITION_UA; `title`ISBN`year`obsolete!("MyKDB+"; first 0Ng; 2021; 0b); ""]
+    .kafka.publishWithHeaders[producer; topic1; .kafka.PARTITION_UA; `ID`First`Last`Phone`Age!(2; "David"; "Wilson"; "00111900"; 42i); ""; `schema_id`something!(enlist "1"; "mogu-mogu")];
+    .kafka.publishWithHeaders[producer; topic2; .kafka.PARTITION_UA; `ID`First`Last`Phone`Age!(14; "Michael"; "Ford"; "00778899"; 19i); ""; enlist[`schema_id]!enlist enlist "1"]
   ];
  };
 

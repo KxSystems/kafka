@@ -145,11 +145,10 @@
 //  - key: symbol
 //  - value: symbol
 // @param timeout {int}: Timeout (milliseconds) for querying.
-// @param pipeline_name {symbol}: Name of pipeline to use. If transformer library is not used, this parameter is ignored.
 // @return
 // - error: If passing client type which is neither of "p" or "c". 
 // - int: Client index in `CLIENTS`.
-.kafka.newClient_impl:LIBPATH_ (`new_client; 4);
+.kafka.newClient_impl:LIBPATH_ (`new_client; 3);
 
 // @private
 // @kind function
@@ -163,13 +162,12 @@
 //  - key: symbol
 //  - value: symbol
 // @param timeout {int}: Timeout (milliseconds) for querying.
-// @param pipeline_name {symbol}: Name of pipeline to use. If transformer library is not used, this parameter is ignored.
 // @return
 // - error: If passing client type which is neither of "p" or "c". 
 // - int: Client index in `CLIENTS`.
-.kafka.newClient:{[client_type;config;timeout;pipeline_name]
+.kafka.newClient:{[client_type;config;timeout]
   if[(not `group.id in key config) and client_type="c"; '"consumer must define 'group.id' within the config"];
-  client:.kafka.newClient_impl[client_type; config; timeout; pipeline_name];
+  client:.kafka.newClient_impl[client_type; config; timeout];
   .kafka.CLIENT_TYPE_MAP,: enlist[client]!enlist[`$client_type];
   client
  };
@@ -349,11 +347,10 @@
 // - key: symbol
 // - value: symbol
 // @param timeout {int}: Timeout (milliseconds) for querying.
-// @param pipeline_name {symol}: Name of pipeline to use for encoding a message. If transformer library is not used, this parameter is ignored.
 // @return
 // - int: Client index in `CLIENTS`.
-.kafka.newProducer:{[config;timeout;pipeline_name]
-  producer: .kafka.newClient["p"; config; timeout; pipeline_name];
+.kafka.newProducer:{[config;timeout]
+  producer: .kafka.newClient["p"; config; timeout];
   .kafka.startBackgroundPoll[producer]
  };
 
@@ -364,11 +361,10 @@
 // - key: symbol
 // - value: symbol
 // @param timeout {int}: Timeout (milliseconds) for querying.
-// @param pipeline_name {symbol}: Name of pipeline to use for decoding a message. If transformer library is not used, this parameter is ignored.
 // @return
 // - int: Client index in `CLIENTS`.
-.kafka.newConsumer:{[config;timeout;pipeline_name]
-  consumer: .kafka.newClient["c"; config; timeout; pipeline_name];
+.kafka.newConsumer:{[config;timeout]
+  consumer: .kafka.newClient["c"; config; timeout];
   .kafka.startBackgroundPoll[consumer]
  };
 
@@ -406,12 +402,6 @@
   // Delete throttle callback.
   .kafka.THROTTLE_CALLBACK_PER_CLIENT _: client_idx;
  };
-
-//%% Pipeline %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-// @brief Get a map from client indices to pipelines.
-// @return q dictionary with client indices as keys and a pipeline names as values.
-.kafka.getPipelinePerClient: LIBPATH_ (`get_pipeline_per_client; 1);
 
 //%% Setting %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 

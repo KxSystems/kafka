@@ -28,11 +28,6 @@ static K ALL_THREADS = 0;
  */
 K CLIENTS = 0;
 
-/**
- * @brief Pipeline name used by a client.
- */
-K CLIENT_PIPELINES=0;
-
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -151,17 +146,27 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg, int cl
   K k_headers = xD(ktn(KS,0),ktn(KS,0));
 #endif
 
-  // Retrieve `payload` and `key`
-  K payload= ktn(KG, msg->len);
+  // Retrieve `key`
   K key=ktn(KG, msg->key_len);
-
-  memmove(kG(payload), msg->payload, msg->len);
+  K payload=0;
 
 #ifdef USE_TRANSFORMER
 
-  if(rd_kafka_type(handle) == RD_KAFKA_CONSUMER && !msg->err){
-    // Use pipeline to decode payload
-    K pipeline_name=ks(kS(CLIENT_PIPELINES)[client_idx]);
+  // Deserialize if schemaregistry message comes.
+  // Retrieve `payload`
+  G *byte_payload=(G*) msg->payload;
+  if(byte_payload[0] == 0){
+    // Schema registry message
+    payload=ktn(KG, msg->len-5);
+    memcpy(kG(payload), byte_payload+5, msg->len-5);
+    // Schema ID
+    int schema_id = (unsigned char)(byte_payload+1) << 24 |
+      (unsigned char)(byte_payload+2) << 16 |
+      (unsigned char)(byte_payload+3) << 8 |
+      (unsigned char)(byte_payload+4);
+
+    sprintf(NUMBER, "%d", schema_id);
+    K pipeline_name=ks(NUMBER);
     payload=transform(pipeline_name, payload);
     if(!payload){
       // Error happenned in transformation
@@ -170,7 +175,19 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg, int cl
     }
     // Delete pipeline no longer used.
     r0(pipeline_name);
-  } 
+  }
+  else{
+    // Plain message
+    payload=ktn(KG, msg->len);
+    memcpy(kG(payload), msg->payload, msg->len);
+  }
+
+#else
+
+  // Does nothing for all messages.
+  // Retrieve `payload`
+  payload= ktn(KG, msg->len);
+  memmove(kG(payload), msg->payload, msg->len);
 
 #endif
 
@@ -395,50 +412,13 @@ static J make_thread_id(osthread_t thread) {
 	return (J) id;
 }
 
-//%% Pipeline %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-/**
- * @brief Set a pipeline to a client specified with an index.
- * @param client_idx: Index of a client within `CLIENTS`.
- * @param pipeline_name: Name of pipeline to use.
- */ 
-void set_pipeline_to_client(int client_idx, K pipeline_name){
-  if(!CLIENT_PIPELINES){
-    // Initialize with the first pipeline.
-    // The first one is assured to be 0 because pipeline is set at the creation of a client.
-    CLIENT_PIPELINES=ktn(KS, 1);
-    kS(CLIENT_PIPELINES)[client_idx]=ss(pipeline_name->s);
-  }
-  else{
-    if(!kS(CLIENT_PIPELINES)[client_idx]){
-      // Reuse the 0 hole.
-      kS(CLIENT_PIPELINES)[client_idx]=ss(pipeline_name->s);
-    }
-    else{
-      // There was no 0 hole
-      // Append the new one to the tail.
-      js(&CLIENT_PIPELINES, ss(pipeline_name->s));
-    }
-  }
-}
-
-/**
- * @brief Remove a pipeline for a client specified with an index.
- * @param client_idx: Index of a client within `CLIENTS`.
- */ 
-void delete_pipeline(K client_idx){
-  // Fill the hole with 0.
-  kS(CLIENT_PIPELINES)[client_idx->i]=0;
-}
-
 //%% Create Client %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 /**
  * @brief Set kafka client handle to a new client.
  * @param handle: Kafka client handle.
- * @param pipeline_name: Name of a pipeline to set for the client.
  */
-K set_handle_to_client(rd_kafka_t *handle, K pipeline_name){
+K set_handle_to_client(rd_kafka_t *handle){
 
   // Store client hande as symbol
   // Why symbol rather than integer?
@@ -447,9 +427,6 @@ K set_handle_to_client(rd_kafka_t *handle, K pipeline_name){
     // The first one is assured to be 0 because pipeline is set at the creation of a client.
     CLIENTS=ktn(KS, 1);
     kS(CLIENTS)[0]=(S) handle;
-#ifdef USE_TRANSFORMER
-    set_pipeline_to_client(0, pipeline_name);
-#endif
     return ki(0);
   }
   else{
@@ -458,10 +435,6 @@ K set_handle_to_client(rd_kafka_t *handle, K pipeline_name){
       if(kS(CLIENTS)[idx] == 0){
         // Reuse 0 hole.
         kS(CLIENTS)[idx]=(S) handle;
-#ifdef USE_TRANSFORMER
-        // Set a pipeline
-        set_pipeline_to_client(idx, pipeline_name);
-#endif
         // Return client index as int
         return ki(idx);
       }
@@ -470,10 +443,6 @@ K set_handle_to_client(rd_kafka_t *handle, K pipeline_name){
 
     // There is no 0 hole. Append a new one.
     js(&CLIENTS, (S) handle);
-#ifdef USE_TRANSFORMER
-    // Set a pipeline
-    set_pipeline_to_client(idx, pipeline_name);
-#endif
     // Return client index as int
     return ki(idx);
   }
@@ -492,27 +461,19 @@ K set_handle_to_client(rd_kafka_t *handle, K pipeline_name){
  * - "c": Consumer
  * @param q_config: Dictionary containing a configuration.
  * @param timeout: Timeout (milliseconds) for querying.
- * @param pipeline_name: Name of pipeline to use. If transformer library is not used, this parameter is ignored.
  * @return 
  * - error: If passing client type which is neither of "p" or "c". 
  * - int: Client index.
  */
-EXP K new_client(K client_type, K q_config, K timeout, K pipeline_name){
+EXP K new_client(K client_type, K q_config, K timeout){
 
   // Buffer for error message
   char error_message[512];
 
-#ifdef USE_TRANSFORMER
-  if(!check_qtype("c!is", client_type, q_config, timeout, pipeline_name)){
-    // Argument type does not match char and dictionary
-    return krr("client type, config, timeout and pipeline must be (char; dictionary; int; symbol) type.");
-  }
-#else
   if(!check_qtype("c!i", client_type, q_config, timeout)){
     // Argument type does not match char and dictionary
     return krr("client type, config and timeout must be (char; dictionary; int) type.");
   }
-#endif
     
   if('p' != client_type->g && 'c' != client_type->g){
     // Neither of producer nor consumer
@@ -577,7 +538,7 @@ EXP K new_client(K client_type, K q_config, K timeout, K pipeline_name){
   }
 
   // Store client hande as symbol
-  return set_handle_to_client(handle, pipeline_name);
+  return set_handle_to_client(handle);
 }
 
 /**
@@ -603,10 +564,6 @@ EXP K delete_client(K client_idx){
   // Destroy client handle
   rd_kafka_destroy(handle);
 
-#ifdef USE_TRANSFORMER
-  // Delete pipeline.
-  delete_pipeline(client_idx);
-#endif
   // Fill hole with 0
   kS(CLIENTS)[client_idx->i]= (S) 0;
 
@@ -698,24 +655,6 @@ EXP K get_out_queue_length(K client_idx){
 
   // Get length out queue messages for this client
   return ki(rd_kafka_outq_len(handle));
-}
-
-//%% Pipeline %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
-
-/**
- * @brief Get a map from client indices to pipelines.
- * @return 
- * - dictionary with client indices as keys and a pipeline names as values.
- */
-EXP K get_pipeline_per_client(K UNUSED(x)){
-  J size=CLIENT_PIPELINES->n;
-  K keys=ktn(KI, size);
-  K values=ktn(KS, size);
-  for(int idx=0; idx!=size; ++idx){
-    kI(keys)[idx]=idx;
-    kS(values)[idx]=ss(kS(CLIENT_PIPELINES)[idx]);
-  }
-  return xD(keys, values);
 }
 
 //%% Setting %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/

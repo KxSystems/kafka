@@ -15,7 +15,6 @@
 //                      Interface                        //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-
 /**
  * @brief Flush a handle of a producer.
  * @param producer_idx: Index of a client (producer) in `CLIENTS`.
@@ -91,25 +90,59 @@ EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, 
     }
   }
 
+#ifdef USE_TRANSFORMER
+
+  // Flag to convert message
+  I use_transformer = 0;
+  K pipeline_name=0;
+  int schema_id=0;
+
+  rd_kafka_headers_t* message_headers = rd_kafka_headers_new((int) hdr_keys->n);
+  for (int idx=0; idx < hdr_keys->n; ++idx){
+    K hdrval = kK(hdr_values)[idx];
+    if(!strcmp(kS(hdr_keys)[idx], "schema_id")){
+      schema_id=atoi((S) kG(hdrval));
+      sprintf(NUMBER, "%d", schema_id);
+      // Schema ID = pipeline name
+      pipeline_name=ks(NUMBER);
+      // Use transformer
+      use_transformer=1;
+    }
+    // Add a pair of header key and value to headers
+    rd_kafka_header_add(message_headers, kS(hdr_keys)[idx], -1, kG(hdrval), hdrval->n);
+  }
+
+  if(use_transformer){
+    // Use pipeline to encode payload
+    K encoded=transform(pipeline_name, payload);
+    if(!encoded){
+      // Error happenned in transformation
+      r0(pipeline_name);
+      return encoded;
+    }
+    // Delete pipeline_name no longer necessary
+    r0(pipeline_name);
+
+    // Build header
+    payload=ktn(KG, 5);
+    kG(payload)[0]=0;
+    kG(payload)[1]=(schema_id >> 24) & 0xFF;
+    kG(payload)[2]=(schema_id >> 16) & 0xFF;
+    kG(payload)[3]=(schema_id >> 8) & 0xFF;
+    kG(payload)[4]=schema_id & 0xFF;
+    // Append serialized bytes to header
+    jv(&payload, encoded);
+  }
+
+#else
+
+  // Don't convert messages
   rd_kafka_headers_t* message_headers = rd_kafka_headers_new((int) hdr_keys->n);
   for (int idx=0; idx < hdr_keys->n; ++idx){
     K hdrval = kK(hdr_values)[idx];
     // Add a pair of header key and value to headers
     rd_kafka_header_add(message_headers, kS(hdr_keys)[idx], -1, kG(hdrval), hdrval->n);
   }
-
-#ifdef USE_TRANSFORMER
-
-  // Use pipeline to encode payload
-  K pipeline_name=ks(kS(CLIENT_PIPELINES)[producer_idx->i]);
-  payload=transform(pipeline_name, payload);
-  if(!payload){
-    // Error happenned in transformation
-    r0(pipeline_name);
-    return payload;
-  }
-  // Delete pipeline_name no longer necessary
-  r0(pipeline_name);
 
 #endif
 
@@ -141,18 +174,17 @@ EXP K publish_with_headers(K UNUSED(client_idx), K UNUSED(topic_idx), K UNUSED(p
 
 /**
  * @brief Send a message with a specified topic to a specified partition.
- * @param producer_idx: Index of client (producer) in `CLIENTS`.
  * @param topic_idx: Index of topic in `TOPICS`.
  * @param partition: Topic partition.
  * @param payload: Message to send.
  * @key: Message key. `""` for auto-generated key.
  */
-EXP K publish(K producer_idx, K topic_idx, K partition, K payload, K key){
+EXP K publish(K topic_idx, K partition, K payload, K key){
   
   // No longer check type of a payload.
-  if(!check_qtype("iii[CG]", producer_idx, topic_idx, partition, key)){
+  if(!check_qtype("ii[CG]", topic_idx, partition, key)){
     // Wrong argument types
-    return krr((S) "producer index, topic index, partition and key must be (int; int; int; string; string) type.");
+    return krr((S) "topic index, partition and key must be (int; int; string; string) type.");
   }
     
   rd_kafka_topic_t *topic_handle=index_to_topic_handle(topic_idx);
@@ -160,21 +192,6 @@ EXP K publish(K producer_idx, K topic_idx, K partition, K payload, K key){
     // Null pointer (`krr`). Error in `index_to_topic_handle()`.
     return (K) topic_handle;
   }
-  
-#ifdef USE_TRANSFORMER
-
-  // Use pipeline to encode payload
-  K pipeline_name=ks(kS(CLIENT_PIPELINES)[producer_idx->i]);
-  payload=transform(pipeline_name, payload);
-  if(!payload){
-    // Error happenned in transformation
-    r0(pipeline_name);
-    return payload;
-  }
-  // Delete pipeline_name no longer necessary
-  r0(pipeline_name);
-  
-#endif
 
   if(rd_kafka_produce(topic_handle, partition->i, RD_KAFKA_MSG_F_COPY, kG(payload), payload->n, kG(key), key->n, NULL)){
     // Error in sending a message
@@ -202,12 +219,12 @@ EXP K publish(K producer_idx, K topic_idx, K partition, K payload, K key){
  * @note
  * https://github.com/edenhill/librdkafka/blob/master/src/rdkafka.h (rd_kafka_resp_err_t)
  */
-EXP K publish_batch(K producer_idx, K topic_idx, K partitions, K payloads, K keys){
+EXP K publish_batch(K topic_idx, K partitions, K payloads, K keys){
   
   // No longer check type of a payload.
-  if(!check_qtype("ii[iI][CG*]", producer_idx, topic_idx, partitions, keys)){
+  if(!check_qtype("i[iI][CG*]", topic_idx, partitions, keys)){
     // Wrong argumrent types
-    return krr((S) "producer index, topic index, partitions, payloads and keys must be (int; int; int|list of int; list of string; null or list of string) type.");
+    return krr((S) "topic index, partitions, payloads and keys must be (int; int|list of int; list of string; null or list of string) type.");
   }
     
   int num_messages = payloads->n;
@@ -252,27 +269,9 @@ EXP K publish_batch(K producer_idx, K topic_idx, K partitions, K payloads, K key
   // Reserve a space for `num_messages` of messages
   messages = calloc(sizeof(*messages), num_messages);
 
-#ifdef USE_TRANSFORMER
-
-  K pipeline_name=ks(kS(CLIENT_PIPELINES)[producer_idx -> i]);
-  
-#endif
-
   for(int i = 0 ; i < num_messages ; i++){
     
     K payload = kK(payloads)[i];
-
-#ifdef USE_TRANSFORMER
-  
-    // Use pipeline to encode payload
-    payload=transform(pipeline_name, payload);
-    if(!payload){
-      // Error happenned in transformation
-      r0(pipeline_name);
-      return payload;
-    }
-
-#endif
 
     K key;
     if (keys->t == 0){
@@ -292,13 +291,6 @@ EXP K publish_batch(K producer_idx, K topic_idx, K partitions, K payloads, K key
     messages[i].partition = kI(partitions)[i]; 
 
   }
-
-#ifdef USE_TRANSFORMER
-
-  // Delete pipeline_name no longer necessary
-  r0(pipeline_name);
-
-#endif
 
   // Send a batch of messages
   rd_kafka_produce_batch(topic_handle, default_partition, message_flags, messages, num_messages);

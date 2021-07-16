@@ -61,6 +61,7 @@ find_library(KAFKA_LIBRARY
     REQUIRED
     NAMES librdkafka rdkafka
     HINTS $ENV{KAFKA_INSTALL_DIR}/lib
+    NO_DEFAULT_PATH
 )
 
 # Flag -DUSE_TRANSFORMER:BOOL=ON

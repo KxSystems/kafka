@@ -23,6 +23,15 @@
 //                    Global Variables                    //
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
+//%% Number to String %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
+/**
+ * @brief Buffer to write out an integer number.
+ */
+static char NUMBER[11];
+
+//%% Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
 #ifdef _WIN32
 SOCKET spair[2];
 #else
@@ -39,11 +48,6 @@ static K ALL_THREADS;
  * @brief Client handles expressed in symbol list
  */
 K CLIENTS;
-
-/**
- * @brief Pipeline name used by a client.
- */
-K CLIENT_PIPELINES;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //

@@ -73,9 +73,9 @@
 // @note
 // Replacement of `.kfk.Topic`
 .kafka.newTopic:{[producer_idx;topic;config]
-  topic:.kafka.newTopic_impl[producer_idx; topic; config];
-  .kafka.PRODUCER_TOPIC_MAP[producer_idx],: topic;
-  topic
+  topic_idx:.kafka.newTopic_impl[producer_idx; topic; config];
+  .kafka.PRODUCER_TOPIC_MAP[producer_idx],: topic_idx;
+  topic_idx
  };
 
 // @private

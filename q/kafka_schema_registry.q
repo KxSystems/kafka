@@ -9,7 +9,10 @@
 // - These methods are dependent on `transformer.q`.
 // - Schema should not evolve automatically. All schemas need to be stored
 //  locally and the schemas will be retrieved when a producer creates a topic
-//  or consumer subscribes to a tipic.
+//  or consumer subscribes to a topic.
+// - Protobuf schema used for conversion directly on messages should be defined
+//  one per file because it is the concept of conversion related to topic. Format
+//  for the same topic must be unique.
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Private Functions                  //
@@ -34,6 +37,8 @@
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Public Interface                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+//%% Schema %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 // @kind function
 // @category SchemaRegistry
@@ -89,14 +94,17 @@
 
 // @kind function
 // @category SchemaRegistry
-// @brief Retrieve a schema from Kafka schema registry with a topic and a schema version.
+// @brief Retrieve a schema information from Kafka schema registry with a topic and a schema version.
 // @param host {symbol}: Schema-registry host.
 // @param port {number}: Schema-registry port.
 // @param topic {symbol}: Topic to which the schema is used.
 // @param version {symbol}: Version of the schema. Version number or `latest`.
 // @return 
-// - string: schema.
-.kafka.getSchemaByTopic:{[host;port;topic;version]
+// - dictionary: Schehma information
+//   - id {long}: Schema ID
+//   - schemaType {enum}: Schema type
+//   - schema {string}: Schema  
+.kafka.getSchemaInfoByTopic:{[host;port;topic;version]
   text: "curl -H \"Accept: application/vnd.schemaregistry.v1+json\" ";
   text,: "http://", string[host], ":", string[port], "/subjects/", string[topic], "-value/versions/", string[version];
 
@@ -104,8 +112,8 @@
   $[`error_code in key result;
     // Error
     'result `message;
-    // Schema
-    result `schema
+    // Schema ID, schema type and schema
+    (@/)[`id`schemaType`schema # result; `id`schemaType; (`long$; {[schema_type] get `$".qtfm.", $["" ~ schema_type; "AVRO"; schema_type]})]
   ]
  };
 

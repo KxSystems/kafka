@@ -14,7 +14,6 @@
 // @kind function
 // @category Producer
 // @brief Send messages with a specified topic to single or multiple partitions.
-// @param producer_idx {int}: Index of client (producer) in `CLIENTS`.
 // @param topic_idx {int}: Index of topic in `TOPICS`.
 // @param partitions {dynamic}:
 // @type 
@@ -29,7 +28,7 @@
 // - list of bool: Status for each published message (`1b` for error) 
 // @note
 // Replacement of `.kfk.BatchPub`.
-.kafka.publishBatch_impl:LIBPATH_	(`publish_batch; 5);
+.kafka.publishBatch_impl:LIBPATH_	(`publish_batch; 4);
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                    Public Interface                   //
@@ -62,19 +61,17 @@
 // @kind function
 // @category Producer
 // @brief Send a message with a specified topic to a specified partition.
-// @param producer_idx {int}: Index of client (producer) in `CLIENTS`.
 // @param topic_idx {int}: Index of topic in `TOPICS`.
 // @param partition {int}: Topic partition.
 // @param payload {string|bytes}: Message to send.
 // @param key {strng|bytes}: Message key.
 // @note
 // Replacement of `.kfk.Pub`.
-.kafka.publish:LIBPATH_ (`publish; 5);
+.kafka.publish:LIBPATH_ (`publish; 4);
 
 // @kind function
 // @category Producer
 // @brief Send messages with a specified topic to single or multiple partitions.
-// @param producer_idx {int}: Index of client (producer) in `CLIENTS`.
 // @param topic_idx {int}: Index of topic in `TOPICS`.
 // @param partitions {dynamic}: 
 // @type
@@ -86,7 +83,7 @@
 // - list of string or bytes: Keys for each message
 // @note
 // Replacement of `.kfk.BatchPub`.
-.kafka.publishBatch:{[producer_idx;topic_idx;partitions;payloads;keys_]
+.kafka.publishBatch:{[topic_idx;partitions;payloads;keys_]
   if[0 > type partitions; partitions:count[payloads]#partitions];
   errors:.kafka.publishBatch_impl[producer_idx; topic_idx; partitions; payloads; keys_];
   if[count err_indices:where ` = errors; '"error in sending messages: ", -3! flip (err_indices; errors err_indices)];

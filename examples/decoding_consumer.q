@@ -36,18 +36,17 @@ data2:();
 
 \c 25 200
 
+// Query schema information to schema registry
+schemaInfo: .kafka.getSchemaInfoByTopic[`localhost; 8081; `test1; `latest];
+
 // Create pipelines used for decoding
-.qtfm.createNewPipeline[`pomelanian];
-.qtfm.addDeserializationLayer[`pomelanian; .qtfm.ZSTD; (::)];
-.qtfm.addDeserializationLayer[`pomelanian; .qtfm.JSON; (::)];
-.qtfm.compile[`pomelanian];
+pipeline_name: `$string schemaInfo `id;
+.qtfm.createNewPipeline[pipeline_name];
+.qtfm.addDeserializationLayer[pipeline_name; .qtfm.AVRO; schemaInfo `schema];
+.qtfm.compile[pipeline_name];
 
 // Create a consumer.
-consumer:.kafka.newConsumer[kfk_cfg; 5000i; `pomelanian];
-
-// Get pipeline map
-pipeline_map: .kafka.getPipelinePerClient[];
-show pipeline_map;
+consumer:.kafka.newConsumer[kfk_cfg; 5000i];
 
 // Topics to subscribe to
 topic1:`test1;
