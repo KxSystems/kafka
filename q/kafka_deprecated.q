@@ -22,10 +22,10 @@
 .kfk.ClientName: .kafka.getClientName;
 .kfk.ClientMemberId: .kafka.getConsumerGroupMemberID;
 .kfk.Consumer:{[config]
-  .kafka.newConsumer[config; 5000i]
+  .kafka.newConsumer[config; 5000i; (::)]
  };
 .kfk.Producer:{[config]
-  .kafka.newProducer[config; 5000i]
+  .kafka.newProducer[config; 5000i; (::)]
  };
 .kfk.SetLoggerLevel: .kafka.setLogLevel;
 .kfk.CommitOffsets: .kafka.commitOffsetsToTopicPartition;
@@ -33,8 +33,8 @@
 .kfk.CommittedOffsets: .kafka.getCommittedOffsetsForTopicPartition;
 .kfk.AssignOffsets: .kafka.assignNewOffsetsToTopicPartition;
 .kfk.offsetForTimes: .kafka.getEarliestOffsetsForTimes;
-.kfk.BatchPub: .kafka.publishBatch;
-.kfk.Pub: .kafka.publish;
+.kfk.BatchPub: .kafka.publishBatch[0Ni];
+.kfk.Pub: .kafka.publish[0Ni];
 .kfk.PubWithHeaders:.kafka.publishWithHeaders;
 .kfk.OutQLen: .kafka.getOutQueueLength;
 .kfk.Sub:{[consumer_idx;topic;partition_to_offset_]
