@@ -17,8 +17,8 @@
 \l test_helper_function.q
 
 // Delete existing topic
-system getenv[`KAFKA_BROKER_HOME], "/bin/kafka-topics.sh --bootstrap-server localhost:9092 --topic topic1 --delete";
-system getenv[`KAFKA_BROKER_HOME], "/bin/kafka-topics.sh --bootstrap-server localhost:9092 --topic topic2 --delete";
+@[system; getenv[`KAFKA_BROKER_HOME], "/bin/kafka-topics.sh --bootstrap-server localhost:9092 --topic topic1 --delete"; {[error] show error}];
+@[system; getenv[`KAFKA_BROKER_HOME], "/bin/kafka-topics.sh --bootstrap-server localhost:9092 --topic topic2 --delete"; {[error] show error}];
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                      Load Library                     //
@@ -72,11 +72,17 @@ topic_callback2:{[consumer;msg]
 //                          Tests                        //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
+if[USE_TRANSFORMER_;
+  .qtfm.createNewPipeline[`idle];
+  .qtfm.addSerializationLayer[`idle; .qtfm.NONE; (::)];
+  .qtfm.compile[`idle]
+ ];
+
 // Create a consumer
-consumer: .kafka.newConsumer[consumer_configuration; 5000i];
+consumer: .kafka.newConsumer[consumer_configuration; 5000i; $[USE_TRANSFORMER_; `idle; (::)]];
 
 // Create a producer
-producer: .kafka.newProducer[producer_configuration; 5000i];
+producer: .kafka.newProducer[producer_configuration; 5000i; $[USE_TRANSFORMER_; `idle; (::)]];
 
 // Register error callback.
 .kafka.registerErrorCallback[producer; {[client_idx;error_code;reason] show "Oh no!! Error happenned due to :", reason, "!";}] 
@@ -93,6 +99,8 @@ topic2:.kafka.newTopic[producer; `topic2; ()!()];
 // Register callback functions for the consumer
 .kafka.registerConsumeTopicCallback[consumer; `topic1; topic_callback1 consumer];
 .kafka.registerConsumeTopicCallback[consumer; `topic2; topic_callback2 consumer];
+
+system "sleep 2";
 
 while[not all `topic1`topic2 in (asc exec topic from .kafka.getBrokerTopicConfig[consumer; 5000i] `topics) except `$"__consumer_offsets"; system "sleep 1"];
 
