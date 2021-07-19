@@ -152,21 +152,25 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg, int cl
 
 #ifdef USE_TRANSFORMER
 
+  printf("transform!!\n");
   // Deserialize if schemaregistry message comes.
   // Retrieve `payload`
   G *byte_payload=(G*) msg->payload;
-  if(byte_payload[0] == 0){
+  if((rd_kafka_type(handle) == RD_KAFKA_CONSUMER) && (!msg->err) && (byte_payload[0] == 0)){
     // Schema registry message
-    payload=ktn(KG, msg->len-5);
-    memcpy(kG(payload), byte_payload+5, msg->len-5);
+
     // Schema ID
-    int schema_id = (unsigned char)(byte_payload+1) << 24 |
-      (unsigned char)(byte_payload+2) << 16 |
-      (unsigned char)(byte_payload+3) << 8 |
-      (unsigned char)(byte_payload+4);
+    int schema_id = *(byte_payload+1) << 24 |
+      *(byte_payload+2) << 16 |
+      *(byte_payload+3) << 8 |
+      *(byte_payload+4);
 
     sprintf(NUMBER, "%d", schema_id);
+    //printf("ID is %s!!\n", NUMBER);
     K pipeline_name=ks(NUMBER);
+
+    payload=ktn(KG, msg->len-5);
+    memcpy(kG(payload), byte_payload+5, msg->len-5);
     payload=transform(pipeline_name, payload);
     if(!payload){
       // Error happenned in transformation
