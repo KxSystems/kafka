@@ -2,23 +2,22 @@
 //                    File Decription                    //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-// @file decoding_consumer.q
+// @file deprecated_consumer.q
 // @fileoverview
-// Example consumer who decodes messages with pipelines.
+// Example consumer for deprecated version. This version does not should not be linked to transformer.
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Load Library                      //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-\l ../q/kafka.q
+\l ../q/kfk.q
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Global Variable                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-// Configuration
 kfk_cfg:(!) . flip(
-    (`metadata.broker.list;`localhost:9092);
+    (`metadata.broker.list;`broker:9092);
     (`group.id;`0);
     (`fetch.wait.max.ms;`10);
     (`statistics.interval.ms;`10000);
@@ -36,40 +35,30 @@ data2:();
 
 \c 25 200
 
-// Create pipelines used for decoding
-.qtfm.createNewPipeline[`pomelanian];
-.qtfm.addDeserializationLayer[`pomelanian; .qtfm.ZSTD; (::)];
-.qtfm.addDeserializationLayer[`pomelanian; .qtfm.JSON; (::)];
-.qtfm.compile[`pomelanian];
-
-// Create a consumer.
-consumer:.kafka.newConsumer[kfk_cfg; 5000i; `pomelanian];
-
-// Get pipeline map
-pipeline_map: .kafka.getPipelinePerClient[];
-show pipeline_map;
+// Create a new consumer
+consumer:.kfk.Consumer[kfk_cfg];
 
 // Topics to subscribe to
 topic1:`test1;
 topic2:`test2;
 
 // Define topic callbacks for individual topic subscriptions `topic1 and `topic2
-topic_cb1:{[consumer;msg]
+topcb1:{[msg]
+  msg[`data]:"c"$msg[`data];
   msg[`rcvtime]:.z.p;
-  if[`headers in msg; msg[`headers]: "c"$msg[`headers]];
-  if[type[msg `data] ~ 99h; data1,: enlist msg];
-  .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
+  data1,::enlist msg;
+  .kfk.CommitOffsets[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 
-topic_cb2:{[consumer;msg]
-  msg[`rcvtime]:.z.p;
-  if[`headers in msg; msg[`headers]: "c"$msg[`headers]];
-  if[type[msg `data] ~ 99h; data2,: enlist msg];
-  .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
+topcb2:{[msg]
+  msg[`data]:"c"$msg[`data];
+  msg[`rcvtime]:.z.t;
+  data2,::enlist msg;
+  .kfk.CommitOffsets[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 
 // Callback for committing offset
-.kafka.offset_commit_cb:{[consumer_idx;error;offsets]
+.kfk.offsetcb:{[consumer_idx;error;offsets]
   $[
     error ~ "Success";
     -1 "committed:", .Q.s1 offsets;
@@ -78,17 +67,12 @@ topic_cb2:{[consumer;msg]
  };
 
 // Subscribe to topic1 and topic2 with different callbacks from a single client
-.kafka.subscribe[consumer;topic1];
-.kafka.subscribe[consumer;topic2];
-
-// Register callback functions for the topic.
-.kafka.registerConsumeTopicCallback[consumer; topic1; topic_cb1 consumer];
-.kafka.registerConsumeTopicCallback[consumer; topic2; topic_cb2 consumer];
+.kfk.Subscribe[consumer; topic1; enlist .kfk.PARTITION_UA; topcb1]
+.kfk.Subscribe[consumer; topic2; enlist .kfk.PARTITION_UA; topcb2]
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Start Process                     //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-consumer_meta:.kafka.getBrokerTopicConfig[consumer; 5000i];
-
+consumer_meta:.kfk.Metadata[consumer];
 show consumer_meta`topics;
