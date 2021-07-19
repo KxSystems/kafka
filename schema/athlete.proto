@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option cc_enable_arenas = true;
+
+import "kdb_type_specifier.proto";
+
+message Person {
+  string          first_name = 1;
+  string          last_name = 2;
+  int32           birthday = 3 [(kdb_type) = DATE];
+  int64           age = 4;
+  repeated string pets = 5;
+  Record          record = 6 [(map_kdb_type).value_type = TIMESPAN];
+}
+
+message Record {
+    map<string, int64> record = 1 [(map_kdb_type).value_type = TIMESPAN];
+}

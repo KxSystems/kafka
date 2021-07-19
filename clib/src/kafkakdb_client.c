@@ -116,6 +116,11 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg, int cl
   rd_kafka_message_headers(msg, &hdrs);
   K k_headers = NULL;
 
+#ifdef USE_TRANSFORMER
+  // Flag to deserialize protobuf schema
+  int use_protobuf_schema = 0;
+#endif
+
   if (hdrs==NULL){
     // Empty header. Empty dictionary
     k_headers = xD(ktn(KS, 0), ktn(KC, 0));
@@ -137,6 +142,13 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg, int cl
       // add value
       K val = ktn(KG, (int) size);
       memcpy(kG(val), value, (int) size);
+
+#ifdef USE_TRANSFORMER
+      if((!strcmp((S) name, "schema_type")) && (!strncmp((S) kG(val), "protobuf", 8))){
+        use_protobuf_schema = 1;
+      }
+#endif
+
       jk(&header_values, val);
     }
     k_headers = xD(header_keys, header_values);
@@ -152,7 +164,6 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg, int cl
 
 #ifdef USE_TRANSFORMER
 
-  printf("transform!!\n");
   // Deserialize if schemaregistry message comes.
   // Retrieve `payload`
   G *byte_payload=(G*) msg->payload;
@@ -166,18 +177,27 @@ K decode_message(const rd_kafka_t* handle, const rd_kafka_message_t *msg, int cl
       *(byte_payload+4);
 
     sprintf(NUMBER, "%d", schema_id);
-    //printf("ID is %s!!\n", NUMBER);
     K pipeline_name=ks(NUMBER);
 
-    payload=ktn(KG, msg->len-5);
-    memcpy(kG(payload), byte_payload+5, msg->len-5);
+    if(use_protobuf_schema){
+      // Protobuf encoded message
+      // Skip [length, message_idx] (8 bytes)
+      payload=ktn(KG, msg->len-13);
+      memcpy(kG(payload), byte_payload+13, msg->len-13);
+    }
+    else{
+      // Avro and JSON
+      payload=ktn(KG, msg->len-5);
+      memcpy(kG(payload), byte_payload+5, msg->len-5);
+    }
+    
     payload=transform(pipeline_name, payload);
     if(!payload){
       // Error happenned in transformation
       r0(pipeline_name);
       return payload;
     }
-    // Delete pipeline no longer used.
+    // Delete pipeline name no longer used.
     r0(pipeline_name);
   }
   else{

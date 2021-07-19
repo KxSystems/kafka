@@ -28,7 +28,6 @@
   text: read0 hsym `$path;
   // Remove lines which start from comment.
   text: text where {[line] not any line like/: ("//*"; "  //*")} each text;
-  show text;
   // Remove comment after an expression.
   text: {[line] line til count[line] ^ first ss[line; "//"]} each text;
   ssr[raze text; "\""; "\\\""]
@@ -47,8 +46,8 @@
 // @param port {number}: Schema-registry port.
 // @param topic {symbol}:
 // - non-null: Topic to which the schema is used.
-// - null: Schema is not tied with topic, i.e., independently uploaded.
-// @param message {path}: HTTP message to post.
+// - null: Schema is not tied with topic, i.e., independently uploaded (ex. Protobuf schema has dependency).
+// @param path {string}: Path to a schema file.
 // @param schema_type_ {enum}: One of these value:
 //  - .qtfm.JSON
 //  - .qtfm.AVRO
@@ -145,6 +144,8 @@
 // @param version {symbol}: Version of the schema. Version number or `latest`.
 // @return 
 // - long: Deleted version.
+// @note The schema ID increases every time you upload a new schema and it is not deletable from teh registry.
+//  What you can do is to delete the registered schema information for a topic.
 .kafka.deleteSchema:{[host;port;topic;version]
   text: "curl -X DELETE -H \"Accept: application/vnd.schemaregistry.v1+json\" ";
   text,: "http://", string[host], ":", string[port], "/subjects/", string[topic], "-value/versions/", string[version];

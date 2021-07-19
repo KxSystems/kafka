@@ -1,0 +1,30 @@
+syntax = "proto2";
+
+import "google/protobuf/descriptor.proto";
+
+enum KdbTypeSpecifier {
+    DEFAULT     = 0;
+    TIMESTAMP   = 1;
+    MONTH       = 2;
+    DATE        = 3;
+    DATETIME    = 4;
+    TIMESPAN    = 5;
+    MINUTE      = 6;
+    SECOND      = 7;
+    TIME        = 8;
+    GUID        = 9;
+
+    // Internal use only
+    // Must be at the end since it is used to determine the enum size for lookup arrays
+    KDBTYPE_LEN = 10;
+}
+
+message MapKdbTypeSpecifier {
+    optional KdbTypeSpecifier key_type   = 1;
+    optional KdbTypeSpecifier value_type = 2;
+}
+
+extend google.protobuf.FieldOptions {
+    optional KdbTypeSpecifier    kdb_type        = 756866;
+    optional MapKdbTypeSpecifier map_kdb_type    = 756867;
+}

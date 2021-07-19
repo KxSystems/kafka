@@ -93,8 +93,9 @@ EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, 
 #ifdef USE_TRANSFORMER
 
   // Flag to convert message
-  I use_transformer = 0;
+  int use_transformer = 0;
   K pipeline_name=0;
+  int use_protobuf_schema = 0;
   int schema_id=0;
 
   rd_kafka_headers_t* message_headers = rd_kafka_headers_new((int) hdr_keys->n);
@@ -107,6 +108,9 @@ EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, 
       pipeline_name=ks(NUMBER);
       // Use transformer
       use_transformer=1;
+    }
+    else if ((!strcmp(kS(hdr_keys)[idx], "schema_type")) && (!strncmp((S) kG(hdrval), "protobuf", 8))){
+      use_protobuf_schema = 1;
     }
     // Add a pair of header key and value to headers
     rd_kafka_header_add(message_headers, kS(hdr_keys)[idx], -1, kG(hdrval), hdrval->n);
@@ -130,6 +134,16 @@ EXP K publish_with_headers(K producer_idx, K topic_idx, K partition, K payload, 
     kG(payload)[2]=(schema_id >> 16) & 0xFF;
     kG(payload)[3]=(schema_id >> 8) & 0xFF;
     kG(payload)[4]=schema_id & 0xFF;
+
+    if(use_protobuf_schema){
+      K message_index=ktn(KG, 8);
+      // Fixed as [1, 0], meaning length 1 and message index 0 (teh first message type in the schema).
+      // See the [specification](https://docs.confluent.io/platform/current/schema-registry/serdes-develop/index.html#wire-format).
+      G protobuf_header[8] = {0, 0, 0, 1, 0, 0, 0, 0};
+      memcpy(kG(message_index), protobuf_header, 8);
+      jv(&payload, message_index);
+    }
+
     // Append serialized bytes to header
     jv(&payload, encoded);
   }

@@ -56,15 +56,15 @@ topic2:`test2;
 // topic subscriptions `topic1 and `topic2
 topic_cb1:{[consumer;msg]
   msg[`rcvtime]:.z.p;
-  if[`headers in msg; msg[`headers]: "c"$msg[`headers]];
-  data1,: enlist msg;
+  if[`headers in key msg; msg[`headers]: "c"$msg[`headers]];
+  data1,: enlist key msg;
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 
 topic_cb2:{[consumer;msg]
   msg[`rcvtime]:.z.p;
-  if[`headers in msg; msg[`headers]: "c"$msg[`headers]];
-  data2,: enlist msg;
+  if[`headers in key msg; msg[`headers]: "c"$msg[`headers]];
+  data2,: enlist key msg;
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 

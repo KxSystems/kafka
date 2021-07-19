@@ -52,8 +52,11 @@
 // @param payload {string|bytes}: Payload to be sent.
 // @param key {string|bytes}: Message key.
 // @param headers {dictionary}: Message headers expressed in a map between header keys to header values.
-// - key symbol
-// - value string
+//  - key: symbol
+//  - value: string
+// In order to trigger encoding with schema, `schema_id` key must be included in a header and its value
+//  must be schema ID on the schema registry. To get the schema ID you can use `.kafka.getSchemaInfoByTopic`.
+//  For Protobuf schema, you need to further include `schema_type` as a key and its value must be "protobuf".
 // @note
 // Replacement of `.kfk.PubWithHeaders`.
 .kafka.publishWithHeaders:LIBPATH_	(`publish_with_headers; 6);
