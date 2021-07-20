@@ -48,6 +48,8 @@ kfk_cfg:(!) . flip(
 //                     Initial Setting                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
+//%% Set up Avro pipeline %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
 // Query schema information to schema registry for test1
 schemaInfo: .kafka.getSchemaInfoByTopic[`localhost; 8081; `test1; `latest];
 
@@ -57,14 +59,17 @@ avro_pipeline_name: `$string schemaInfo `id;
 .qtfm.addSerializationLayer[avro_pipeline_name; .qtfm.AVRO; schemaInfo `schema];
 .qtfm.compile[avro_pipeline_name];
 
+//%% Set up Protobuf pipeline %%//vvvvvvvvvvvvvvvvvvvvvvvv/
+
 // Query schema information to schema registry for test3
 schemaInfo: .kafka.getSchemaInfoByTopic[`localhost; 8081; `test3; `latest];
 
-// Create pipelines used for Protobuf encoding
 // Add import path of proto file.
 .qtfm.addProtoImportPath "schema/";
 // Import proto file.
 .qtfm.importProtoFile "athlete.proto";
+
+// Create pipelines used for Protobuf encoding
 protobuf_pipeline_name: `$string schemaInfo `id;
 .qtfm.createNewPipeline[protobuf_pipeline_name];
 // One message type must be passed for one topic. Various encoding for the same topic seems strange.
@@ -75,10 +80,10 @@ protobuf_pipeline_name: `$string schemaInfo `id;
 producer:.kafka.newProducer[kfk_cfg; 5000i];
 
 // Create topics.
-topic1:.kafka.newTopic[producer;`test1;()!()];
-topic2:.kafka.newTopic[producer;`test2;()!()];
-topic3:.kafka.newTopic[producer;`test3;()!()];
-topic4:.kafka.newTopic[producer;`test4;()!()];
+topic1:.kafka.newTopic[producer; `test1; ()!()];
+topic2:.kafka.newTopic[producer; `test2; ()!()];
+topic3:.kafka.newTopic[producer; `test3; ()!()];
+topic4:.kafka.newTopic[producer; `test4; ()!()];
 
 // Callback for delivery report.
 .kafka.dr_msg_cb:{[producer_idx; message]
@@ -109,8 +114,6 @@ n: 0;
 //                     Start Process                     //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
--1 "Published one message for each topic";
-producer_meta:.kafka.getBrokerTopicConfig[producer; 5000i];
-
+producer_meta: .kafka.getBrokerTopicConfig[producer; 5000i];
 show producer_meta `topics;
 -1 "Set timer with \\t 500 to publish a message each second to each topic.";

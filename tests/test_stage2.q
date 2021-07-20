@@ -55,7 +55,7 @@ current_offset_1:last exec offset from .kafka.getCommittedOffsetsForTopicPartiti
 current_offset_2:last exec offset from .kafka.getCommittedOffsetsForTopicPartition[consumer; `topic2; enlist 0i]
 
 // Publish messages
-.kafka.publishBatch[topic1; 0i; ("batch hello"; "batch hello2"); ""];
+.kafka.publishBatch[producer; topic1; 0i; ("batch hello"; "batch hello2"); ""];
 
 // Flush the handle
 .kafka.flushProducerHandle[producer; 1000];
@@ -66,7 +66,7 @@ current_offset_2:last exec offset from .kafka.getCommittedOffsetsForTopicPartiti
 .test.ASSERT_EQ["offset proceeds for topic 1 after batch publish"; (last exec offset from .kafka.getCommittedOffsetsForTopicPartition[consumer; `topic1; enlist 0i]) - current_offset_1; 2]
 
 // Publish messages
-.kafka.publishBatch[topic2; 0 0i; ("batch hello"; "batch hello2"); ""];
+.kafka.publishBatch[producer; topic2; 0 0i; ("batch hello"; "batch hello2"); ""];
 
 // Flush the handle
 .kafka.flushProducerHandle[producer; 1000];

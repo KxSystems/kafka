@@ -74,8 +74,9 @@ adjusted_l `kafka_init.q;
 adjusted_l `kafka_producer.q;
 adjusted_l `kafka_topic.q;
 
-USE_TRANSFORMER_: @[LIBPATH_; (`create_new_pipeline; 1); {0b}];
-if[(not USE_TRANSFORMER_ ~ 0b) and `transformer.q in distinct raze (key `:.; key `:q);
+USE_TRANSFORMER_: not @[LIBPATH_; (`create_new_pipeline; 1); {0b}] ~ 0b;
+if[USE_TRANSFORMER_ and `transformer.q in distinct raze (key `:.; key `:q; key `:../q);
+  -1 "Load transformer";
   // Using tarnsformer library.
   adjusted_l `transformer.q;
   adjusted_l `kafka_schema_registry.q

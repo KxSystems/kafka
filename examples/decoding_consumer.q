@@ -57,6 +57,8 @@ sonomama_data: ();
 
 \c 25 200
 
+//%% Set up Avro pipeline %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvv/
+
 // Query schema information to schema registry for test1
 schemaInfo: .kafka.getSchemaInfoByTopic[`localhost; 8081; `test1; `latest];
 
@@ -65,6 +67,8 @@ avro_pipeline_name: `$string schemaInfo `id;
 .qtfm.createNewPipeline[avro_pipeline_name];
 .qtfm.addDeserializationLayer[avro_pipeline_name; .qtfm.AVRO; schemaInfo `schema];
 .qtfm.compile[avro_pipeline_name];
+
+//%% Set up Protobuf pipeline %%//vvvvvvvvvvvvvvvvvvvvvvvv/
 
 // Query schema information to schema registry for test3
 schemaInfo: .kafka.getSchemaInfoByTopic[`localhost; 8081; `test3; `latest];
@@ -118,7 +122,7 @@ topic_cb3:{[consumer;msg]
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 
-// Callbac for committing an offset
+// Callback for committing an offset
 .kafka.offset_commit_cb:{[consumer_idx;error;offsets]
   $[
     error ~ "Success";
@@ -143,6 +147,6 @@ topic_cb3:{[consumer;msg]
 //                     Start Process                     //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
-consumer_meta:.kafka.getBrokerTopicConfig[consumer; 5000i];
+consumer_meta: .kafka.getBrokerTopicConfig[consumer; 5000i];
 
-show consumer_meta`topics;
+show consumer_meta `topics;

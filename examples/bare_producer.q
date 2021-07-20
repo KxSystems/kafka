@@ -4,8 +4,8 @@
 
 // @file bare_producer.q
 // @fileoverview
-// Example producer for kafkakdb not linked with transformer. For consumer who does not convert messages
-//  using kafkakdb linked with transformer, see `idle_producer.q`.
+// Example producer for kafkakdb not linked with transformer. If data is not following the wired format,
+//  it is automatically counted as non-schema-registry data and then passed through as it is (bytes).
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Load Library                      //
@@ -23,18 +23,18 @@ kfk_cfg:(!) . flip(
   (`statistics.interval.ms;`10000);
   (`queue.buffering.max.ms;`1);
   (`api.version.request; `true)
-  );
+ );
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                     Initial Setting                   //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 // Create a producer.
-producer:.kafka.newProducer[kfk_cfg; 5000i; (::)]
+producer:.kafka.newProducer[kfk_cfg; 5000i];
 
 // Create topics.
-topic1:.kafka.newTopic[producer;`test1;()!()]
-topic2:.kafka.newTopic[producer;`test2;()!()]
+topic1:.kafka.newTopic[producer; `test1;()!()];
+topic2:.kafka.newTopic[producer; `test2;()!()];
 
 // Callback for delivery report.
 .kafka.dr_msg_cb:{[producer_idx; message]
@@ -55,8 +55,7 @@ topic2:.kafka.newTopic[producer;`test2;()!()]
 //                     Start Process                     //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
--1 "Published one message for each topic";
-producer_meta:.kafka.getBrokerTopicConfig[producer; 5000i];
+producer_meta: .kafka.getBrokerTopicConfig[producer; 5000i];
 
 show producer_meta `topics;
 -1 "Set timer with \\t 500 to publish a message each second to each topic.";

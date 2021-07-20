@@ -17,8 +17,8 @@
 \l test_helper_function.q
 
 // Delete existing topic
-system getenv[`KAFKA_BROKER_HOME], "/bin/kafka-topics.sh --bootstrap-server localhost:9092 --topic topic1 --delete";
-system getenv[`KAFKA_BROKER_HOME], "/bin/kafka-topics.sh --bootstrap-server localhost:9092 --topic topic2 --delete";
+@[system; getenv[`KAFKA_BROKER_HOME], "/bin/kafka-topics.sh --bootstrap-server localhost:9092 --topic topic1 --delete"; {[error] show error}];
+@[system; getenv[`KAFKA_BROKER_HOME], "/bin/kafka-topics.sh --bootstrap-server localhost:9092 --topic topic2 --delete"; {[error] show error}];
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                      Load Library                     //
@@ -93,6 +93,8 @@ topic2:.kafka.newTopic[producer; `topic2; ()!()];
 // Register callback functions for the consumer
 .kafka.registerConsumeTopicCallback[consumer; `topic1; topic_callback1 consumer];
 .kafka.registerConsumeTopicCallback[consumer; `topic2; topic_callback2 consumer];
+
+system "sleep 2";
 
 while[not all `topic1`topic2 in (asc exec topic from .kafka.getBrokerTopicConfig[consumer; 5000i] `topics) except `$"__consumer_offsets"; system "sleep 1"];
 
