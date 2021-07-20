@@ -2,9 +2,9 @@
 title: Guide for using Kafka with kdb+
 description: Lists functions available for use within the Kafka API for kdb+ and gives limitations as well as examples of each being used 
 date: March 2021
-keywords: broker, consumer, kafka, producer, publish, subscribe, subscription, topic
+keywords: kafka, q, kdb+, interface, library
 ---
-# Function reference 
+# Function Reference 
 
 As outlined in the overview for this API, the kdb+/Kafka interface is a thin wrapper for kdb+ around the [`librdkafka`](https://github.com/edenhill/librdkafka) C API for [Apache Kafka](https://kafka.apache.org/). 
 

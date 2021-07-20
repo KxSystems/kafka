@@ -38,12 +38,12 @@
 
 // Configuration
 kfk_cfg:(!) . flip(
-    (`metadata.broker.list;`localhost:9092);
-    (`group.id;`0);
-    (`fetch.wait.max.ms;`10);
-    (`statistics.interval.ms;`10000);
-    (`enable.auto.commit; `false);
-    (`api.version.request; `true)
+  (`metadata.broker.list;`localhost:9092);
+  (`group.id;`0);
+  (`fetch.wait.max.ms;`10);
+  (`statistics.interval.ms;`10000);
+  (`enable.auto.commit; `false);
+  (`api.version.request; `true)
  );
 
 // Table to store received data.

@@ -75,7 +75,6 @@
   ];
 
   schema: .kafka.process_file[path];
-  show schema;
 
   text: "curl -X POST -H \"Content-Type: application/vnd.schemaregistry.v1+json\" ";
   text,: "--data '{\"schema\":\"", schema, "\", \"schemaType\": \"", schema_type, "\"}' ";
