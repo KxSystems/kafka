@@ -1,12 +1,12 @@
 ---
 title: Guide for using Kafka with kdb+
-description: Lists functions available for use within the Kafka API for kdb+ and gives limitations as well as examples of each being used 
+description: Overview and example of Confluent Kafka Schema Registry Support.
 date: July 2021
 keywords: kafka, schema registry, q, kdb+, interface, library
 ---
 # Confluent Kafka Schema Registry
 
-From kafkakdb 2.0, Confluent Kafka Schema Registry is supported[^1]. In the version 1, the only allowed message type was bytes or string. Using the schema registry, however, you can send whatever type of object so long as it is supported by conversion methods for the schema type. For example, Avro serializer can serialize a q dictionary and Protobuf serializer can handle the types supported by [protobufkdb](https://code.kx.com/q/interfaces/protobuf/protobuf-types/).
+From kafkakdb 2.0, Confluent Kafka Schema Registry is supported[^1]. In the version 1, the only allowed message type was bytes or string. Using the schema registry, however, you can send whatever type of object so long as it is supported by conversion methods for the schema type (See [Type Mapping](#type_mapping_for_message_formats)). For example, Avro serializer can serialize a q dictionary and Protobuf serializer can handle the types supported by [protobufkdb](https://code.kx.com/q/interfaces/protobuf/protobuf-types/).
 
 Currently kafkakdb supports the following schema types:
 
@@ -17,11 +17,11 @@ Currently kafkakdb supports the following schema types:
 **Note:**
 - [^1] Deprecated version does not provide the schema registry support.
 
-## Pipeline
+## Pipeline <img src="images/pipeline.png" width="25"/>
 
-<img src="images/pipeline.jpg" alt="drawing" width="200"/> These conversions are done with a "pipeline" that you build before launching a kafka client. The pipeline is configured by a unique pipeline name and multiple serialization/deserialization layers. Once you compile the pipeline, you can convert a q message into Avro/Protobuf/JSON message by applying the pipeline to it and vice versa.
+These conversions are done with a "pipeline" that you build before launching a kafka client. The pipeline is configured by a unique pipeline name and multiple serialization/deserialization layers. Once you compile the pipeline, you can convert a q message into Avro/Protobuf/JSON message by applying the pipeline to it and vice versa.
 
-## Walk Through
+## Walk Through <img src="images/footstep.png" width="25"/>
 
 In this section we demonstrate how kafkakdb can interact with Confluent Kafka Schema Registry for producer (consumer framework is almost same except for difference of serialization/deserilization when creating a pipeline). We use on-premise Confluent Platform in this guide with container deployment. For installation of the platform, see [this page](https://docs.confluent.io/platform/current/schema-registry/schema_registry_onprem_tutorial.html#schema-registry-onprem-tutorial).
 
@@ -43,13 +43,13 @@ $ docker-composeup -d
 
 Before registering a schema for a topic, the topic mst exist on the schema registry. Open the control center `http://localhost:9021` and create topics `test1`, `test2` and `test3`.
 
-<img src="images/confluent_home.png" width="400"/>
+<img src="images/confluent_home.png" width="400"/><br>
 
-<img src="images/confluent_topic.png"  width="400"/> 
+<img src="images/confluent_topic.png"  width="400"/><br>
 
-<img src="images/confluent_add_topic.png" width="400"/> 
+<img src="images/confluent_add_topic.png" width="400"/><br>
 
-<img src="images/confluent_test1.png" width="400"/> 
+<img src="images/confluent_test1.png" width="400"/>
 
 ### 3. Register Schema
 
@@ -227,3 +227,51 @@ mtype topic client partition offset msgtime                       data       key
 ```
 
 These producer/consumer code can be found under [`examples/`](https://github.com/KxSystems/kafka/tree/master/examples) directory of our repository.
+
+## Type Mapping for Message Formats <img src="images/right_left.png" width="25"/>
+
+The sections below are describing a type mapping for each type of schema.
+
+### JSON
+
+| q                                                                                        | JSON                                     |
+|------------------------------------------------------------------------------------------|------------------------------------------|
+| bool                                                                                     | boolean                                  |
+| short, int, long                                                                         | long                                     |
+| real, float                                                                              | float                                    |
+| char, symbol, timestamp, month, date, datetime, timespan, minute, second, time, string   | string                                   |
+| dictionary                                                                               | object                                   |
+| table                                                                                    | array of object                          |
+| symbol list                                                                              | array of string                          |
+| other list                                                                               | array of corresponding mapped type above |
+
+**Notes:**
+- Basically same as `.j.j` and `.j.k` but timestamp is serialized with `"D"` as a separator of date and time instead of `"T"`.
+- Deserialing JSON string can produce either string or symbol. If the length of string is less than 5 it will be parsed as symbol.
+
+### Avro
+
+All records are passed as dictionary with keys being field names.
+
+| q                | Avro                     |
+|------------------|--------------------------|
+| bool             | Boolean                  |
+| GUID             | Uuid                     |
+| int              | Int                      |
+| long             | Long                     |
+| real             | Float                    |
+| float            | Double                   |
+| symbol, string   | String                   |
+| timestamp        | TimestampMicros          |
+| date             | Date                     |
+| datetime         | TimestampMillis          |
+| timespan         | Duration (millis)        |
+| time             | TimeMillis               |
+| list             | Array                    |
+| dictionary       | Map                      |
+
+**Note:** As map and array type can hold only a unique type as its items/values, array item/value is possible but all elements have the same array types (say list of long).
+
+### Protobuf
+
+See the [Type Mapping](https://code.kx.com/q/interfaces/protobuf/protobuf-types/) on the KX website.
