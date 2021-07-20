@@ -15,7 +15,7 @@
 // q)schema_id: .kafka.registerSchema[`localhost; 8081; `test2; "schema/person.avsc";.qtfm.AVRO]
 // q)schema_id
 // 1
-// q)schema_id:.kafka.registerSchema[`localhost; 8081; `; "schema/google/descriptor.proto";.qtfm.PROTOBUF]
+// q)schema_id:.kafka.registerSchema[`localhost; 8081; `; "schema/google/protobuf/descriptor.proto";.qtfm.PROTOBUF]
 // q)schema_id
 // 2
 // q)schema_id:.kafka.registerSchema[`localhost; 8081; `; "schema/kdb_type_specifier.proto";.qtfm.PROTOBUF]
