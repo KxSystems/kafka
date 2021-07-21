@@ -117,10 +117,12 @@
 
 // @kind function
 // @category SchemaRegistry
-// @brief Retrieve a schema from Kafka schema registry with a nique schema ID.
+// @brief Retrieve a schema from Kafka schema registry with a unique schema ID.
 // @param host {symbol}: Schema-registry host.
 // @param port {number}: Schema-registry port.
 // @param schema_id {number}: Globally unique schema ID.
+// @return
+// - string: Schema contents.
 .kafka.getSchemaByID:{[host;port;schema_id]
   text: "curl -H \"Accept: application/vnd.schemaregistry.v1+json\" ";
   text,: "http://", string[host], ":", string[port], "/schemas/ids/", string[schema_id];

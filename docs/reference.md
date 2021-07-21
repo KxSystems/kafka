@@ -61,11 +61,19 @@ Kafka interface functionality
   .kafka.getEarliestOffsetsForTimes               Query earliest offsets for given partitions whose timestamps are greater or equal to given offsets.
   .kafka.getPrevailingOffsets                     Get the prevailing offsets for given partitions (last consumed message+1).
 
-  // System infomation
+  // System information
   .kafka.getKafkaThreadCount                      Get a number of threads being used by librdkafka.
   .kafka.version                                  Librdkafka version.
   .kafka.versionString                            Human readable librdkafka version.
+
+  // Schema Registry
+  .kafka.deleteSchema                             Delete a schema from Kafka schema registry with a topic and a schema version.
+  .kafka.getSchemaByID                            Retrieve a schema from Kafka schema registry with a unique schema ID.
+  .kafka.getSchemaInfoByTopic                     Retrieve a schema information from Kafka schema registry with a topic and a schema version.
+  .kafka.registerSchema                           Register a schema to Kafka schema registry.
 ```
+
+For pipeline related functions under the namespace `.qtfm`, see [Pipeline User Guide](pipeline_reference.md).
 
 For simplicity in each of the examples below it should be assumed that the user’s system is configured correctly, unless otherwise specified. For example:
 
@@ -1036,3 +1044,104 @@ q).kafka.versionString[]
 ```
 
 [*] Replacement of `.kfk.VersionSym`.
+
+## Schema Registry
+
+### `.kafka.deleteSchema`
+                            
+_Delete a schema from Kafka schema registry with a topic and a schema version._
+
+Syntax: `.kafka.deleteSchema[host;port;topic;version]`
+
+Where
+
+- `host` {symbol}: Schema-registry host.
+- `port` {number}: Schema-registry port.
+- `topic` {symbol}: Topic to which the schema is used.
+- `version` {symbol}: Version of the schema. Version number or `latest`.
+
+```q
+q).kafka.deleteSchema[`localhost;8081;`test2;`latest]
+1i
+```
+
+### `.kafka.getSchemaByID`
+
+_Retrieve a schema from Kafka schema registry with a unique schema ID._
+
+Syntax: `.kafka.getSchemaByID[host;port;schema_id]`
+
+Where
+
+- `host` {symbol}: Schema-registry host.
+- `port` {number}: Schema-registry port.
+- `schema_id` {number}: Globally unique schema ID.
+
+Returns
+
+- string: Schema contents.
+
+```q
+q)\c 25 200
+q).kafka.getSchemaByID[`localhost; 8081; 1]
+"{\"type\":\"record\",\"name\":\"Person\",\"namespace\":\"io.confluent.examples.person\",\"fields\":[{\"name\":\"ID\",\"type\":\"long\"},{\"name\":\"First\",\"type\":\"string\"},{\"name\":\"Last\",..
+```
+
+### `.kafka.getSchemaInfoByTopic`
+
+_Retrieve a schema information from Kafka schema registry with a topic and a schema version._
+
+Syntax: `.kafka.getSchemaInfoByTopic[host;port;topic;version]`
+
+Where
+
+- `host` {symbol}: Schema-registry host.
+- `port` {number}: Schema-registry port.
+- `topic` {symbol}: Topic to which the schema is used.
+- `version` {symbol}: Version of the schema. Version number or `latest`.
+
+Returns
+
+- dictionary: Schehma information
+  - `id` {long}: Schema ID
+  - `schemaType` {enum}: Schema type
+  - `schema` {string}: Schema  
+
+```q
+q).kafka.getSchemaInfoByTopic[`localhost; 8081; `test1; `latest];
+id        | 1
+schemaType| `.qtfm.METHOD$`AVRO
+schema    | "{\"type\":\"record\",\"name\":\"Person\",\"namespace\":\"io.conf..
+```
+
+### `.kafka.registerSchema`
+
+_Register a schema to Kafka schema registry._
+
+Syntax: `.kafka.registerSchema[host;port;topic;path;schema_type_]`
+
+Where
+
+- `host` {symbol}: Schema-registry host.
+- `port` {number}: Schema-registry port.
+- `topic` {symbol}:
+  - non-null: Topic to which the schema is used.
+  - null: Schema is not tied with topic, i.e., independently uploaded (ex. Protobuf schema has dependency).
+- `path` {string}: Path to a schema file.
+- `schema_type_` {enum}: One of these value:
+  - `.qtfm.JSON`
+  - `.qtfm.AVRO`
+  - `.qtfm.PROTOBUF`
+
+Returns
+
+- long: Schema ID.
+
+```q
+q)kafka.registerSchema[`localhost; 8081; `; "schema/google/protobuf/descriptor.proto";.qtfm.PROTOBUF]
+2
+q).kafka.registerSchema[`localhost; 8081; `; "schema/kdb_type_specifier.proto";.qtfm.PROTOBUF]
+3
+q).kafka.registerSchema[`localhost; 8081; `test3; "schema/athlete.proto";.qtfm.PROTOBUF]
+4
+```
