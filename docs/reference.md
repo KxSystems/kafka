@@ -73,7 +73,7 @@ Kafka interface functionality
   .kafka.registerSchema                           Register a schema to Kafka schema registry.
 ```
 
-For pipeline related functions under the namespace `.qtfm`, see [Pipeline User Guide](pipeline_reference.md).
+For pipeline related functions under the namespace `.qtfm`, see [User Guide for Pipeline](pipeline_reference.md).
 
 For simplicity in each of the examples below it should be assumed that the user’s system is configured correctly, unless otherwise specified. For example:
 
@@ -1138,7 +1138,7 @@ Returns
 - long: Schema ID.
 
 ```q
-q)kafka.registerSchema[`localhost; 8081; `; "schema/google/protobuf/descriptor.proto";.qtfm.PROTOBUF]
+q).kafka.registerSchema[`localhost; 8081; `; "schema/google/protobuf/descriptor.proto";.qtfm.PROTOBUF]
 2
 q).kafka.registerSchema[`localhost; 8081; `; "schema/kdb_type_specifier.proto";.qtfm.PROTOBUF]
 3
