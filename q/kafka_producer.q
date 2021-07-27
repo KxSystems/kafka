@@ -88,6 +88,6 @@
 // Replacement of `.kfk.BatchPub`.
 .kafka.publishBatch:{[topic_idx;partitions;payloads;keys_]
   if[0 > type partitions; partitions:count[payloads]#partitions];
-  errors:.kafka.publishBatch_impl[producer_idx; topic_idx; partitions; payloads; keys_];
+  errors:.kafka.publishBatch_impl[topic_idx; partitions; payloads; keys_];
   if[count err_indices:where ` = errors; '"error in sending messages: ", -3! flip (err_indices; errors err_indices)];
  };

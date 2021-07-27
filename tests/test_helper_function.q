@@ -30,12 +30,16 @@ ASSERT_EQ:{[test_name; lhs; rhs]
     [
       PASSED__+:1;
       `.test.MODULES__ insert (enlist test_name; 0b); 
+      // To append to "TEst xxx ..."
+      -1 "ok";
       (::)
     ];
     [
       FAILED__+:1;
       `.test.MODULES__ insert (enlist test_name; 1b); 
       message:"assertion failed.\n\tleft:", (-3!lhs), "\n\tright:", -3!rhs;
+      // To append to "TEst xxx ..."
+      -1 "failed";
       -2 message;
     ]
   ]
@@ -54,12 +58,16 @@ ASSERT_LIKE:{[test_name; lhs; rhs]
     [
       PASSED__+:1;
       `.test.MODULES__ insert (enlist test_name; 0b); 
+      // To append to "TEst xxx ..."
+      -1 "ok";
       (::)
     ];
     [
       FAILED__+:1;
       `.test.MODULES__ insert (enlist test_name; 1b); 
       message:"assertion failed.\n\tleft:", (-3!lhs), "\n\tright:", -3!rhs;
+      // To append to "TEst xxx ..."
+      -1 "failed";
       -2 message;
     ]
   ]
@@ -76,11 +84,15 @@ ASSERT:{[test_name;expr]
     [
       PASSED__+:1;
       `.test.MODULES__ insert (enlist test_name; 0b);
+      // To append to "TEst xxx ..."
+      -1 "ok";
       (::)
     ];
     [
       FAILED__+:1;
       `.test.MODULES__ insert (enlist test_name; 1b);
+      // To append to "TEst xxx ..."
+      -1 "failed";
       -2 "assertion failed.\n\tleft:1b\n\tright:0b";
     ]
   ]
