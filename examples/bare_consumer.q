@@ -47,7 +47,7 @@ topic_cb1:{[consumer;msg]
   msg[`data]:"c"$msg[`data];
   msg[`rcvtime]:.z.p;
   if[`headers in key msg; msg[`headers]: "c"$msg[`headers]];
-  data1,::enlist msg;
+  data1,:enlist msg;
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 
@@ -55,7 +55,7 @@ topic_cb2:{[consumer;msg]
   msg[`data]:"c"$msg[`data];
   msg[`rcvtime]:.z.t;
   if[`headers in key msg; msg[`headers]: "c"$msg[`headers]];
-  data2,::enlist msg;
+  data2,:enlist msg;
   .kafka.commitOffsetsToTopicPartition[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 

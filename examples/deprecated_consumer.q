@@ -17,7 +17,7 @@
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 
 kfk_cfg:(!) . flip(
-    (`metadata.broker.list;`broker:9092);
+    (`metadata.broker.list;`localhost:9092);
     (`group.id;`0);
     (`fetch.wait.max.ms;`10);
     (`statistics.interval.ms;`10000);
@@ -46,14 +46,14 @@ topic2:`test2;
 topcb1:{[msg]
   msg[`data]:"c"$msg[`data];
   msg[`rcvtime]:.z.p;
-  data1,::enlist msg;
+  data1,:enlist msg;
   .kfk.CommitOffsets[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 
 topcb2:{[msg]
   msg[`data]:"c"$msg[`data];
   msg[`rcvtime]:.z.t;
-  data2,::enlist msg;
+  data2,:enlist msg;
   .kfk.CommitOffsets[consumer; msg `topic; enlist[msg `partition]!enlist msg[`offset]; 1b];
  };
 
