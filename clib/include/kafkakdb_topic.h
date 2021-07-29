@@ -15,7 +15,7 @@
 /**
  * @brief Topic names expressed in symbol list
  */
-K TOPICS;
+extern K TOPICS;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //

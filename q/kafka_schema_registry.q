@@ -76,12 +76,13 @@
 
   schema: .kafka.process_file[path];
 
-  text: "curl -X POST -H \"Content-Type: application/vnd.schemaregistry.v1+json\" ";
-  text,: "--data '{\"schema\":\"", schema, "\", \"schemaType\": \"", schema_type, "\"}' ";
+  //text: "curl -X POST -H \"Content-Type: application/vnd.schemaregistry.v1+json\" ";
+  //text,: "--data '{\"schema\":\"", schema, "\", \"schemaType\": \"", schema_type, "\"}' ";
   // Schema is registered against topic
-  text,: "http://", string[host], ":", string[port], "/subjects/", subjects, "/versions";
+  //text,: "http://", string[host], ":", string[port], "/subjects/", subjects, "/versions";
+  result: .j.k first .kurl.sync:["http://", string[host], ":", string[port], "/subjects/", subjects, "/versions"; "POST"; `body`headers!("{\"schema\":\"", schema, "\", \"schemaType\": \"", schema_type, "\"}"; enlist["Content-Type"]!enlist "application/vnd.schemaregistry.v1+json")];
   
-  result: .j.k first system text;
+  //result: .j.k first system text;
   $[`error_code in key result;
     // Error
     'result `message;
@@ -103,10 +104,11 @@
 //   - schemaType {enum}: Schema type
 //   - schema {string}: Schema  
 .kafka.getSchemaInfoByTopic:{[host;port;topic;version]
-  text: "curl -H \"Accept: application/vnd.schemaregistry.v1+json\" ";
-  text,: "http://", string[host], ":", string[port], "/subjects/", string[topic], "-value/versions/", string[version];
+  //text: "curl -H \"Accept: application/vnd.schemaregistry.v1+json\" ";
+  //text,: "http://", string[host], ":", string[port], "/subjects/", string[topic], "-value/versions/", string[version];
 
-  result: .j.k first system text;
+  result: .j.k first .kurl.sync["http://", string[host], ":", string[port], "/subjects/", string[topic], "-value/versions/", string[version]; "GET"; enlist[`headers]!enlist (enlist["Accept"!enlist "application/vnd.schemaregistry.v1+json"])];
+  //result: .j.k first system text;
   $[`error_code in key result;
     // Error
     'result `message;
@@ -124,10 +126,12 @@
 // @return
 // - string: Schema contents.
 .kafka.getSchemaByID:{[host;port;schema_id]
-  text: "curl -H \"Accept: application/vnd.schemaregistry.v1+json\" ";
-  text,: "http://", string[host], ":", string[port], "/schemas/ids/", string[schema_id];
+  //text: "curl -H \"Accept: application/vnd.schemaregistry.v1+json\" ";
+  //text,: "http://", string[host], ":", string[port], "/schemas/ids/", string[schema_id];
 
-  result: .j.k first system text;
+  result: .j.k first .kurl.sync["http://", string[host], ":", string[port], "/schemas/ids/", string[schema_id]; "GET"; enlist[`headers]!enlist (enlist["Accept"!enlist "application/vnd.schemaregistry.v1+json"])];
+
+  //result: .j.k first system text;
   $[`error_code in key result;
     // Error
     'result `message;

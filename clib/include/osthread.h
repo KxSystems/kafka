@@ -6,7 +6,8 @@
 #ifndef SRC_OSTHREAD_H_
 #define SRC_OSTHREAD_H_
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(WIN32)
+
 #include <windows.h>
 #include <processthreadsapi.h>
 

@@ -82,8 +82,9 @@ static const C QTYPE_INDICATORS[256];
 
 /**
  * @brief WHAT IS THIS??
+ * @note Initialized inside `init`.
  */
-K S0;
+extern K S0;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //

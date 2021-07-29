@@ -29,6 +29,7 @@ const J ONEDAY_MILLIS = 86400000;
 
 /**
  * @brief WHAT IS THIS??
+ * @note Initialized inside `init`.
  */
 K S0 = 0;
 

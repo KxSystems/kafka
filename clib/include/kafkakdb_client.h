@@ -33,10 +33,10 @@ static char NUMBER[11];
 //%% Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
 #ifdef _WIN32
-SOCKET spair[2];
+extern SOCKET spair[2];
 #else
 #define SOCKET_ERROR -1
-I spair[2];
+extern I spair[2];
 #endif
 
 /**
@@ -47,7 +47,7 @@ static K ALL_THREADS;
 /**
  * @brief Client handles expressed in symbol list
  */
-K CLIENTS;
+extern K CLIENTS;
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                   Private Functions                   //

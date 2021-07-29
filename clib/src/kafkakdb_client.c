@@ -18,6 +18,13 @@
 
 //%% Interface %%//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv/
 
+#ifdef _WIN32
+SOCKET spair[2]={-1, -1};
+#else
+#define SOCKET_ERROR -1
+I spair[2]={-1, -1};
+#endif
+
 /**
  * @brief Thread pool for polling client.
  */
