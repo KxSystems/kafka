@@ -78,11 +78,11 @@
 
   //text: "curl -X POST -H \"Content-Type: application/vnd.schemaregistry.v1+json\" ";
   //text,: "--data '{\"schema\":\"", schema, "\", \"schemaType\": \"", schema_type, "\"}' ";
-  // Schema is registered against topic
   //text,: "http://", string[host], ":", string[port], "/subjects/", subjects, "/versions";
-  result: .j.k first .kurl.sync:["http://", string[host], ":", string[port], "/subjects/", subjects, "/versions"; "POST"; `body`headers!("{\"schema\":\"", schema, "\", \"schemaType\": \"", schema_type, "\"}"; enlist["Content-Type"]!enlist "application/vnd.schemaregistry.v1+json")];
-  
   //result: .j.k first system text;
+  // Schema is registered against topic
+  result: .j.k last .kurl.sync ("http://", string[host], ":", string[port], "/subjects/", subjects, "/versions"; "POST"; `body`headers!("{\"schema\":\"", schema, "\", \"schemaType\": \"", schema_type, "\"}"; enlist["Content-Type"]!enlist "application/vnd.schemaregistry.v1+json"));
+  
   $[`error_code in key result;
     // Error
     'result `message;
@@ -106,9 +106,8 @@
 .kafka.getSchemaInfoByTopic:{[host;port;topic;version]
   //text: "curl -H \"Accept: application/vnd.schemaregistry.v1+json\" ";
   //text,: "http://", string[host], ":", string[port], "/subjects/", string[topic], "-value/versions/", string[version];
-
-  result: .j.k first .kurl.sync["http://", string[host], ":", string[port], "/subjects/", string[topic], "-value/versions/", string[version]; "GET"; enlist[`headers]!enlist (enlist["Accept"!enlist "application/vnd.schemaregistry.v1+json"])];
   //result: .j.k first system text;
+  result: .j.k last .kurl.sync ("http://", string[host], ":", string[port], "/subjects/", string[topic], "-value/versions/", string[version]; "GET"; enlist[`headers]!enlist (enlist["Accept"]!enlist "application/vnd.schemaregistry.v1+json"));
   $[`error_code in key result;
     // Error
     'result `message;
@@ -128,10 +127,9 @@
 .kafka.getSchemaByID:{[host;port;schema_id]
   //text: "curl -H \"Accept: application/vnd.schemaregistry.v1+json\" ";
   //text,: "http://", string[host], ":", string[port], "/schemas/ids/", string[schema_id];
-
-  result: .j.k first .kurl.sync["http://", string[host], ":", string[port], "/schemas/ids/", string[schema_id]; "GET"; enlist[`headers]!enlist (enlist["Accept"!enlist "application/vnd.schemaregistry.v1+json"])];
-
   //result: .j.k first system text;
+  result: .j.k last .kurl.sync ("http://", string[host], ":", string[port], "/schemas/ids/", string[schema_id]; "GET"; enlist[`headers]!enlist (enlist["Accept"]!enlist "application/vnd.schemaregistry.v1+json"));
+
   $[`error_code in key result;
     // Error
     'result `message;
@@ -152,10 +150,11 @@
 // @note The schema ID increases every time you upload a new schema and it is not deletable from teh registry.
 //  What you can do is to delete the registered schema information for a topic.
 .kafka.deleteSchema:{[host;port;topic;version]
-  text: "curl -X DELETE -H \"Accept: application/vnd.schemaregistry.v1+json\" ";
-  text,: "http://", string[host], ":", string[port], "/subjects/", string[topic], "-value/versions/", string[version];
+  //text: "curl -X DELETE -H \"Accept: application/vnd.schemaregistry.v1+json\" ";
+  //text,: "http://", string[host], ":", string[port], "/subjects/", string[topic], "-value/versions/", string[version];
+  //result: .j.k first system text;
+  result: .j.k last .kurl.sync ("http://", string[host], ":", string[port], "/subjects/", string[topic], "-value/versions/", string[version]; "DELETE"; enlist[`headers]!enlist (enlist["Accept"]!enlist "application/vnd.schemaregistry.v1+json"));
 
-  result: .j.k first system text;
   $[not -9h ~ type result;
     // Error
     'result `message;
