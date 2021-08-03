@@ -22,9 +22,9 @@ cp /usr/include/librdkafka/rdkafka.h /usr/local/lib/librdkafka/include/librdkafk
 ## Install transformer ##vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv#
 
 ## The transformer package should be downloaded in advance.
-## qp pull gitlab.com/kxdev/interop/transformer/transformer.qpk 0.1.0
+## qp pull gitlab.com/kxdev/interop/transformer/transformer.qpk 0.1.1
 unzip transformer.qpk
-cp transformer/src/* /usr/local/lib/
+cp transformer/src/*so /usr/local/lib/
 
 ## Install kafkakdb ##vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv#
 

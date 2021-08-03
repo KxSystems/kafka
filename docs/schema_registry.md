@@ -23,9 +23,11 @@ These conversions are done with a "pipeline" that you build before launching a k
 
 ## Walk Through <img src="images/footstep.png" width="25"/>
 
-In this section we demonstrate how kafkakdb can interact with Confluent Kafka Schema Registry for producer (consumer framework is almost same except for difference of serialization/deserilization when creating a pipeline). We use on-premise Confluent Platform in this guide with container deployment. For installation of the platform, see [this page](https://docs.confluent.io/platform/current/schema-registry/schema_registry_onprem_tutorial.html#schema-registry-onprem-tutorial).
+In this section we demonstrate how kafkakdb can interact with Confluent Kafka Schema Registry for producer (consumer framework is almost same except for difference of serialization/deserilization when creating a pipeline).
 
 ### 1. Start Confluent Platform
+
+We use on-premise Confluent Platform in this guide with container deployment. For installation of the platform, see [this page](https://docs.confluent.io/platform/current/quickstart/ce-docker-quickstart.html#step-1-download-and-start-cp-using-docker).
 
 Start the Confluent Platform with **docker-compose**.
 
@@ -33,11 +35,13 @@ Start the Confluent Platform with **docker-compose**.
 $ docker-composeup -d
 ```
 
-**Note: In our environment `control-center` and `ksql-datagen` component fails (explicitly or silently) at the start up. You mey need to check the status by `docker-compose ps` and restart the `control-center` first and then start the failed components. Example is below:**
+**Note: In our environment `control-center` and `ksql-datagen` component fails (explicitly or silently) at the start up. You may need to check the status by `docker-compose ps` and restart the `control-center` first and then start the failed components. Example is below:**
 
     $ docker-compose stop control-center
     $ docker-compose start control-center
     $ docker-compose start ksql-datagen rest-proxy
+
+**Even if they do not fail, i takes a few minutes until control-center gets ready tp explore with a browser.**
 
 ### 2. Create a Topic
 

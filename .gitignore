@@ -2,11 +2,9 @@ qpbuild/
 clib/transformer*
 clib/kurl*
 clib/include/k.h
-clib/include/qtfm.h
 clib/build/
 clib/qpbuild/
 clib/kafkakdb.so
 clib/libs/qtfm*
-q/transformer.q
 q/kurl*
 tests/bench_producer.log

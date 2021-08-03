@@ -210,7 +210,7 @@ w64> MKLINK rdkafka.dll %KAFKA_INSTALL_DIR%\bin\rdkafka.dll
 
 ### Install qtfm (optional)
 
-Message transformer is supported only for Linux. If you intend to use transformer with kafkakdb, you need to install it to a location where q can serach it (for eaxmple, under `${QOME}/[os]64`). After installing qtfm.so you need to copy `qtfm.h` to `clib/include`.
+Message transformer is supported only for Linux. If you intend to use transformer with kafkakdb, you need to install it to a location where q can serach it (for eaxmple, under `${QHOME}/[os]64`). After installing qtfm.so you need to copy `qtfm.h` to `clib/include` and `transformer.q` to `q/`.
 
 ### Install kafkakdb
 
