@@ -3,7 +3,6 @@
 kfk_cfg:(!) . flip(
     (`metadata.broker.list;`localhost:9092);
     (`group.id;`0);
-    (`queue.buffering.max.ms;`1);
     (`fetch.wait.max.ms;`10);
     (`statistics.interval.ms;`10000);
     (`enable.auto.commit;`false);
@@ -23,9 +22,6 @@ data:();
     data,::enlist msg;}
 // Define Offset callback functionality
 .kfk.offsetcb:{[cid;err;offsets]show (cid;err;offsets);}
-
-// Assign partitions to consume from specified offsets
-show .kfk.AssignOffsets[client;;(1#0i)!1#.kfk.OFFSET.END]each (topic1;topic2)
 
 // Subscribe to relevant topics from a defined client
 .kfk.Sub[client;;(1#0i)!1#.kfk.OFFSET.END]each (topic1;topic2)
