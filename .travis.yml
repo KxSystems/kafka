@@ -4,7 +4,6 @@ os:
 - linux
 
 before_install:
-  - sudo apt-get update
   - wget -qO - http://packages.confluent.io/deb/3.3/archive.key | sudo apt-key add - # Use the confluent repository
   - sudo add-apt-repository "deb http://packages.confluent.io/deb/3.3 stable main"
   - sudo apt-get update -qq # Update quietly.
