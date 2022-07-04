@@ -24,7 +24,7 @@ data:();
 .kfk.offsetcb:{[cid;err;offsets]show (cid;err;offsets);}
 
 // Subscribe to relevant topics from a defined client
-.kfk.Sub[client;;(1#0i)!1#.kfk.OFFSET.END]each (topic1;topic2)
+.kfk.Sub[client;(topic1;topic2);(1#0i)!1#.kfk.OFFSET.END]
 
 strt:.z.t
 // The following example has been augmented to display and commit offsets for each of

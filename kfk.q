@@ -171,7 +171,7 @@ consumecb:{[msg]$[null f:consumetopic msg`topic;consumetopic.;f]msg}
 /* cb   = callback function to be used for the specified topic
 Subscribe:{[cid;top;part;cb]
   Sub[cid;top;part];
-  if[not null cb;consumetopic[top]:cb];
+  if[all not null cb;if[(count top)<>count cb;'".kfk.Subscribe callback needed for each topic"];consumetopic[top]:cb];
   }
 
 
