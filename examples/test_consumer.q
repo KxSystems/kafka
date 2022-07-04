@@ -4,8 +4,6 @@ kfk_cfg:(!) . flip(
     (`metadata.broker.list;`localhost:9092);
     (`group.id;`0);
     (`fetch.wait.max.ms;`10);
-    (`auto.offset.reset;`earliest);
-    (`enable.auto.commit;`false);
     (`statistics.interval.ms;`10000)
     );
 client:.kfk.Consumer[kfk_cfg];
