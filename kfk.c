@@ -794,7 +794,15 @@ EXP K2(kfkAssignTopPar){
     return KNL;
   t_partition = rd_kafka_topic_partition_list_new(y->n);
   // topic-partition assignment
-  ptlistadd(y,t_partition);
+  if (KJ==kK(y)[1]->t)
+    ptlistadd(y,t_partition);
+  else{
+    I i;
+    K dk=kK(y)[0],dv=kK(y)[1];
+    S* t=kS(dk);
+    for(i=0;i<dk->n;i++)
+      plistoffsetdict(t[i],kK(dv)[i],t_partition);
+  }
   if(KFK_OK != (err=rd_kafka_assign(rk,t_partition)))
     return krr((S) rd_kafka_err2str(err));
   rd_kafka_topic_partition_list_destroy(t_partition);
