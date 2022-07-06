@@ -514,21 +514,19 @@ EXP K3(kfkSub){
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
   J i;
-  I*p;
-  if(!checkType("is[I!]", x, y, z))
+  if(!checkType("i[sS][I!]", x, y, z))
     return KNL;
   if(!(rk= clientIndex(x)))
     return KNL;
   if(KFK_OK != (err = rd_kafka_subscription(rk, &t_partition)))
     return krr((S)rd_kafka_err2str(err));
-  if(z->t == XD){
-    if(!checkType("IJ", kK(z)[0], kK(z)[1]))
-      return KNL;
-    plistoffsetdict(y->s,z,t_partition);
+  if(y->t==-KS)
+    rd_kafka_topic_partition_list_add(t_partition,y->s,RD_KAFKA_PARTITION_UA);
+  else {
+    S* p=kS(y);
+    for(i=0;i<y->n;i++)
+      rd_kafka_topic_partition_list_add(t_partition,p[i],RD_KAFKA_PARTITION_UA);
   }
-  else
-    for(p=kI(z), i= 0; i < z->n; ++i)
-      rd_kafka_topic_partition_list_add(t_partition, y->s, p[i]);
   if(KFK_OK != (err= rd_kafka_subscribe(rk, t_partition)))
     return krr((S) rd_kafka_err2str(err));
   rd_kafka_topic_partition_list_destroy(t_partition);

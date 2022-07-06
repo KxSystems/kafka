@@ -167,11 +167,11 @@ consumecb:{[msg]$[null f:consumetopic msg`topic;consumetopic.;f]msg}
 // Subscribe to a topic from a client, with a defined topic/partition offset and unique callback function
 /* cid  = Integer denoting client Id
 /* top  = Topic to be subscribed to as a symbol
-/* part = Partition list or partition/offset dictionary
+/* part = Partition list or partition/offset dictionary (depreciated / unused)
 /* cb   = callback function to be used for the specified topic
 Subscribe:{[cid;top;part;cb]
   Sub[cid;top;part];
-  if[not null cb;consumetopic[top]:cb];
+  if[all not null cb;if[(count top)<>count cb;'".kfk.Subscribe callback needed for each topic"];consumetopic[top]:cb];
   }
 
 
