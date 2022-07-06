@@ -166,7 +166,7 @@ consumecb:{[msg]$[null f:consumetopic msg`topic;consumetopic.;f]msg}
 
 // Subscribe to a topic from a client, with a defined topic/partition offset and unique callback function
 /* cid  = Integer denoting client Id
-/* top  = Topic to be subscribed to as a symbol
+/* top  = Topic to be subscribed to as a symbol, or list of topics (as symbol list)
 /* part = Partition list or partition/offset dictionary (depreciated / unused)
 /* cb   = callback function to be used for the specified topic
 Subscribe:{[cid;top;part;cb]
@@ -208,7 +208,7 @@ i.checkOffsetDict:{[dict]
   }
 // Assign a new topic-partition dictionary to be consumed by a designated clientid
 /* cid    = Integer denoting client ID
-/* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
+/* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition or Symbol!Dictionary mapping of topic to partitions/offset (dictionary mapping of integer partition to long offset location)
 Assign:{[cid;toppar]
   if[not 99h=type toppar      ;'"Final parameter must be a dictionary"];
   if[not 11h=type key toppar  ;'"Dictionary key must of type symbol"];
