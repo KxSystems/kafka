@@ -201,14 +201,22 @@ AssignOffsets:{[cid;top;partoff]
   assignOffsets[cid;top;partoff]
   }
 
+i.checkOffsetDict:{[dict]
+  if[not all 99h=type each dict;'"Partition info must be of type  dictionary"];
+  if[not all 6h=type each key each dict;'"Partition dictionary key must of type int"];
+  if[not all 7h=type each value each dict;'"Partition dictionary values must be of type long"];
+  }
 // Assign a new topic-partition dictionary to be consumed by a designated clientid
 /* cid    = Integer denoting client ID
 /* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
 Assign:{[cid;toppar]
-  i.checkDict[toppar];
+  if[not 99h=type toppar      ;'"Final parameter must be a dictionary"];
+  if[not 11h=type key toppar  ;'"Dictionary key must of type symbol"];
+  if[2=(7h;0h)?type value toppar;'"Dictionary values must be of type long or a list"];
   // Create a distinct set of topic-partition pairs to assign,
   // non distinct entries cause a segfault
-  toppar:(!). flip distinct(,'/)(key;value)@\:toppar;
+  if[7h=type value toppar;toppar:(!). flip distinct(,'/)(key;value)@\:toppar;]
+  if[0h=type value toppar;i.checkOffsetDict[value toppar];if[(count distinct a)<>count a:raze key[toppar],/:'key each value toppar;'"Topic and Partition mapping not unique"];]
   AssignTopPar[cid;toppar]
   }
 
