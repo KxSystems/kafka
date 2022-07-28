@@ -148,15 +148,42 @@ static V throttlecb(rd_kafka_t *rk, const char *brokername,
           kp((S)brokername), ki(brokerid), ki(throttle_time_ms),KNL));
 }
 
+static I createStr(K x,char* b,I bLen){
+  char* str=b;
+  I i;
+  for(i=0;i<x->n;++i){
+    I l=strlen(kS(x)[i]);
+    if((str-b)+l+(!!i)+1>bLen)return 0;
+    if(i)*str++=',';
+    memcpy(str,kS(x)[i],l+1);
+    str+=l;
+  }
+  return str-b+1;
+}
+
 // client api
 // x - config dict sym->sym
 static K loadConf(rd_kafka_conf_t *conf, K x){
-  char b[512];
+  char b[512],o[1024],*v;
   J i;
+  if(xy->t!=KS&&xy->t)
+    return krr("bad cfg values type");
   for(i= 0; i < xx->n; ++i){
-    if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, kS(xx)[i], kS(xy)[i], b, sizeof(b))){
+    if(xy->t==KS)
+      v=kS(xy)[i];
+    else if(!xy->t)
+      if(kK(xy)[i]->t==-KS)
+        v=kK(xy)[i]->s;
+      else if(kK(xy)[i]->t==KS){
+        if(!createStr(kK(xy)[i],o,sizeof(o)))return krr("cfg value too long");
+        v=o;
+      }
+      else
+        return krr("bad cfg value type");
+    else
+      return krr("bad cfg value type");
+    if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, kS(xx)[i], v, b, sizeof(b)))
       return krr((S) b);
-    }
   }
   return knk(0);
 }
