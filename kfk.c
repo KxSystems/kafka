@@ -180,6 +180,8 @@ static K loadConf(rd_kafka_conf_t *conf, K x){
       }
       else
         return krr("bad cfg value type");
+    else
+      return krr("bad cfg value type");
     if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, kS(xx)[i], v, b, sizeof(b)))
       return krr((S) b);
   }
