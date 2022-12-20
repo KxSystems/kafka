@@ -50,6 +50,7 @@ funcs:(
 	  // .kfk.CommittedOffsets[client_id:i;topic:s;partition_offsets:I!J]:partition_offsets
 	(`kfkCommittedOffsets;3);
 	  // .kfk.assignOffsets[client_id:i;topic:s;partition_offsets:I!J]:()
+    (`kfkqueryWatermark;4);
 	(`kfkassignOffsets;3);
           // .kfk.Threadcount[]:i
         (`kfkThreadCount;1);
