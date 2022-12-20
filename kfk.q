@@ -49,7 +49,9 @@ funcs:(
 	(`kfkPositionOffsets;3);
 	  // .kfk.CommittedOffsets[client_id:i;topic:s;partition_offsets:I!J]:partition_offsets
 	(`kfkCommittedOffsets;3);
-	  // .kfk.assignOffsets[client_id:i;topic:s;partition_offsets:I!J]:()
+	  // .kfk.QueryWatermark[client_id:i:topic:s;partition:j;timeout:j]:_
+    (`kfkqueryWatermark;4);
+      // .kfk.AssignOffsets[client_id:i;topic:s;partition_offsets:I!J]:()
 	(`kfkassignOffsets;3);
           // .kfk.Threadcount[]:i
         (`kfkThreadCount;1);

@@ -573,6 +573,24 @@ EXP K1(kfkUnsub){
   return knk(0);
 }
 
+EXP K4(kfkqueryWatermark){
+  rd_kafka_t *rk;
+  rd_kafka_resp_err_t err;
+  int64_t low,high;
+  K w;
+  if(!checkType("isjj",x,y,z,r))
+    return KNL;
+  if(!(rk= clientIndex(x)))
+    return KNL;
+  err= rd_kafka_query_watermark_offsets(rk,y->s,z->j,&low,&high,r->j);
+  if(KFK_OK != err)
+    return krr((S) rd_kafka_err2str(err));
+  w=ktn(KJ,2);
+  kJ(w)[0]=low;
+  kJ(w)[1]=high;
+  return w;
+}
+
 // https://github.com/edenhill/librdkafka/wiki/Manually-setting-the-consumer-start-offset
 EXP K3(kfkassignOffsets){
   rd_kafka_t *rk;
