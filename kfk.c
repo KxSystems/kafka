@@ -576,7 +576,7 @@ EXP K1(kfkUnsub){
 EXP K4(kfkqueryWatermark){
   rd_kafka_t *rk;
   rd_kafka_resp_err_t err;
-  J low,high;
+  int64_t low,high;
   K w;
   if(!checkType("isjj",x,y,z,r))
     return KNL;
