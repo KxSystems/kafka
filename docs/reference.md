@@ -152,7 +152,7 @@ Where
 
 returns a null on successful execution; will display inappropriate assignments if necessary
 
-> note From v1.6, [`.kfk.Assign`](#assign) is preferred for assigning multiple offsets/topics.
+> From v1.6, [`.kfk.Assign`](#assign) is preferred for assigning multiple offsets/topics.
 
 If previous assignments have already been communicated to the Kafka infrastructure, these assignments will be reapplied.
 
@@ -202,7 +202,7 @@ Where
 
 removes the topic-partition pairs and returns a null; will display inappropriate assignment deletion if necessary.
 
-> note From v1.6, [`.kfk.Assign`](#assign) is preferred for assigning multiple offsets/topics.
+> From v1.6, [`.kfk.Assign`](#assign) is preferred for assigning multiple offsets/topics.
 
 If previous assignments have already been communicated to the Kafka infrastructure, these remaining assignments will be reapplied
 
@@ -282,7 +282,7 @@ returns a null on successful execution.
 
 If previous assignments for a different topic/partition have already been communicated to the Kafka infrastructure, these assignments will be reapplied.
 
-> note From v1.6, [`.kfk.Assign`](#assign) is preferred for assigning multiple offsets/topics.
+> From v1.6, [`.kfk.Assign`](#assign) is preferred for assigning multiple offsets/topics.
 
 ```q
 q).kfk.OFFSET.END   // start consumption at end of partition
@@ -292,7 +292,7 @@ q).kfk.OFFSET.BEGINNING // start consumption at start of partition
 q).kfk.AssignOffsets[client;TOPIC;(1#0i)!1#.kfk.OFFSET.END]
 ```
 
-> note **Last-committed offset**
+> **Last-committed offset**
 > 
 > In the above examples an offset of -1001 is a special value. 
 > It indicates the offset could not be determined and the consumer will read from the last-committed offset once one becomes available.
@@ -369,7 +369,7 @@ _Client's broker-assigned member ID_
 
 Where `clid` is a client ID (integer), returns the member ID (symbol) assigned to the client, or signals `unknown client`.
 
-> warning **Consumer processes only**
+> :warning: **Consumer processes only**
 > 
 > This function should be called only on a consumer process. 
 > This is an [external limitation](https://docs.confluent.io/2.0.0/clients/librdkafka/rdkafka_8h.html#a856d7ecba1aa64e5c89ac92b445cdda6).
@@ -562,7 +562,7 @@ q).kfk.MaxMsgsPerPoll 100
 100
 ```
 
-> note **Upper limit set by `.kfk.MaxMsgsPerPoll` vs max_messages in `.kfk.Poll`**
+> **Upper limit set by `.kfk.MaxMsgsPerPoll` vs max_messages in `.kfk.Poll`**
 > 
 > The argument `max_messages` passed to `.kfk.Poll` is preferred to the global limit of maximum number of messages set by `.kfk.MaxMsgPerPoll`. 
 > The latter limit is used only when `max_messages` passed to `.kfk.Poll` is 0.
@@ -763,7 +763,7 @@ hdrs:`header1`header2!("test1";"test2")
 .kfk.PubWithHeaders[1i;test_topic;part;payload;"test_key";hdrs]
 ```
 
-> note **Support for functionality**
+> **Support for functionality**
 >     
 > This functionality is only available for versions of `librdkafka` ≥ 0.11.4; use of a version less than this does not allow this 
 
@@ -812,7 +812,7 @@ Subscriptions can be made to topics that do not currently exist.
 **Multiple subscriptions** 
 As of v1.4.0 multiple calls to `.kfk.Sub` for a given client will allow for consumption from multiple topics rather than overwriting the subscribed topic, although each addition will cause a rebalance.
 
-> warning **Partition ID**
+> :warning: **Partition ID**
 > 
 > The parameter `partid` is a legacy argument to the function and with recent versions of librdkafka does not have any effect on the subscription. On subscription Kafka handles organisation of consumers based on the active members of a `group.id` to efficiently distribute consumption amongst the group.
 
@@ -842,7 +842,7 @@ Where
 
 returns a null on successful execution and augments `.kfk.consumetopic` with a new callback function for the consumer.
 
-> warning **Partition ID**
+> :warning: **Partition ID**
 > 
 > The parameter `partid` is a legacy argument to the function and with recent versions of librdkafka does not have any effect on the subscription. On subscription Kafka handles organization of consumers based on the active members of a `group.id` to efficiently distribute consumption among the group.
 
@@ -863,7 +863,7 @@ q).kfk.consumetopic
 test| {[msg]show msg;}
 ```
 
-> note **Consume callbacks**
+> **Consume callbacks**
 >     
 > The addition of callbacks specific to a topic was added in `v1.5.0` a call of `.kfk.Subscribe` augments the dictionary `.kfk.consumetopic` where the key maps topic name to the callback function in question. A check for a custom callback is made on each call to `.kfk.consumecb` following `v1.5.0`. If an appropriate key is found the associated callback will be invoked. The default callback can be modified via modification of ```.kfk.consumetopic[`]```
 
