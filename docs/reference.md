@@ -80,14 +80,14 @@ Membership in a consumer group is maintained dynamically: if a process fails, th
 
 The subscribe method is not incremental: you must include the full list of topics that you want to consume from.
 
->Note **Rebalance**
+> **Rebalance**
 >
->A rebalance operation occurs if any one of the following events is triggered:
+> A rebalance operation occurs if any one of the following events is triggered:
 >
->-   Number of partitions change for any of the subscribed topics
->-   A subscribed topic is created or deleted
->-   An existing member of the consumer group is shutdown or fails
->-   A new member is added to the consumer group
+> -   Number of partitions change for any of the subscribed topics
+> -   A subscribed topic is created or deleted
+> -   An existing member of the consumer group is shutdown or fails
+> -   A new member is added to the consumer group
 >
 > Group rebalances will cause partition offsets to be reset (e.g. application of `auto.offset.reset` setting) 
 
