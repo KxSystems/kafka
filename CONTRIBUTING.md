@@ -16,11 +16,11 @@ You may also wish to 'star' the project (click the star link on the project main
 
 ## Contributing as a developer
 
-### Getting Started
+### Getting started
 
 If you are looking to lend your development skills to the project, you can check the projects issue list to see what people may be looking for. Developers who already have an idea of what they might like to change should consider creating an issue to indicate to others of the work they are undertaking and commence any discussion on the possible solutions.
 
-### Making Changes
+### Making changes
 
 Please fork the projects master branch to your own account. Using your fork, you are free to create changes or create branches in isolation.
 
@@ -30,7 +30,7 @@ Please keep your fork up-to date to reduce the risk of conflicts occurring when 
 
 It can also be worth considering if your changes may also require changes to documentation or dependent systems.
 
-### Submitting Changes
+### Submitting changes
 
 When committing changes, please provide a descriptive commit comment of why the change was made (e.g. 'fixed bug' is not a suitable comment as it doesn't describe which bug).  
 
@@ -40,8 +40,7 @@ After pushing to your fork, submit a pull request against the main projects mast
 
 In order to have your pull request approved in a timely manner, please provide comments on the pull request that details what was changed & for which reasons. The complexity or size of the change indicate the size of the descriptions required, in order for the reviewer to get up to speed as quick as possible.
 
-### Additional Resources
+### Additional resources
 
-[Kx Kafka Documentation](https://code.kx.com/q/interfaces/kafka/)
 [librdkafka C Documentation](https://docs.confluent.io/2.0.0/clients/librdkafka/rdkafka_8h.html#ab66a2c014db2e652aa12466b137a6200)
 

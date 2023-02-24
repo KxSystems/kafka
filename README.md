@@ -1,28 +1,30 @@
-# `kfk` – Kafka for kdb+
+# ![Kafka](docs/kafka.png) `kfk` – Kafka for kdb+
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/kxsystems/kafka)](https://github.com/kxsystems/kafka/releases) [![Travis (.org) branch](https://img.shields.io/travis/kxsystems/kafka/master)](https://travis-ci.org/kxsystems/kafka/branches)
 
-## Introduction
+
 
 `kfk` is a thin wrapper for kdb+ around [`librdkafka`](https://github.com/edenhill/librdkafka) C API for [Kafka](https://kafka.apache.org/).
-It is part of the [_Fusion for kdb+_](https://code.kx.com/v2/interfaces/fusion/) interface collection.
+It is part of the [_Fusion for kdb+_](https://code.kx.com/q/interfaces) interface collection.
 
 This interface is supported for the following platforms
 
-* 32 & 64 bit MacOS and Linux
-* 64 bit Windows
+* 32- & 64-bit macOS and Linux
+* 64-bit Windows
 
 ## New to kdb+ ?
 
-Kdb+ is the world's fastest time-series database, optimized for ingesting, analyzing and storing massive amounts of structured data. To get started with kdb+, please visit https://code.kx.com/q/learn/ for downloads and developer information. For general information, visit https://kx.com/
+Kdb+ is the world’s fastest time-series database, optimized for ingesting, analyzing and storing massive amounts of structured data. To get started with kdb+, see https://code.kx.com/q for downloads and developer information. For general information, visit https://kx.com/
 
 ## Documentation
 
-Documentation outlining the functionality available for this interface can be found [here](https://code.kx.com/v2/interfaces/kafka/).
+-   [User guide](docs)
+-   [Reference](docs/reference.md)
+
 
 ## Running
 
-### Linux & Mac
+### Linux and macOS
 
 #### Step 1
 
@@ -108,44 +110,57 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/lib
 
 At present the Windows build of the `.dll` for the kafka interface has been tested on Visual Studio 2017 with `librdkafka.redist.1.0.0`. The following are the steps completed to achieve this
 
-1. Install nuget for Windows: <https:/nuget.com/downloads>
+1.  Install nuget for Windows: <https:/nuget.com/downloads>
 
-2. Install the redistributed version of librdkafka which is suitable for use with windows, documentation can be found [here](https://www.nuget.org/packages/librdkafka.redist/1.0.0).
+2.  Install the redistributed version of librdkafka which is suitable for use with windows, documentation can be found [here](https://www.nuget.org/packages/librdkafka.redist/1.0.0).
 
-        >nuget install librdkafka.redist
+    ```bash
+    nuget install librdkafka.redist
+    ```
 
-3. Ensure that you have Windows Visual Studio 2017 installed.
+3.  Ensure  you have Windows Visual Studio 2017 installed.
 
-4. Place the installed librdkafka.redist into an appropriate location (suggestions `%HOME%` or `%QHOME%`).
-   For the remaining instructions the path to the install is "C:/Users/jdoe/librdkafka.redist.1.0.0"
+4.  Place the installed librdkafka.redist into an appropriate location (suggestions `%HOME%` or `%QHOME%`).
+    For the remaining instructions, the path to the install is `C:/Users/jdoe/librdkafka.redist.1.0.0`
 
-5. Update LIB user environment variable to include the following path to rdkafka.h for appropriate Windows architecture in this case
+5.  Update `LIB` user environment variable to include the following path to `rdkafka.h` for appropriate Windows architecture in this case
 
-        LIB = C:/Users/jdoe/librdkafka.redist.1.0.0/build/native/lib/win/x64/win-x64-Release/v120
+    ```bash
+    LIB = C:/Users/jdoe/librdkafka.redist.1.0.0/build/native/lib/win/x64/win-x64-Release/v120
+    ```
 
-6. Update PATH system environment variable to include path to native folder for the appropriate computer architecture
+6.  Update `PATH` system environment variable to include path to native folder for the appropriate computer architecture
 
-        PATH = C:/Users/jdoe/librdkafka.redist.1.0.0/runtimes/win-x64/native
+    ```bash
+    PATH = C:/Users/jdoe/librdkafka.redist.1.0.0/runtimes/win-x64/native
+    ```
 
-7. Create a user environment variable `KAFKA_NATIVE` in line with the following example path
+7.  Create a user environment variable `KAFKA_NATIVE` in line with the following example path
 
-        KAFKA_NATIVE = C:/Users/jdoe/librdkafka.redist.1.0.0/build/native/include/
+    ```bash
+    KAFKA_NATIVE = C:/Users/jdoe/librdkafka.redist.1.0.0/build/native/include/
+    ```
 
-8. Clone the kafka interface from the KxSystems github
+8.  Clone the Kafka interface from the KxSystems GitHub repo
 
-        >git clone https://github.com/kxsystems/kafka
+    ```bash
+    git clone https://github.com/kxsystems/kafka
+    ```
 
-9. Move to the `kafka/build/` folder within the github clone and run the following;
+9.  Move to the `kafka/build/` folder within the GitHub clone and run the following;
 
-        >call "build.bat"
+    ```bash
+    call "build.bat"
+    ```
 
-10. If prompted for input please follow instructions accordingly
+10. If prompted for input, follow instructions accordingly.
 
 11. Move the created `.dll` from the build folder to `%QHOME%/<arch>`
 
 ## Status
-This interface is provided here under an Apache 2.0 license.
 
-If you find issues with the interface or have feature requests please consider raising an issue [here](https://github.com/KxSystems/kafka/issues).
+This interface is provided under an Apache 2.0 license.
 
-If you wish to contribute to this project please follow the contributing guide [here](CONTRIBUTING.md).
+If you find issues with the interface or have feature requests please [raise an issue](../..//issues).
+
+To contribute to this project, please follow the [contribution guide](CONTRIBUTING.md).
