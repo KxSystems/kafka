@@ -7,6 +7,21 @@ The kdb+/Kafka interface is a thin wrapper for kdb+ around the [`librdkafka`](ht
 
 ## **`.kfk.`** Kafka interface 
 
+System information<br>
+[`Metadata`](#metadata) Broker Metadata<br>
+[`Version`](#version) Librdkafka version<br>
+[`VersionSym`](#versionsym) Human readable Librdkafka version<br>
+[`ThreadCount`](#threadcount) Number of threads being used by librdkafka
+
+Topics<br>
+[`Topic`](#topic) Create a topic on which messages can be sent<br>
+[`TopicDel`](#topicdel) Delete a defined topic<br>
+[`TopicName`](#topicname) Topic Name
+
+Callback modifications<br>
+[`errcbreg`](#errcbreg) Register an error callback associated with a specific client<br>
+[`throttlecbreg`](#throttlecbreg) Register a throttle callback associated with a specific client
+
 Clients<br>
 [`ClientDel`](#clientdel) Close consumer and destroy Kafka handle to client<br>
 [`ClientName`](#clientname) Kafka handle name<br>
@@ -26,38 +41,261 @@ Publishing <br>
 [`PubWithHeaders`](#pubwithheaders) Publish a message to a defined topic with a header <br>
 [`OutQLen`](#outqlen) Current out queue length
 
-Subscription - dynamically assigned<br>
+[Subscriptions](#subscriptions)<br>
+
+[Dynamic](#dynamic) assigned subscriptions<br>
 [`Sub`](#sub) Subscribe to a defined topic<br>
 [`Subscribe`](#subscribe) Subscribe from a consumer to a topic with a specified callback<br>
-[`Subscription`](#subscription) Most recent topic subscription
+[`Subscription`](#subscription) Most recent topic subscription<br>
 
-Subscription - manually assigned partitions/offsets<br>
+[Manual](#manual) assigned partitions/offsets<br>
 [`Assign`](#assign) Create a new assignment from which data will be consumed<br>
 [`AssignOffsets`](#assignoffsets) Assignment of partitions to consume<br>
 [`AssignAdd`](#assignadd) Add new assignments to the current assignment<br>
 [`AssignDel`](#assigndel) Remove topic partition assignments from the current assignments<br>
-[`Assignment`](#assignment) Return the current assignment 
+[`Assignment`](#assignment) Return the current assignment<br>
 
-Subscription - common<br>
+[Common](#common)<br>
 [`consumetopic`](#consumetopic) Called for each message received<br>
 [`Unsub`](#unsub) Unsubscribe from a topic<br>
 [`MaxMsgsPerPoll`](#maxmsgsperpoll) Set the maximum number of messages per poll<br>
 [`Poll`](#poll) Manually poll the feed
 
-System information<br>
-[`Metadata`](#metadata) Broker Metadata<br>
-[`Version`](#version) Librdkafka version<br>
-[`VersionSym`](#versionsym) Human readable Librdkafka version<br>
-[`ThreadCount`](#threadcount) Number of threads being used by librdkafka
+## System information
 
-Topics<br>
-[`Topic`](#topic) Create a topic on which messages can be sent<br>
-[`TopicDel`](#topicdel) Delete a defined topic<br>
-[`TopicName`](#topicname) Topic Name
+### `Metadata`
 
-Callback modifications<br>
-[`errcbreg`](#errcbreg) Register an error callback associated with a specific client<br>
-[`throttlecbreg`](#throttlecbreg) Register a throttle callback associated with a specific client
+_Information about configuration of brokers and topics_
+
+```txt
+.kfk.Metadata id
+```
+
+Where `id` is a consumer or producer ID, returns a dictionary with information about the brokers and topics.
+
+```q
+q)show producer_meta:.kfk.Metadata producer
+orig_broker_id  | 0i
+orig_broker_name| `localhost:9092/0
+brokers         | ,`id`host`port!(0i;`localhost;9092i)
+topics          | (`topic`err`partitions!(`test3;`Success;,`id`err`leader`rep..
+q)producer_meta`topics
+topic              err     partitions                                        ..
+-----------------------------------------------------------------------------..
+test               Success ,`id`err`leader`replicas`isrs!(0i;`Success;0i;,0i;..
+__consumer_offsets Success (`id`err`leader`replicas`isrs!(0i;`Success;0i;,0i;..
+```
+
+### `ThreadCount`
+
+_The number of threads in use by librdkafka_
+
+```txt
+.kfk.ThreadCount[]
+```
+
+returns the number of threads currently in use by `librdkafka`.
+
+```q
+q).kfk.ThreadCount[]
+5i
+```
+
+### `Version`
+
+_Version of librdkafka (integer)_
+
+```txt
+.kfk.Version[]
+```
+
+Returns the `librdkafka` version (integer) used within the interface.
+
+```q
+q).kfk.Version
+16777471i
+```
+
+### `VersionSym`
+
+_Version of librdkafka (symbol)_
+
+```txt
+.kfk.VersionSym[]
+```
+
+Returns the `librdkafka` version (symbol) used within the interface.
+
+```q
+q).kfk.VersionSym[]
+`1.1.0
+```
+
+## Topics
+
+### `Topic`
+
+_Create a topic on which messages can be sent_
+
+```txt
+.kfk.Topic[id;topic;cfg]
+```
+
+Where
+
+-   `id` is a consumer or producer ID
+-   `topic` is a name to be assigned to the topic (symbol)
+-   `cfg` is a user-defined topic configuration (dictionary): default: `()!()`
+
+returns the topic ID (integer).
+
+```q
+q)consumer:.kfk.Consumer[kfk_cfg]
+q).kfk.Topic[consumer;`test;()!()]
+0i
+q).kfk.Topic[consumerl`test1;()!()]
+1i
+```
+
+### `TopicDel`
+
+_Delete a currently defined topic_
+
+```txt
+.kfk.TopicDel topic
+```
+
+Where `topic` is a topic ID, deletes the topic and returns a null.
+
+```q
+q).kfk.Topic[0i;`test;()!()]
+0i
+q).kfk.TopicDel[0i]
+q)/ topic now no longer available for deletion
+q).kfk.TopicDel[0i]
+'unknown topic
+```
+
+
+### `TopicName`
+
+_Returns the name of a topic_
+
+```txt
+.kfk.TopicName tpcid
+```
+
+Where `tpcid` is a topic ID, returns its name  as a symbol.
+
+```q
+q).kfk.Topic[0i;`test;()!()]
+0i
+q).kfk.Topic[0i;`test1;()!()]
+1i
+q).kfk.TopicName[0i]
+`test
+q).kfk.TopicName[1i]
+`test1
+```
+
+## Callback Modifications
+
+### `errcbreg`
+
+_Register an error callback associated with a specific client_
+
+```txt
+.kfk.errcbreg[clid;callback]
+```
+
+Where
+
+-   `clid` is a client ID (integer)
+-   `callback` is a ternary function
+
+sets `callback` to be triggered by errors associated with the client, 
+augments the dictionary `.kfk.errclient` mapping client ID to callback,
+and returns a null.
+
+The arguments of `callback` are:
+
+-   `cid`: ID of client for which this is called (integer)
+-   `err_int`: error status code in Kafka (integer)
+-   `reason`: error message (string)
+
+
+```q
+q)// Assignment prior to registration of new callback
+q)// this is the default behavior invoked
+q).kfk.errclient
+ |{[cid;err_int;reason]}
+q)// Attempt to create a consumer which will fail
+q).kfk.Consumer[`metadata.broker.list`group.id!`foobar`0]
+0i
+
+q)// Update the default behavior to show the output
+q).kfk.errclient[`]:{[cid;err_int;reason]show(cid;err_int;reason);}
+
+q)// Attempt to create another failing consumer
+q).kfk.Consumer[`metadata.broker.list`group.id!`foobar`0]
+1i
+q)1i
+-193i
+"foobar:9092/bootstrap: Failed to resolve 'foobar:9092': nodename nor servnam..
+1i
+-187i
+"1/1 brokers are down"
+
+q)// Start a new q session and register an error callback for cid 0
+q).kfk.errcbreg[0i;{[cid;err_int;reason] show err_int;}]
+q)// Attempt to create a consumer that will fail
+q).kfk.Consumer[`metadata.broker.list`group.id!`foobar`0]
+0i
+q)-193i
+-187i
+```
+
+### `throttlecbreg`
+
+_Register an throttle callback associated with a specific client_
+
+```txt
+.kfk.throttlecbreg[clid;callback]
+```
+
+Where
+
+-   `clid` is a client ID (integer)
+-   `callback` is a quaternary function
+
+sets `callback` to be triggered on throttling associated with the client, 
+augments the dictionary `.kfk.errclient` mapping client ID to callback,
+and returns a null.
+
+The arguments of `callback` are:
+
+-   `cid`: ID (integer) of client for which this is called 
+-   `bname`: broker name (string)
+-   `bid`: broker ID (integer)
+-   `throttle_time`: accepted throttle time in milliseconds (integer)
+
+```q
+q)// Assignment prior to registration of new callback 
+q)// this is the default behavior invoked
+q).kfk.throttleclient
+ |{[cid;bname;bid;throttle_time]}
+
+q)// Update the default behavior to show the output
+q).kfk.throttleclient[`]:{[cid;bname;bid;throttle_time]show(cid;bid);}
+
+q)// Add a throttle client associated specifically with client 0
+q).kfk.throttlecbreg[0i;{[cid;bname;bid;throttle_time]show(cid;throttle_time);}]
+
+q)// Display the updated throttle callback logic
+q).kfk.throttleclient
+ |{[cid;bname;bid;throttle_time]show(cid;bid);}
+0|{[cid;bname;bid;throttle_time]show(cid;throttle_time);}
+```
 
 ## Clients
 
@@ -425,7 +663,7 @@ q).kfk.OutQLen producer
 5i
 ```
 
-## Subscription functionality
+## Subscriptions
 
 
 !!! warning "Mixing Manual and Dynamic Assignments"
@@ -433,7 +671,7 @@ q).kfk.OutQLen producer
     It isn't possible to mix manual partition assignment (i.e. using assign) with dynamic partition assignment through topic subscription
 
 
-### Dynamic Assigned
+### Dynamic
 
 Used when subscribing to the topics we were interested in and let Kafka dynamically assign a fair share of the partitions for those topics based on the active consumers in the group.
 
@@ -549,7 +787,7 @@ topic partition offset metadata
 test2 -1        -1001  ""
 ```
 
-### Manually Assigned
+### Manual
 
 Permits the user to be in full control of consumption of messages from their choosen topic partition and offset.
 
@@ -812,238 +1050,4 @@ q).kfk.Poll[0i;100;100]
 10
 ```
 
-## System information
 
-### `Metadata`
-
-_Information about configuration of brokers and topics_
-
-```txt
-.kfk.Metadata id
-```
-
-Where `id` is a consumer or producer ID, returns a dictionary with information about the brokers and topics.
-
-```q
-q)show producer_meta:.kfk.Metadata producer
-orig_broker_id  | 0i
-orig_broker_name| `localhost:9092/0
-brokers         | ,`id`host`port!(0i;`localhost;9092i)
-topics          | (`topic`err`partitions!(`test3;`Success;,`id`err`leader`rep..
-q)producer_meta`topics
-topic              err     partitions                                        ..
------------------------------------------------------------------------------..
-test               Success ,`id`err`leader`replicas`isrs!(0i;`Success;0i;,0i;..
-__consumer_offsets Success (`id`err`leader`replicas`isrs!(0i;`Success;0i;,0i;..
-```
-
-### `ThreadCount`
-
-_The number of threads in use by librdkafka_
-
-```txt
-.kfk.ThreadCount[]
-```
-
-returns the number of threads currently in use by `librdkafka`.
-
-```q
-q).kfk.ThreadCount[]
-5i
-```
-
-### `Version`
-
-_Version of librdkafka (integer)_
-
-```txt
-.kfk.Version[]
-```
-
-Returns the `librdkafka` version (integer) used within the interface.
-
-```q
-q).kfk.Version
-16777471i
-```
-
-### `VersionSym`
-
-_Version of librdkafka (symbol)_
-
-```txt
-.kfk.VersionSym[]
-```
-
-Returns the `librdkafka` version (symbol) used within the interface.
-
-```q
-q).kfk.VersionSym[]
-`1.1.0
-```
-
-## Topics
-
-### `Topic`
-
-_Create a topic on which messages can be sent_
-
-```txt
-.kfk.Topic[id;topic;cfg]
-```
-
-Where
-
--   `id` is a consumer or producer ID
--   `topic` is a name to be assigned to the topic (symbol)
--   `cfg` is a user-defined topic configuration (dictionary): default: `()!()`
-
-returns the topic ID (integer).
-
-```q
-q)consumer:.kfk.Consumer[kfk_cfg]
-q).kfk.Topic[consumer;`test;()!()]
-0i
-q).kfk.Topic[consumerl`test1;()!()]
-1i
-```
-
-### `TopicDel`
-
-_Delete a currently defined topic_
-
-```txt
-.kfk.TopicDel topic
-```
-
-Where `topic` is a topic ID, deletes the topic and returns a null.
-
-```q
-q).kfk.Topic[0i;`test;()!()]
-0i
-q).kfk.TopicDel[0i]
-q)/ topic now no longer available for deletion
-q).kfk.TopicDel[0i]
-'unknown topic
-```
-
-
-### `TopicName`
-
-_Returns the name of a topic_
-
-```txt
-.kfk.TopicName tpcid
-```
-
-Where `tpcid` is a topic ID, returns its name  as a symbol.
-
-```q
-q).kfk.Topic[0i;`test;()!()]
-0i
-q).kfk.Topic[0i;`test1;()!()]
-1i
-q).kfk.TopicName[0i]
-`test
-q).kfk.TopicName[1i]
-`test1
-```
-
-## Callback Modifications
-
-### `errcbreg`
-
-_Register an error callback associated with a specific client_
-
-```txt
-.kfk.errcbreg[clid;callback]
-```
-
-Where
-
--   `clid` is a client ID (integer)
--   `callback` is a ternary function
-
-sets `callback` to be triggered by errors associated with the client, 
-augments the dictionary `.kfk.errclient` mapping client ID to callback,
-and returns a null.
-
-The arguments of `callback` are:
-
--   `cid`: ID of client for which this is called (integer)
--   `err_int`: error status code in Kafka (integer)
--   `reason`: error message (string)
-
-
-```q
-q)// Assignment prior to registration of new callback
-q)// this is the default behavior invoked
-q).kfk.errclient
- |{[cid;err_int;reason]}
-q)// Attempt to create a consumer which will fail
-q).kfk.Consumer[`metadata.broker.list`group.id!`foobar`0]
-0i
-
-q)// Update the default behavior to show the output
-q).kfk.errclient[`]:{[cid;err_int;reason]show(cid;err_int;reason);}
-
-q)// Attempt to create another failing consumer
-q).kfk.Consumer[`metadata.broker.list`group.id!`foobar`0]
-1i
-q)1i
--193i
-"foobar:9092/bootstrap: Failed to resolve 'foobar:9092': nodename nor servnam..
-1i
--187i
-"1/1 brokers are down"
-
-q)// Start a new q session and register an error callback for cid 0
-q).kfk.errcbreg[0i;{[cid;err_int;reason] show err_int;}]
-q)// Attempt to create a consumer that will fail
-q).kfk.Consumer[`metadata.broker.list`group.id!`foobar`0]
-0i
-q)-193i
--187i
-```
-
-### `throttlecbreg`
-
-_Register an throttle callback associated with a specific client_
-
-```txt
-.kfk.throttlecbreg[clid;callback]
-```
-
-Where
-
--   `clid` is a client ID (integer)
--   `callback` is a quaternary function
-
-sets `callback` to be triggered on throttling associated with the client, 
-augments the dictionary `.kfk.errclient` mapping client ID to callback,
-and returns a null.
-
-The arguments of `callback` are:
-
--   `cid`: ID (integer) of client for which this is called 
--   `bname`: broker name (string)
--   `bid`: broker ID (integer)
--   `throttle_time`: accepted throttle time in milliseconds (integer)
-
-```q
-q)// Assignment prior to registration of new callback 
-q)// this is the default behavior invoked
-q).kfk.throttleclient
- |{[cid;bname;bid;throttle_time]}
-
-q)// Update the default behavior to show the output
-q).kfk.throttleclient[`]:{[cid;bname;bid;throttle_time]show(cid;bid);}
-
-q)// Add a throttle client associated specifically with client 0
-q).kfk.throttlecbreg[0i;{[cid;bname;bid;throttle_time]show(cid;throttle_time);}]
-
-q)// Display the updated throttle callback logic
-q).kfk.throttleclient
- |{[cid;bname;bid;throttle_time]show(cid;bid);}
-0|{[cid;bname;bid;throttle_time]show(cid;throttle_time);}
-```
