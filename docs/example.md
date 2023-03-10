@@ -1,16 +1,10 @@
-# ![Apache Kafka](kafka.png) Using Kafka with kdb+
+# kdb+ Kafka Example
 
+Follow the [installation instructions](install.md) for set-up.
 
+To run examples on this page you will need a Kafka broker available.
 
-`kfk` is a thin wrapper for kdb+ around the 
- `librdkafka` C API (available on [MacOS/Linux](https://github.com/edenhill/librdkafka) or [Windows](https://www.nuget.org/packages/librdkafka.redist/1.0.0)) for [Apache Kafka](https://kafka.apache.org/).
-
-Follow the [installation instructions](../README.md#building-and-installation) for set-up.
-
-To run examples on this page you will need a Kafka broker available. It is easy to [set up a local instance for testing](../README.md#setting-up-test-kafka-instance).
-
-
-## API
+## API Introduction
 
 The library follows the `librdkafka` API closely where possible.
 As per its [introduction](https://github.com/edenhill/librdkafka/blob/master/INTRODUCTION.md):
@@ -20,7 +14,6 @@ As per its [introduction](https://github.com/edenhill/librdkafka/blob/master/INT
 
 Both clients and topics accept an optional configuration dictionary.
 `.kfk.Client` and `.kfk.Topic` return an int which acts as a Client or Topic ID (index into an internal array). Client IDs are used to create topics and Topic IDs are used to publish or subscribe to data on that topic. They can also be used to query metadata – state of subscription, pending queues, etc.
-
 
 ### Minimal producer example
 
@@ -39,7 +32,6 @@ show "Published 1 message";
 
 :point_right: 
 [KxSystems/kafka/examples/test_producer.q](https://github.com/KxSystems/kafka/blob/master/examples/test_producer.q)
-
 
 ### Minimal consumer example
 
@@ -60,19 +52,9 @@ data:();
 :point_right: 
 [KxSystems/kafka/examples/test_consumer.q](https://github.com/KxSystems/kafka/blob/master/examples/test_consumer.q) for a slightly more elaborate version 
 
-
-## Configuration
-
-The library supports and uses all configuration options exposed by `librdkafka`, except callback functions, which are identical to Kafka options by design of `librdkafka`. 
-
-:point_right: 
-[edenhill/librdkafka/CONFIGURATION.md](https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md) for a list of options
-
-
-## Testing
+## Test Environment
 
 One can use either existing Kafka broker or start a test Kafka broker as described below.
-
 
 ### Setting up a test Kafka instance
 
@@ -94,7 +76,6 @@ Start Kafka broker.
 ```bash
 bin/kafka-server-start.sh config/server.properties
 ```
-
 
 ### Running examples
 
@@ -129,10 +110,3 @@ mtype topic client partition offset msgtime                       data       ..
 
 The messages will now flow from producer to consumer, the publishing rate can be adjusted via `\t x` in the producer process.
 
-
-## Performance and tuning
-
-:point_right: 
-[edenhill/librdkafka/wiki/How-to-decrease-message-latency](https://github.com/edenhill/librdkafka/wiki/How-to-decrease-message-latency)
-
-There are numerous configuration options and it is best to find settings that suit your needs and setup. See [Configuration](#configuration) above. 
