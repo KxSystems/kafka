@@ -33,7 +33,8 @@ Clients<br>
 Offsets<br>
 [`CommitOffsets`](#commitoffsets) Commit offsets on broker for provided partition list<br>
 [`PositionOffsets`](#positionoffsets) Current offsets for topics and partitions<br>
-[`CommittedOffsets`](#committedoffsets) Retrieve committed offsets for topics and partitions
+[`CommittedOffsets`](#committedoffsets) Retrieve committed offsets for topics and partitions<br>
+[`queryWatermark`](#querywatermark) Query broker for low (oldest/beginning) and high (newest/end) offsets for partition.
 
 Publishing <br>
 [`BatchPub`](#batchpub) Publish a batch of data to a defined topic<br>
@@ -537,6 +538,24 @@ topic partition offset metadata
 test  0         26481  ""
 test  1         -1001  ""
 ```
+
+
+### `queryWatermark`
+
+_Query broker for low (oldest/beginning) and high (newest/end) offsets for partition_
+
+```txt
+.kfk.queryWatermark[client;`test1;0;1000]
+```
+
+Where
+
+-   `clid` is a consumer ID (integer)
+-   `topic` is a topic (symbol)
+-   `partition` partition (long)
+-   `timeout` timeout in ms (long)
+
+returns 2 element long for low/high watermark
 
 ## Publishing functionality
 
