@@ -223,8 +223,6 @@ EXP K2(kfkClient){
     return krr((S) b);
   if(!(rk= rd_kafka_new(type, conf, b, sizeof(b))))
     return krr(b);
-  /* Redirect logs to main queue */
-  rd_kafka_set_log_queue(rk,NULL);
   /* Redirect rd_kafka_poll() to consumer_poll() */
   if(type == RD_KAFKA_CONSUMER){
     rd_kafka_poll_set_consumer(rk);
@@ -232,6 +230,8 @@ EXP K2(kfkClient){
   }
   else
     rd_kafka_queue_io_event_enable(rd_kafka_queue_get_main(rk),spair[1],"X",1);
+  /* Redirect logs to main queue */
+  rd_kafka_set_log_queue(rk,NULL);
   js(&clients, (S) rk);
   return ki(clients->n - 1);
 }
