@@ -7,7 +7,7 @@ else
         KFK_ROOT="${KAFKA_ROOT}"
 endif
 KFK_INCLUDE    = ${KFK_ROOT}/include
-W_OPTS         = -Wall -Wno-strict-aliasing -Wno-parentheses -Wextra -Werror -Wsign-compare
+W_OPTS         = -Wall -Wno-strict-aliasing -Wno-parentheses -Wextra -Werror -Wsign-compare -Wno-ignored-qualifiers
 OPTS           = -DKXVER=3 -shared -fPIC $(W_OPTS)
 LD_COMMON      = -lz -lpthread -lssl -g -O2
 LDOPTS_DYNAMIC = -L${KFK_ROOT}/lib/ -lrdkafka
