@@ -72,7 +72,14 @@ _Information about configuration of brokers and topics_
 .kfk.Metadata id
 ```
 
-Where `id` is a consumer or producer ID, returns a dictionary with information about the brokers and topics.
+Where `id` is a consumer or producer ID, returns a dictionary populated with the following info:
+
+-   `orig_broker_id` (int): Broker originating this metadata
+-   `orig_broker_name` (symbol): Name of originating broker
+-   `brokers` (list of dictionaries): Info on current brokers
+-   `topics` (list of dictionaries): Info on current topics
+
+e.g.
 
 ```q
 q)show producer_meta:.kfk.Metadata producer
