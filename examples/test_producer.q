@@ -1,4 +1,5 @@
 \l ../kfk.q
+
 kfk_cfg:(!) . flip(
   (`metadata.broker.list;`localhost:9092);
   (`statistics.interval.ms;`10000);
@@ -12,12 +13,19 @@ topic2:.kfk.Topic[producer;`test2;()!()]
 .z.ts:{n+:1;topic:$[n mod 2;topic1;topic2];
        .kfk.Pub[topic;.kfk.PARTITION_UA;string x;""]}
 
+printmeta:{
+  -1 "==== MetaData provided by the following broker =======";
+  -1 "name:",string x`orig_broker_name;
+  -1 "id:",string x`orig_broker_id;
+  -1 "==== Brokers =========================================";
+  show each x`brokers;
+  -1 "==== Topics ==========================================";
+  $[count x`topics;show each x`topics;-1 "[None]"];
+  -1 "";}
 
+printmeta .kfk.Metadata[producer];
 
--1 "Publishing on topics:",string[.kfk.TopicName topic1],", ",string[.kfk.TopicName topic2];
+-1 "Publishing single msg on topics: ",string[.kfk.TopicName topic1],", ",string[.kfk.TopicName topic2];
 .kfk.Pub[;.kfk.PARTITION_UA;string .z.p;""]each(topic1;topic2);
--1 "Published one message for each topic";
-producer_meta:.kfk.Metadata[producer];
-show producer_meta`topics;
--1 "Set timer with \\t 500 to publish a message each second to each topic.";
+-1 "Set timer with \\t 500 to publish a message every 1/2 second to each topic in turn";
 
