@@ -1,10 +1,10 @@
 OSFLAG :=
 MS :=
 
-ifeq ($(KAFKA_ROOT)),)
-        KFK_ROOT="${HOME}"
+ifeq ($(KAFKA_ROOT),)
+	KFK_ROOT=${HOME}
 else
-        KFK_ROOT="${KAFKA_ROOT}"
+	KFK_ROOT=${KAFKA_ROOT}
 endif
 KFK_INCLUDE    = ${KFK_ROOT}/include
 W_OPTS         = -Wall -Wno-strict-aliasing -Wno-parentheses -Wextra -Werror -Wsign-compare -Wno-ignored-qualifiers
