@@ -26,6 +26,10 @@ topcb2:{[msg]
   msg[`rcvtime]:.z.t;
   data2,::enlist msg;}
 
+printver:{
+  -1 "==== librdkafka version ==============================";
+  -1 "." sv 2 cut -8$"0123456789abcdef" 16 vs .kfk.Version;}
+
 printmeta:{
   -1 "==== MetaData provided by the following broker =======";
   -1 "name:",string x`orig_broker_name;
@@ -36,6 +40,7 @@ printmeta:{
   $[count x`topics;show each x`topics;-1 "[None]"];
   -1 "";}
 
+printver[];
 printmeta .kfk.Metadata[client];
 
 // Subscribe to topic1 and topic2 with different callbacks from a single client

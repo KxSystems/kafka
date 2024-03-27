@@ -238,9 +238,7 @@ EXP K2(kfkClient){
 
 EXP K1(kfkdeleteClient){
   rd_kafka_t *rk;
-  if(!checkType("i", x))
-    return KNL;
-  if(!(rk= clientIndex(x)))
+  if(!checkType("i", x)||!(rk= clientIndex(x)))
     return KNL;
   rd_kafka_consumer_close(rk);
   rd_kafka_destroy(rk);
@@ -250,18 +248,14 @@ EXP K1(kfkdeleteClient){
 
 EXP K1(kfkClientName){
   rd_kafka_t *rk;
-  if(!checkType("i", x))
-    return KNL;
-  if(!(rk= clientIndex(x)))
+  if(!checkType("i", x)||!(rk= clientIndex(x)))
     return KNL;
   return ks((S) rd_kafka_name(rk));
 }
 
 EXP K1(kfkmemberID){
   rd_kafka_t *rk;
-  if(!checkType("i", x))
-    return KNL;
-  if(!(rk= clientIndex(x)))
+  if(!checkType("i", x)||!(rk= clientIndex(x)))
     return KNL;
   return ks(rd_kafka_memberid(rk));
 }
@@ -271,9 +265,7 @@ EXP K3(kfkgenerateTopic){
   rd_kafka_topic_t *rkt;
   rd_kafka_t *rk;
   rd_kafka_topic_conf_t *rd_topic_conf;
-  if(!checkType("is!",x ,y ,z))
-    return KNL;
-  if(!(rk= clientIndex(x)))
+  if(!checkType("is!",x ,y ,z)||!(rk= clientIndex(x)))
     return KNL;
   rd_topic_conf= rd_kafka_topic_conf_new();
   loadTopConf(rd_topic_conf, z);
@@ -284,9 +276,7 @@ EXP K3(kfkgenerateTopic){
 
 EXP K1(kfkTopicDel){
   rd_kafka_topic_t *rkt;
-  if(!checkType("i", x))
-    return KNL;
-  if(!(rkt= topicIndex(x)))
+  if(!checkType("i", x)||!(rkt= topicIndex(x)))
     return KNL;
   rd_kafka_topic_destroy(rkt);
   kS(topics)[x->i]= (S) 0;
@@ -295,9 +285,7 @@ EXP K1(kfkTopicDel){
 
 EXP K1(kfkTopicName){
   rd_kafka_topic_t *rkt;
-  if(!checkType("i", x))
-    return KNL;
-  if(!(rkt= topicIndex(x)))
+  if(!checkType("i", x)||!(rkt= topicIndex(x)))
     return KNL;
   return ks((S) rd_kafka_topic_name(rkt));
 }
@@ -351,9 +339,7 @@ EXP K1(kfkMetadata){
   const struct rd_kafka_metadata *meta;
   K r;
   rd_kafka_t *rk;
-  if(!checkType("i", x))
-    return KNL;
-  if(!(rk= clientIndex(x)))
+  if(!checkType("i", x)||!(rk= clientIndex(x)))
     return KNL;
   rd_kafka_resp_err_t err= rd_kafka_metadata(rk, 1, NULL, &meta, 5000);
   if(KFK_OK != err)
@@ -392,9 +378,7 @@ static V plistoffsetdict(S topic,K partitions,rd_kafka_topic_partition_list_t *t
 EXP K2(kfkFlush){
   rd_kafka_t *rk;
   I qy=0;
-  if(!checkType("i[hij]",x,y))
-    return KNL;
-  if(!(rk= clientIndex(x)))
+  if(!checkType("i[hij]",x,y)||!(rk= clientIndex(x)))
     return KNL;
   SW(y->t){
     CS(-KH,qy=y->h);
@@ -459,9 +443,7 @@ EXP K kfkPubWithHeaders(K UNUSED(clientIdx),K UNUSED(topicIdx),K UNUSED(partitio
 // producer api
 EXP K4(kfkPub){
   rd_kafka_topic_t *rkt;
-  if(!checkType("ii[CG][CG]", x, y, z, r))
-    return KNL;
-  if(!(rkt= topicIndex(x)))
+  if(!checkType("ii[CG][CG]", x, y, z, r)||!(rkt= topicIndex(x)))
     return KNL;
   if(rd_kafka_produce(rkt, y->i, RD_KAFKA_MSG_F_COPY, kG(z), z->n, kG(r), r->n, NULL))
     return krr((S) rd_kafka_err2str(rd_kafka_last_error()));
@@ -541,9 +523,7 @@ EXP K3(kfkSub){
   rd_kafka_resp_err_t err;
   rd_kafka_t *rk;rd_kafka_topic_partition_list_t *t_partition;
   J i;
-  if(!checkType("i[sS][I!]", x, y, z))
-    return KNL;
-  if(!(rk= clientIndex(x)))
+  if(!checkType("i[sS][I!]", x, y, z)||!(rk= clientIndex(x)))
     return KNL;
   if(KFK_OK != (err = rd_kafka_subscription(rk, &t_partition)))
     return krr((S)rd_kafka_err2str(err));
@@ -563,9 +543,7 @@ EXP K3(kfkSub){
 EXP K1(kfkUnsub){
   rd_kafka_t *rk;
   rd_kafka_resp_err_t err;
-  if(!checkType("i", x))
-    return KNL;
-  if(!(rk= clientIndex(x)))
+  if(!checkType("i", x)||!(rk= clientIndex(x)))
     return KNL;
   err= rd_kafka_unsubscribe(rk);
   if(KFK_OK != err)
@@ -578,9 +556,7 @@ EXP K4(kfkqueryWatermark){
   rd_kafka_resp_err_t err;
   int64_t low,high;
   K w;
-  if(!checkType("isjj",x,y,z,r))
-    return KNL;
-  if(!(rk= clientIndex(x)))
+  if(!checkType("isjj",x,y,z,r)||!(rk= clientIndex(x)))
     return KNL;
   err= rd_kafka_query_watermark_offsets(rk,y->s,z->j,&low,&high,r->j);
   if(KFK_OK != err)
@@ -697,9 +673,7 @@ EXP K1(kfkSubscription){
   rd_kafka_topic_partition_list_t *t;
   rd_kafka_t *rk;
   rd_kafka_resp_err_t err;
-  if (!checkType("i", x))
-    return KNL;
-  if (!(rk = clientIndex(x)))
+  if (!checkType("i", x)||!(rk = clientIndex(x)))
     return KNL;
   if (KFK_OK != (err= rd_kafka_subscription(rk, &t)))
     return krr((S)rd_kafka_err2str(err));
@@ -785,9 +759,7 @@ EXP K1(kfkMaxMsgsPerPoll){
 EXP K3(kfkPoll){
   J n= 0;
   rd_kafka_t *rk;
-  if(!checkType("ijj", x, y, z))
-    return KNL;
-  if(!(rk= clientIndex(x)))
+  if(!checkType("ijj", x, y, z)||!(rk= clientIndex(x)))
     return KNL;
   n=pollClient(rk,y->j,z->j);
   return kj(n);
@@ -831,9 +803,7 @@ EXP K2(kfkAssignTopPar){
   rd_kafka_t *rk;
   rd_kafka_topic_partition_list_t *t_partition;
   rd_kafka_resp_err_t err;
-  if(!checkType("i", x))
-    return KNL;
-  if(!(rk= clientIndex(x)))
+  if(!checkType("i", x)||!(rk= clientIndex(x)))
     return KNL;
   t_partition = rd_kafka_topic_partition_list_new(y->n);
   // topic-partition assignment
@@ -861,9 +831,7 @@ EXP K1(kfkAssignment){
   rd_kafka_topic_partition_list_t *t;
   rd_kafka_t *rk;
   rd_kafka_resp_err_t err;
-  if(!checkType("i", x))
-    return KNL;
-  if(!(rk= clientIndex(x)))
+  if(!checkType("i", x)||!(rk= clientIndex(x)))
     return KNL;
   if(KFK_OK != (err=rd_kafka_assignment(rk, &t)))
     return krr((S)rd_kafka_err2str(err));
@@ -882,9 +850,7 @@ EXP K2(kfkAssignmentAdd){
   rd_kafka_t *rk;
   rd_kafka_topic_partition_list_t *t;
   rd_kafka_resp_err_t err;
-  if(!checkType("i", x))
-    return KNL;
-  if(!(rk= clientIndex(x)))
+  if(!checkType("i", x)||!(rk= clientIndex(x)))
     return KNL;
   // retrieve the current assignment
   if(KFK_OK != (err=rd_kafka_assignment(rk, &t)))
@@ -906,9 +872,7 @@ EXP K2(kfkAssignmentDel){
   rd_kafka_t *rk;
   rd_kafka_topic_partition_list_t *t;
   rd_kafka_resp_err_t err;
-  if(!checkType("i", x))
-    return KNL;
-  if(!(rk= clientIndex(x)))
+  if(!checkType("i", x)||!(rk= clientIndex(x)))
     return KNL;
   // retrieve the current assignment
   if(KFK_OK != (err=rd_kafka_assignment(rk, &t)))
@@ -933,9 +897,7 @@ EXP K1(kfkOutQLen){
 EXP K2(kfkSetLoggerLevel){
   rd_kafka_t *rk;
   I qy=0;
-  if(!checkType("i[hij]",x,y))
-    return KNL;
-  if(!(rk=clientIndex(x)))
+  if(!checkType("i[hij]",x,y)||!(rk=clientIndex(x)))
     return KNL;
   SW(y->t){
     CS(-KH,qy=y->h);
