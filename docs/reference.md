@@ -114,14 +114,16 @@ q).kfk.ThreadCount[]
 _Version of librdkafka (integer)_
 
 ```txt
-.kfk.Version[]
+.kfk.Version
 ```
 
-Returns the `librdkafka` version (integer) used within the interface.
+Returns the `librdkafka` version (integer) used within the interface. Can be parsed as follows (according to the [kafka version format](https://docs.confluent.io/legacy/platform/5.5.15/clients/librdkafka/rdkafka_8h.html#aa2e242fb8620a32b650a40575bc7f98e))
 
-```q
+```
 q).kfk.Version
-16777471i
+33751295i
+q)"." sv 2 cut -8$"0123456789abcdef" 16 vs .kfk.Version
+" 2.03.00.ff"
 ```
 
 ### `VersionSym`
