@@ -481,7 +481,7 @@ Where
 -   `topic` is the topic (symbol)
 -   `part_offsets` is a list of partitions (int, short, or long), or a dictionary of partitions (int) and offsets (long)
 
-returns a table containing the current offset and partition for the topic of interest.
+returns a table containing the current offset and partition for the topic of interest. The offset field of each requested partition will be set to the offset of the last consumed message + 1, or -1001 if there was no previous message.
 
 ```q
 q)client:.kfk.Consumer kfk_cfg
