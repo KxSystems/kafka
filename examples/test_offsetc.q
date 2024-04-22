@@ -30,15 +30,15 @@ strt:.z.t
 // The following example has been augmented to display and commit offsets for each of
 // the available topics every 10 seconds
 \t 5000
-.z.ts:{n+:1;topic:$[n mod 2;topic1;topic2];
+.z.ts:{n+:1;commit_topic:$[n mod 2;topic1;topic2];
   if[(5000<"i"$.z.t-strt)&1<count data;
-    -1 "\nPublishing information from topic :",string topic;
-    show seen:exec last offset by partition from data where topic=topic;
+    -1 "\nPublishing information from topic :",string commit_topic;
+    show seen:exec 1+last offset by partition from data where topic=commit_topic;
     show "Position:";
-    show .kfk.PositionOffsets[client;topic;seen];
+    show .kfk.PositionOffsets[client;commit_topic;seen];
     show "Before commited:";
-    show .kfk.CommittedOffsets[client;topic;seen];
-    .kfk.CommitOffsets[client;topic;seen;0b];
+    show .kfk.CommittedOffsets[client;commit_topic;seen];
+    .kfk.CommitOffsets[client;commit_topic;seen;0b];
     show "After commited:";
-    show .kfk.CommittedOffsets[client;topic;seen];]
+    show .kfk.CommittedOffsets[client;commit_topic;seen];]
   }
