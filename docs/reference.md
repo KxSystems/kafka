@@ -1,66 +1,75 @@
 # ![Apache Kafka](kafka.png) Kafka function reference 
 
-
 The kdb+/Kafka interface is a thin wrapper for kdb+ around the [`librdkafka`](https://github.com/edenhill/librdkafka) C API for [Apache Kafka](https://kafka.apache.org/). 
-
-
 
 ## **`.kfk.`** Kafka interface 
 
-System information<br>
-[`Metadata`](#metadata) Broker Metadata<br>
-[`Version`](#version) Librdkafka version<br>
-[`VersionSym`](#versionsym) Human readable Librdkafka version<br>
-[`ThreadCount`](#threadcount) Number of threads being used by librdkafka
+System information
 
-Topics<br>
-[`Topic`](#topic) Create a topic on which messages can be sent<br>
-[`TopicDel`](#topicdel) Delete a defined topic<br>
-[`TopicName`](#topicname) Topic Name
+- [`Metadata`](#metadata) Broker Metadata
+- [`Version`](#version) Librdkafka version
+- [`VersionSym`](#versionsym) Human readable Librdkafka version
+- [`ThreadCount`](#threadcount) Number of threads being used by librdkafka
 
-Callback modifications<br>
-[`errcbreg`](#errcbreg) Register an error callback associated with a specific client<br>
-[`throttlecbreg`](#throttlecbreg) Register a throttle callback associated with a specific client
+Topics
 
-Clients<br>
-[`ClientDel`](#clientdel) Close consumer and destroy Kafka handle to client<br>
-[`ClientName`](#clientname) Kafka handle name<br>
-[`ClientMemberId`](#clientmemberid) Client's broker assigned member ID<br>
-[`Consumer`](#consumer) Create a consumer according to defined configuration<br>
-[`Producer`](#producer) Create a producer according to defined configuration<br>
-[`SetLoggerLevel`](#setloggerlevel) Set the maximum logging level for a client
+- [`Topic`](#topic) Create a topic on which messages can be sent
+- [`TopicDel`](#topicdel) Delete a defined topic
+- [`TopicName`](#topicname) Topic Name
 
-Offsets<br>
-[`CommitOffsets`](#commitoffsets) Commit offsets on broker for provided partition list<br>
-[`PositionOffsets`](#positionoffsets) Current offsets for topics and partitions<br>
-[`CommittedOffsets`](#committedoffsets) Retrieve committed offsets for topics and partitions<br>
-[`queryWatermark`](#querywatermark) Query broker for low (oldest/beginning) and high (newest/end) offsets for partition.
+Callback modifications
 
-Publishing <br>
-[`BatchPub`](#batchpub) Publish a batch of data to a defined topic<br>
-[`Pub`](#pub) Publish a message to a defined topic<br>
-[`PubWithHeaders`](#pubwithheaders) Publish a message to a defined topic with a header <br>
-[`OutQLen`](#outqlen) Current out queue length
+- [`errcbreg`](#errcbreg) Register an error callback associated with a specific client
+- [`throttlecbreg`](#throttlecbreg) Register a throttle callback associated with a specific client
+- [`statcb`](#statcb) Statistics callback
+- [`logcb`](#logcb) Logger callback
+- [`drcb`](#drcb) Delivery report callback (publisher only)
+- [`offsetcb`](#offsetcb) Offset commit callback for use with consumer groups (subscriber only)
+- [`consumetopic`](#consumetopic) Called for each message received (subscriber only)
 
-[Subscriptions](#subscriptions)<br>
+Clients (Consumer or Producer)
 
-[Dynamic](#dynamic) assigned subscriptions<br>
-[`Sub`](#sub) Subscribe to a defined topic<br>
-[`Subscribe`](#subscribe) Subscribe from a consumer to a topic with a specified callback<br>
-[`Subscription`](#subscription) Most recent topic subscription<br>
+- [`ClientDel`](#clientdel) Close consumer and destroy Kafka handle to client
+- [`ClientName`](#clientname) Kafka handle name
+- [`ClientMemberId`](#clientmemberid) Client's broker assigned member ID
+- [`Consumer`](#consumer) Create a consumer according to defined configuration
+- [`Producer`](#producer) Create a producer according to defined configuration
+- [`SetLoggerLevel`](#setloggerlevel) Set the maximum logging level for a client
 
-[Manual](#manual) assigned partitions/offsets<br>
-[`Assign`](#assign) Create a new assignment from which data will be consumed<br>
-[`AssignOffsets`](#assignoffsets) Assignment of partitions to consume<br>
-[`AssignAdd`](#assignadd) Add new assignments to the current assignment<br>
-[`AssignDel`](#assigndel) Remove topic partition assignments from the current assignments<br>
-[`Assignment`](#assignment) Return the current assignment<br>
+Offsets
 
-[Common](#common)<br>
-[`consumetopic`](#consumetopic) Called for each message received<br>
-[`Unsub`](#unsub) Unsubscribe from a topic<br>
-[`MaxMsgsPerPoll`](#maxmsgsperpoll) Set the maximum number of messages per poll<br>
-[`Poll`](#poll) Manually poll the feed
+- [`CommitOffsets`](#commitoffsets) Commit offsets on broker for provided partition list
+- [`PositionOffsets`](#positionoffsets) Current offsets for topics and partitions
+- [`CommittedOffsets`](#committedoffsets) Retrieve committed offsets for topics and partitions
+- [`queryWatermark`](#querywatermark) Query broker for low (oldest/beginning) and high (newest/end) offsets for partition.
+
+Publishing
+
+- [`BatchPub`](#batchpub) Publish a batch of data to a defined topic
+- [`Pub`](#pub) Publish a message to a defined topic
+- [`PubWithHeaders`](#pubwithheaders) Publish a message to a defined topic with a header 
+- [`OutQLen`](#outqlen) Current out queue length 
+- [`Flush`](#flush) Wait until all outstanding produce requests, et.al, are completed
+
+[Subscriptions](#subscriptions)
+
+- [Dynamic](#dynamic) assigned subscriptions
+  - [`Sub`](#sub) Subscribe to a defined topic
+  - [`Subscribe`](#subscribe) Subscribe from a consumer to a topic with a specified callback
+  - [`Subscription`](#subscription) Most recent topic subscription
+- [Manual](#manual) assigned partitions/offsets
+  - [`Assign`](#assign) Create a new assignment from which data will be consumed
+  - [`AssignOffsets`](#assignoffsets) Assignment of partitions to consume
+  - [`AssignAdd`](#assignadd) Add new assignments to the current assignment
+  - [`AssignDel`](#assigndel) Remove topic partition assignments from the current assignments
+  - [`Assignment`](#assignment) Return the current assignment
+- General Subscription Functions
+  - [`Unsub`](#unsub) Unsubscribe from a topic
+
+[Polling](#polling)
+
+- [`MaxMsgsPerPoll`](#maxmsgsperpoll) Set the maximum number of messages per poll
+- [`Poll`](#poll) Manually poll the feed
 
 ## System information
 
@@ -68,7 +77,7 @@ Publishing <br>
 
 _Information about configuration of brokers and topics_
 
-```txt
+```q
 .kfk.Metadata id
 ```
 
@@ -79,7 +88,9 @@ Where `id` is a consumer or producer ID, returns a dictionary populated with the
 -   `brokers` (list of dictionaries): Info on current brokers
 -   `topics` (list of dictionaries): Info on current topics
 
-e.g.
+When using a consumer, the metadata response information may trigger a re-join if any subscribed topics have changed partition count or existence state.
+
+Example:
 
 ```q
 q)show producer_meta:.kfk.Metadata producer
@@ -98,7 +109,7 @@ __consumer_offsets Success (`id`err`leader`replicas`isrs!(0i;`Success;0i;,0i;..
 
 _The number of threads in use by librdkafka_
 
-```txt
+```q
 .kfk.ThreadCount[]
 ```
 
@@ -113,7 +124,7 @@ q).kfk.ThreadCount[]
 
 _Version of librdkafka (integer)_
 
-```txt
+```q
 .kfk.Version
 ```
 
@@ -130,7 +141,7 @@ q)"." sv 2 cut -8$"0123456789abcdef" 16 vs .kfk.Version
 
 _Version of librdkafka (symbol)_
 
-```txt
+```q
 .kfk.VersionSym[]
 ```
 
@@ -147,7 +158,7 @@ q).kfk.VersionSym[]
 
 _Create a topic on which messages can be sent_
 
-```txt
+```q
 .kfk.Topic[id;topic;cfg]
 ```
 
@@ -171,7 +182,7 @@ q).kfk.Topic[consumerl`test1;()!()]
 
 _Delete a currently defined topic_
 
-```txt
+```q
 .kfk.TopicDel topic
 ```
 
@@ -191,7 +202,7 @@ q).kfk.TopicDel[0i]
 
 _Returns the name of a topic_
 
-```txt
+```q
 .kfk.TopicName tpcid
 ```
 
@@ -214,7 +225,7 @@ q).kfk.TopicName[1i]
 
 _Register an error callback associated with a specific client_
 
-```txt
+```q
 .kfk.errcbreg[clid;callback]
 ```
 
@@ -223,9 +234,7 @@ Where
 -   `clid` is a client ID (integer)
 -   `callback` is a ternary function
 
-sets `callback` to be triggered by errors associated with the client, 
-augments the dictionary `.kfk.errclient` mapping client ID to callback,
-and returns a null.
+sets `callback` to be triggered by errors associated with the client, augments the dictionary `.kfk.errclient` mapping client ID to callback, and returns a null.
 
 The arguments of `callback` are:
 
@@ -269,7 +278,7 @@ q)-193i
 
 _Register an throttle callback associated with a specific client_
 
-```txt
+```q
 .kfk.throttlecbreg[clid;callback]
 ```
 
@@ -307,6 +316,118 @@ q).kfk.throttleclient
 0|{[cid;bname;bid;throttle_time]show(cid;throttle_time);}
 ```
 
+### statcb
+
+_Statistics callback_
+
+```q
+.kfk.statcb[j]
+```
+
+Where j is a json string (see [`.j.k`](https://code.kx.com/q/ref/dotj/#jk-deserialize) for parsing json in q). For more information on the format of json, see [https://github.com/confluentinc/librdkafka/wiki/Statistics](https://github.com/confluentinc/librdkafka/wiki/Statistics).
+
+Override this variable to provide a new definition that suits your needs. Default is to use `.kfk.stats` to record the last 100 stats.
+
+The statistics callback is triggered every `statistics.interval.ms`.
+
+### logcb
+
+_Logger callback (logs from librdkafka)_
+
+```q
+.kfk.logcb[level;fac;buf]
+```
+
+Where
+
+- `level` is log level (integer) as discussed in [`SetLoggerLevel`](#setloggerlevel)
+- `fac` in the msg type (string)
+- `buf` is the msg detail (string)
+
+should be set to return nil.
+
+Override this variable to provide a new definition that suits your needs. Default is to print to stdout.
+
+### drcb
+
+_Delivery report callback_
+
+```q
+.kfk.drcb[cid;msg]
+```
+
+Where
+- `cid` is the ID (integer) of client for which this is called 
+- `msg` is the message details (as dictionary)
+
+should be set to return nil. For publishing msgs only (i.e. client that is a producer).
+
+Override this variable to provide a new definition that suits your needs. There is no default action.
+
+The callback is called when a message is succesfully produced or if librdkafka encountered a permanent failure. Delivery errors occur when the retry count is exceeded, when the `message.timeout.ms` timeout is exceeded or there is a permanent error like RD_KAFKA_RESP_ERR_UNKNOWN_TOPIC_OR_PART.
+
+### offsetcb
+
+_Offset commit callback for use with consumer groups_
+
+```q
+.kfk.offsetcb[cid;err;offsets]
+```
+
+Where
+
+- `cid` is the ID (integer) of client for which this is called 
+- `err` error details (string) e.g. "Success" if ok
+- `offsets` is a list of dictionaries, each containing details for each commit with the following details
+  - `topic` (symbol)
+  - `partition` (int)
+  - `offset` (long)
+  - `metadata` (string)
+
+should be set to return nil. For subscribers only.
+
+Override this variable to provide a new definition that suits your needs. There is no default action.
+
+The results of automatic or manual offset commits will be scheduled for this callback. 
+If no partitions had valid offsets to commit this callback will be called with err == RD_KAFKA_RESP_ERR__NO_OFFSET which is not to be considered an error.
+
+The offsets list contains per-partition information:
+
+- offset: committed offset (attempted)
+- err: commit error
+
+#### `consumetopic`
+
+_Main unary function called on consumption of data for both default and per topic callback. Called for each message received._
+
+```q
+.kfk.consumetopic msg
+```
+Where `msg` is the content of a message received (as dictionary) from any calls to the subscription on the topic.
+
+Override this variable to provide a new definition that suits your needs. There is no default action.
+
+e.g.
+setting the callback to print each msg
+
+```q
+.kfk.consumetopic[`]:{[msg]show msg;};
+```
+
+will print as message as follows:
+
+```q
+mtype    | `
+topic    | `test1
+client   | 0i
+partition| 0i
+offset   | 1803
+msgtime  | 2024.04.23D16:17:52.403000000
+data     | 0x323032342e30342e32334431363a31373a35322e333938373134303030
+key      | `byte$()
+headers  | (`symbol$())!`symbol$()
+```
+
 ## Clients
 
 The following functions relate to the creation of consumers and producers and their manipulation/interrogation.
@@ -315,12 +436,14 @@ The following functions relate to the creation of consumers and producers and th
 
 _Close a consumer and destroy the associated Kafka handle to client_
 
-```txt
+```q
 .kfk.ClientDel clid
 ```
 
 Where  `clid` is the client to be deleted (integer), returns null on successful deletion. 
 If client unknown, signals `'unknown client`.
+
+This call will block until the consumer has revoked its assignment, committed offsets to broker, and left the consumer group (if applicable). The maximum blocking time is roughly limited to session.timeout.ms.
 
 ```q
 /Client exists
@@ -336,9 +459,9 @@ q).kfk.ClientDel 0i
 
 ### `ClientMemberId`
 
-_Client's broker-assigned member ID_
+_Returns this client's broker-assigned group member id_
 
-```txt
+```q
 .kfk.ClientMemberId clid
 ```
 
@@ -360,7 +483,7 @@ q).kfk.ClientMemberId 1i
 
 _Kafka handle name_
 
-```txt
+```q
 .kfk.ClientName clid
 ```
 
@@ -378,7 +501,7 @@ q).kfk.ClientName 1i
 
 _Create a consumer according to user-defined configuration_
 
-```txt
+```q
 .kfk.Consumer cfg
 ```
 
@@ -402,7 +525,7 @@ q).kfk.Consumer kfk_cfg
 
 _Create a producer according to user-defined configuration_
 
-```txt
+```q
 .kfk.Producer cfg
 ```
 
@@ -423,18 +546,28 @@ q).kfk.Producer kfk_cfg
 
 ### `SetLoggerLevel`
 
-_Set the maximum logging level for a client_
+_Specifies the maximum logging level emitted by internal kafka logging and debugging_
 
-```txt
+```q
 .kfk.SetLoggerLevel[clid;level]
 ```
 
 Where
 
 -   `clid` is the client ID (int)
--   `level` is the syslog severity level (int/long/short)
+-   `level` is the syslog severity level (int/long/short). Log levels are
+  - 0 (emergency)
+  - 1 (alert)
+  - 2 (critical)
+  - 3 (error)
+  - 4 (warning)
+  - 5 (notice)
+  - 6 (info)
+  - 7 (debug)
 
 returns a null on successful application of function.
+
+If the "debug" configuration property is set the log level is automatically adjusted to 7 (debug).
 
 ```q
 q)show client
@@ -446,15 +579,15 @@ q).kfk.SetLoggerLevel[client;7]
 
 The following functions relate to use of offsets within the API to ensure records are read correctly from the broker.
 
-!!! note "Multiple topic offset assignment"
-
-    As of v1.4.0 offset functionality can now handle calls associated with multiple topics without overwriting previous definitions. To apply the functionality this must be called for each topic.
+> :note: **Multiple topic offset assignment**
+>
+> As of v1.4.0 offset functionality can now handle calls associated with multiple topics without overwriting previous definitions. To apply the functionality this must be called for each topic.
 
 ### `CommitOffsets`
 
 _Commit offsets on broker for provided partitions and offsets_
 
-```txt
+```q
 .kfk.CommitOffsets[clid;topic;part_offsets;block_commit]
 ```
 
@@ -471,7 +604,7 @@ returns a null on successful commit of offsets.
 
 _Current offsets for particular topics and partitions_
 
-```txt
+```q
 .kfk.PositionOffsets[clid;topic;part_offsets]
 ```
 
@@ -481,7 +614,9 @@ Where
 -   `topic` is the topic (symbol)
 -   `part_offsets` is a list of partitions (int, short, or long), or a dictionary of partitions (int) and offsets (long)
 
-returns a table containing the current offset and partition for the topic of interest. The offset field of each requested partition will be set to the offset of the last consumed message + 1, or -1001 if there was no previous message.
+returns a table containing the current offset and partition for the topic of interest. The offset field of each requested partition will be set to the offset of the last consumed message + 1, or .kfk.OFFSET.INVALID (-1001) if there was no previous message.
+
+In this context the last consumed message is the offset consumed by the current librdkafka instance and, in case of rebalancing, not necessarily the last message fetched from the partition.
 
 ```q
 q)client:.kfk.Consumer kfk_cfg
@@ -512,7 +647,7 @@ test  2         -1001  ""
 
 _Retrieve the last-committed offset for a topic on a particular partition_
 
-```txt
+```q
 .kfk.CommittedOffsets[clid;topic;part_offsets]
 ```
 
@@ -523,6 +658,10 @@ Where
 -   `part_offsets` is a list of partitions (int, short, or long), or a dictionary of partitions (int) and offsets (long)
 
 returns a table containing the offset for a particular partition for a topic.
+
+Committed offsets will be returned according to the isolation.level configuration property, if set to read_committed (default) then only stable offsets for fully committed transactions will be returned, while read_uncommitted may return offsets for not yet committed transactions.
+
+Offset will be set to .kfk.OFFSET.INVALID (-1001) if there was no stored offset for that partition.
 
 ```q
 q)client:.kfk.Consumer[kfk_cfg];
@@ -553,7 +692,7 @@ test  1         -1001  ""
 
 _Query broker for low (oldest/beginning) and high (newest/end) offsets for partition_
 
-```txt
+```q
 .kfk.queryWatermark[client;`test1;0;1000]
 ```
 
@@ -572,14 +711,14 @@ returns 2 element long for low/high watermark
 
 _Publish a batch of messages to a defined topic_
 
-```txt
+```q
 .kfk.BatchPub[tpcid;partid;data;keys]
 ```
 
 Where
 
 -   `tpcid` is the topic (previously created) to be published on (integer)
--   `partid` is the target partition/s (integer atom or list)
+-   `partid` is the target partition/s (integer atom or list). If partition is .kfk.PARTITION_UA the configured partitioner will be run for each message (slower), otherwise the messages will be enqueued to the specified partition directly (faster).
 -   `data` is a mixed list payload containing either bytes or strings
 -   `keys` is an empty string for auto key on all messages or a key per message as a mixed list of bytes or strings
 
@@ -609,18 +748,24 @@ q).kfk.BatchPub[;0 1i;batchMsg;batchKeys]each(topic1;topic2)
 
 _Publish a message to a defined topic_
 
-```txt
+```q
 .kfk.Pub[tpcid;partid;data;keys]
 ```
 
 Where
 
 -   `tpcid` is the topic to be published on (integer)
--   `partid` is the target partition (integer)
+-   `partid` is the target partition (integer). Can be .kfk.PARTITION_UA (unassigned) for automatic partitioning using the topic's partitioner function, or a fixed partition (0..N)
 -   `data` is the payload to be published (string)
 -   `keys` is the message key (string) to be passed with the message to the partition 
 
 returns a null on successful publication.
+
+This is an asynchronous non-blocking API. See [`drcb`](#drcb) (delivery report callback) on how to setup a callback to be called once the delivery status (success or failure) is known.
+
+Since producing is asynchronous, you should call [`Flush`](#flush) before you destroy the producer. Otherwise, any outstanding messages will be silently discarded.
+
+When temporary errors occur, librdkafka automatically retries to produce the messages. Retries are triggered after `retry.backoff.ms` and when the leader broker for the given partition is available. Otherwise, librdkafka falls back to polling the topic metadata to monitor when a new leader is elected (see the `topic.metadata.refresh.fast.interval.ms` and `topic.metadata.refresh.interval.ms` configurations) and then performs a retry. A delivery error will occur if the message could not be produced within message.timeout.ms.
 
 ```q
 q)producer:.kfk.Producer kfk_cfg
@@ -634,7 +779,7 @@ q).kfk.Pub[test_topic;-1i;string .z.p;"test_key"]
 
 _Publish a message to a defined topic, with an associated header_
 
-```txt
+```q
 .kfk.PubWithHeader[clid;tpcid;partid;data;keys;hdrs]
 ```
 
@@ -648,6 +793,8 @@ Where
 -   `hdrs` is a dictionary mapping a header name (symbol) to a byte array or string
 
 returns a null on successful publication; errors if version conditions not met.
+
+See [`Pub`](#pub) for further details of how messages are published.
 
 ```q
 // Create an appropriate producer
@@ -674,29 +821,59 @@ hdrs:`header1`header2!("test1";"test2")
 
 > **Support for functionality**
 >     
-> This functionality is only available for versions of `librdkafka` ≥ 0.11.4; use of a version less than this does not allow this 
+> This functionality is only available for versions of `librdkafka` ≥ 0.11.4
 
 ### `OutQLen`
 
 _Current number of messages that are queued for publishing_
 
-```txt
+```q
 .kfk.OutQLen prid
 ```
 
 Where `prid` is the integer value of the producer which we wish to check the number of queued messages, returns as an int the number of messages in the queue.
+
+The out queue length is the sum of
+
+- number of messages waiting to be sent to, or acknowledged by, the broker
+- number of delivery reports waiting to be served
+- number of callbacks waiting to be served
+- number of events waiting to be served by background queue
+
+An application should wait for the return value of this function to reach zero before terminating to make sure outstanding messages, requests (such as offset commits), callbacks and events are fully processed. See [`Flush`](#flush).
 
 ```q
 q).kfk.OutQLen producer
 5i
 ```
 
+### `Flush`
+
+_Wait until all outstanding produce requests, et.al, are completed_
+
+```q
+.kfk.Flush[prid;timeout]
+```
+
+Where 
+
+-   `prid` is the integer value of the producer (integer)
+-   `timeout` is the timeout in milliseconds (short/integer/long)
+
+returns a null if all events completed.
+
+This should typically be done prior to destroying a producer instance to make sure all queued and in-flight produce requests are completed before terminating. This function may trigger callbacks.
+
+The `linger.ms` time will be ignored for the duration of the call, queued messages will be sent to the broker as soon as possible.
+
+Relates to []`OutQLen`](#outqlen).
+
 ## Subscriptions
 
 
-!!! warning "Mixing Manual and Dynamic Assignments"
-
-    It isn't possible to mix manual partition assignment (i.e. using assign) with dynamic partition assignment through topic subscription
+> :warning: **Mixing Manual and Dynamic Assignments**
+>
+> It isn't possible to mix manual partition assignment (i.e. using assign) with dynamic partition assignment through topic subscription
 
 
 ### Dynamic
@@ -707,22 +884,22 @@ Membership in a consumer group is maintained dynamically: if a process fails, th
 
 The subscribe method is not incremental: you must include the full list of topics that you want to consume from.
 
-!!! note "Rebalance"
-
-    A rebalance operation occurs if any one of the following events are triggered:
-
-    -   Number of partitions change for any of the subscribed topics
-    -   A subscribed topic is created or deleted
-    -   An existing member of the consumer group is shutdown or fails
-    -   A new member is added to the consumer group
-
-     Group rebalances will cause partition offsets to be reset (e.g. application of auto.offset.reset setting) 
+> :note: **Rebalance**
+>
+> A rebalance operation occurs if any one of the following events are triggered:
+>
+> -   Number of partitions change for any of the subscribed topics
+> -   A subscribed topic is created or deleted
+> -   An existing member of the consumer group is shutdown or fails
+> -   A new member is added to the consumer group
+>
+> Group rebalances will cause partition offsets to be reset (e.g. application of auto.offset.reset setting) 
 
 #### `Sub`
 
 _High level subscription from a consumer process to a topic_
 
-```txt
+```q
 .kfk.Sub[clid;topic;partid]
 ```
 
@@ -732,7 +909,18 @@ Where
 -   `topic` is the topic/s being subscribed to (symbol atom – or list, for v1.6+)
 -   `partid` is the target partition (enlisted integer) (UNUSED)
 
-returns a null on successful execution.
+returns a null on successful execution. Received msgs are then consumed via a call to the registered [`consumetopic`](#consumetopic)) function.
+
+The full topic list is retrieved every `topic.metadata.refresh.interval.ms` to pick up new or delete topics that match the subscription. If there is any change to the matched topics the consumer will immediately rejoin the group with the updated set of subscribed topics.
+
+This is an asynchronous method which returns immediately: background threads will (re)join the group, wait for group rebalance, assign() the assigned partitions, and then start fetching messages. This cycle may take up to `session.timeout.ms` * 2 or more to complete.
+
+The msg callback (defaults to [`consumetopic`](#consumetopic)) can return a consumer error UNKNOWN_TOPIC_OR_PART for non-existent topics, and TOPIC_AUTHORIZATION_FAILED for unauthorized topics e.g.
+```q
+mtype                 topic client partition offset msgtime                       data                                                                        key      headers                 rcvtime                      
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+UNKNOWN_TOPIC_OR_PART test1 0      0         -1001                                "Subscribed topic not available: test1: Broker: Unknown topic or partition" `byte$() (`symbol$())!`symbol$() 2024.04.23D14:04:03.584293000
+``` 
 
 **Subscribing in advance**
 Subscriptions can be made to topics that do not currently exist.
@@ -756,7 +944,7 @@ q).kfk.Sub[client;(topic1;topic2);enlist .kfk.PARTITION_UA]
 
 _Subscribe from a consumer to a topic with a specified callback_
 
-```txt
+```q
 .kfk.Subscribe[clid;topic;partid;callback]
 ```
 
@@ -768,7 +956,7 @@ Where
 -   `callback` is a callback function defined related to the subscribed topic. This function should take as input a single parameter, 
     the content of a message received from any calls to the subscription on the topic.
 
-returns a null on successful execution and augments `.kfk.consumetopic` with a new callback function for the consumer.
+returns a null on successful execution. As per [`Sub`](#sub) but augments `.kfk.consumetopic` with a new callback function for the consumer.
 
 > :warning: **Partition ID**
 > 
@@ -799,7 +987,7 @@ test| {[msg]show msg;}
 
 _Most-recent subscription to a topic_
 
-```txt
+```q
 .kfk.Subscription clid
 ```
 
@@ -829,7 +1017,7 @@ Manual partition assignment does not use group coordination, so consumer failure
 
 _Create a new assignment from which to consume data; remove previous assignments._
 
-```txt
+```q
 .kfk.Assign[clid;tpc_part]
 ```
 
@@ -838,8 +1026,7 @@ Where
 -   `clid` is an integer denoting the client ID which the assignment is to applied
 -   `tpc_part` is a dictionary mapping topic names (symbol) to partitions (long), or from v.1.6 onwards a Symbol!Dictionary mapping of topic to partitions/offset (dictionary mapping of integer partition to long offset location)
 
-
-returns a null on successful execution.
+returns a null on successful execution. Received msgs are then consumed via a call to the registered [`consumetopic`](#consumetopic)) function.
 
 ```q
 // subscribe to test (partition 0) and test1 (partition 1)
@@ -854,7 +1041,7 @@ returns a null on successful execution.
 
 _Assign partitions to be consumed._
 
-```txt
+```q
 .kfk.AssignOffsets[clid;topic;part_offsets]
 ```
 
@@ -864,7 +1051,7 @@ Where
 -   `topic` is the topic (symbol)
 -   `part_offsets` is a dictionary of partitions and where to start consuming them
 
-returns a null on successful execution.
+returns a null on successful execution. Received msgs are then consumed via a call to the registered [`consumetopic`](#consumetopic)) function.
 
 If previous assignments for a different topic/partition have already been communicated to the Kafka infrastructure, these assignments will be reapplied.
 
@@ -880,14 +1067,14 @@ q).kfk.AssignOffsets[client;TOPIC;(1#0i)!1#.kfk.OFFSET.END]
 
 > **Last-committed offset**
 > 
-> In the above examples an offset of -1001 is a special value. 
+> In the above examples an offset of .kfk.OFFSET.INVALID (-1001) is a special value. 
 > It indicates the offset could not be determined and the consumer will read from the last-committed offset once one becomes available.
 
 #### `AssignAdd`
 
 _Add additional topic-partition pairs to the current assignment._
 
-```txt
+```q
 .kfk.Assign[clid;tpc_part]
 ```
 
@@ -936,7 +1123,7 @@ q).kfk.AssignAdd[cid;`test`test1!1 1]
 
 _Delete a set of topic-partition pairs from the current assignment._
 
-```txt
+```q
 .kfk.AssignDel[clid;tpc_part]
 ```
 
@@ -985,7 +1172,7 @@ q).kfk.AssignDel[cid;`test`test1!1 1]
 
 _Retrieve the current assignment for a specified client_
 
-```txt
+```q
 .kfk.Assignment clid
 ```
 
@@ -1008,22 +1195,13 @@ test  0         -1001  ""
 test1 1         -1001  ""
 ```
 
-### Common
-
-#### `consumetopic`
-
-_Main unary function called on consumption of data for both default and per topic callback. Called for each message received._
-
-```txt
-.kfk.consumetopic msg
-```
-Where `msg` is the content of a message received from any calls to the subscription on the topic.
+### General Subscription Functions
 
 #### `Unsub`
 
 _Unsubscribe from all topics associated with Client regardless of whether created via manual or dynamic assigned subscriptions_
 
-```txt
+```q
 .kfk.Unsub clid
 ```
 
@@ -1035,11 +1213,13 @@ q).kfk.Unsub[1i]
 'unknown client
 ```
 
+### Polling
+
 #### `MaxMsgsPerPoll`
 
 _Set the maximum number of messages per poll_
 
-```txt
+```q
 .kfk.MaxMsgsPerPoll max_messages
 ```
 
@@ -1059,7 +1239,7 @@ q).kfk.MaxMsgsPerPoll 100
 
 _Manually poll the messages from the message feed_
 
-```txt
+```q
 .kfk.Poll[cid;timeout;max_messages]
 ```
 
