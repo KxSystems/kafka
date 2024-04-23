@@ -462,7 +462,7 @@ Where
 
 -   `clid` is a consumer client ID (int)
 -   `topic` is a topic (symbol)
--   `part_offsets` is a dictionary of partitions(ints) and last received offsets (longs)
+-   `part_offsets` is a dictionary of partitions(ints) and last received offsets (longs). The offset should be the offset where consumption will resume i.e. the last processed offset + 1
 -   `block_commit` is whether commit will block until offset commit is complete (boolean)
 
 returns a null on successful commit of offsets.
