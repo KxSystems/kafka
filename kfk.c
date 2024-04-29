@@ -163,11 +163,12 @@ static I createStr(K x,char* b,I bLen){
 
 // client api
 // x - config dict sym->sym
-static K loadConf(rd_kafka_conf_t *conf, K x){
-  char b[512],o[1024],*v;
+static int loadConf(rd_kafka_conf_t *conf, K x){
+  static char b[512];
+  char o[1024],*v;
   J i;
   if(xy->t!=KS&&xy->t)
-    return krr("bad cfg values type");
+    return krr("bad cfg values type"),0;
   for(i= 0; i < xx->n; ++i){
     if(xy->t==KS)
       v=kS(xy)[i];
@@ -175,26 +176,26 @@ static K loadConf(rd_kafka_conf_t *conf, K x){
       if(kK(xy)[i]->t==-KS)
         v=kK(xy)[i]->s;
       else if(kK(xy)[i]->t==KS){
-        if(!createStr(kK(xy)[i],o,sizeof(o)))return krr("cfg value too long");
+        if(!createStr(kK(xy)[i],o,sizeof(o)))return krr("cfg value too long"),0;
         v=o;
       }
       else
-        return krr("bad cfg value type");
+        return krr("bad cfg value type"),0;
     else
-      return krr("bad cfg value type");
+      return krr("bad cfg value type"),0;
     if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, kS(xx)[i], v, b, sizeof(b)))
-      return krr((S) b);
+      return krr((S) b),0;
   }
-  return knk(0);
+  return 1;
 }
-static K loadTopConf(rd_kafka_topic_conf_t *conf, K x){
-  char b[512];
+static int loadTopConf(rd_kafka_topic_conf_t *conf, K x){
+  static char b[512];
   J i;
   for(i= 0; i < xx->n; ++i){
     if(RD_KAFKA_CONF_OK !=rd_kafka_topic_conf_set(conf, kS(xx)[i], kS(xy)[i], b, sizeof(b)))
-      return krr((S) b);
+      return krr((S) b),0;
   }
-  return knk(0);
+  return 1;
 }
 
 // x:client type p - producer, c - consumer
@@ -203,14 +204,17 @@ EXP K2(kfkClient){
   rd_kafka_type_t type;
   rd_kafka_t *rk;
   rd_kafka_conf_t *conf;
-  char b[512];
+  static char b[512];
   if(!checkType("c!", x, y))
     return KNL;
   if('p' != xg && 'c' != xg)
     return krr("type: unknown client type");
   type= 'p' == xg ? RD_KAFKA_PRODUCER : RD_KAFKA_CONSUMER;
-  if(!loadConf(conf= rd_kafka_conf_new(), y))
+  conf=rd_kafka_conf_new();
+  if(!loadConf(conf, y)){
+    rd_kafka_conf_destroy(conf);
     return KNL;
+  }
   rd_kafka_conf_set_stats_cb(conf, statscb);
   rd_kafka_conf_set_log_cb(conf, logcb);
   if('p' == xg)
@@ -219,8 +223,10 @@ EXP K2(kfkClient){
     rd_kafka_conf_set_offset_commit_cb(conf,offsetcb);
   rd_kafka_conf_set_throttle_cb(conf,throttlecb);
   rd_kafka_conf_set_error_cb(conf,errorcb);
-  if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, "log.queue", "true", b, sizeof(b)))
+  if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, "log.queue", "true", b, sizeof(b))){
+    rd_kafka_conf_destroy(conf);
     return krr((S) b);
+  }
   if(!(rk= rd_kafka_new(type, conf, b, sizeof(b))))
     return krr(b);
   /* Redirect rd_kafka_poll() to consumer_poll() */
@@ -268,7 +274,10 @@ EXP K3(kfkgenerateTopic){
   if(!checkType("is!",x ,y ,z)||!(rk= clientIndex(x)))
     return KNL;
   rd_topic_conf= rd_kafka_topic_conf_new();
-  loadTopConf(rd_topic_conf, z);
+  if(!loadTopConf(rd_topic_conf, z)){
+    rd_kafka_topic_conf_destroy(rd_topic_conf);
+    return KNL;
+  }
   rkt= rd_kafka_topic_new(rk, y->s, rd_topic_conf);
   js(&topics, (S) rkt);
   return ki(topics->n - 1);

@@ -178,6 +178,9 @@ q).kfk.Topic[consumerl`test1;()!()]
 1i
 ```
 
+:point_right: 
+[edenhill/librdkafka/CONFIGURATION.md](https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md) for a list of cfg options. Note: column indicating whether only used by a [consumer](#consumer) or [producer](#producer) rather than a topic.
+
 ### `TopicDel`
 
 _Delete a currently defined topic_
@@ -519,7 +522,7 @@ q).kfk.Consumer kfk_cfg
 ```
 
 :point_right: 
-[edenhill/librdkafka/CONFIGURATION.md](https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md) for a list of cfg options
+[edenhill/librdkafka/CONFIGURATION.md](https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md) for a list of cfg options (note: column indicating whether consumer/producer/both).
 
 ### `Producer`
 
@@ -542,7 +545,7 @@ q).kfk.Producer kfk_cfg
 ```
 
 :point_right: 
-[edenhill/librdkafka/CONFIGURATION.md](https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md) for a list of cfg options
+[edenhill/librdkafka/CONFIGURATION.md](https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md) for a list of cfg options (note: column indicating whether consumer/producer/both).
 
 ### `SetLoggerLevel`
 
