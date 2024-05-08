@@ -161,39 +161,43 @@ static I createStr(K x,char* b,I bLen){
   return str-b+1;
 }
 
-// client api
-// x - config dict sym->sym
-static int loadConf(rd_kafka_conf_t *conf, K x){
-  static char b[512];
-  char o[1024],*v;
-  J i;
-  if(xy->t!=KS&&xy->t)
-    return krr("bad cfg values type"),0;
-  for(i= 0; i < xx->n; ++i){
-    if(xy->t==KS)
-      v=kS(xy)[i];
-    else if(!xy->t)
-      if(kK(xy)[i]->t==-KS)
-        v=kK(xy)[i]->s;
-      else if(kK(xy)[i]->t==KS){
-        if(!createStr(kK(xy)[i],o,sizeof(o)))return krr("cfg value too long"),0;
-        v=o;
-      }
-      else
-        return krr("bad cfg value type"),0;
-    else
-      return krr("bad cfg value type"),0;
-    if(RD_KAFKA_CONF_OK !=rd_kafka_conf_set(conf, kS(xx)[i], v, b, sizeof(b)))
-      return krr((S) b),0;
+static char* getConf(K x,I i,S buf,I bufLen){
+  if(xt==KS)
+    return kS(x)[i];
+  else if(!xt){
+    x=kK(x)[i];
+    if(xt==KC && xn<bufLen){
+      buf[xn]=0;
+      return memcpy(buf,xG,xn);
+    }else if(xt==-KC){
+      buf[0]=xg;
+      buf[1]=0;
+      return buf;
+    }else if(xt==-KS){
+      return x->s;
+    }else if(xt==KS){
+      if(!createStr(x,buf,bufLen))return 0;
+      return buf;
+    }
   }
-  return 1;
+  return 0;
 }
-static int loadTopConf(rd_kafka_topic_conf_t *conf, K x){
-  static char b[512];
-  J i;
+
+static int loadConf(void*conf, K x,I topic){
+  static char err[128];
+  char nbuff[128],vbuff[512];
+  char *name,*val;
+  J i;I r;
   for(i= 0; i < xx->n; ++i){
-    if(RD_KAFKA_CONF_OK !=rd_kafka_topic_conf_set(conf, kS(xx)[i], kS(xy)[i], b, sizeof(b)))
-      return krr((S) b),0;
+    name=getConf(xx,i,nbuff,sizeof(nbuff));
+    val=getConf(xy,i,vbuff,sizeof(vbuff));
+    if(!name||!val)return krr("bad cfg value type"),0;
+    if(topic)
+      r=rd_kafka_topic_conf_set((rd_kafka_topic_conf_t*)conf, name, val, err, sizeof(err));
+    else
+      r=rd_kafka_conf_set((rd_kafka_conf_t*)conf, name, val, err, sizeof(err));
+    if(RD_KAFKA_CONF_OK!=r)
+      return krr((S) err),0;
   }
   return 1;
 }
@@ -211,7 +215,7 @@ EXP K2(kfkClient){
     return krr("type: unknown client type");
   type= 'p' == xg ? RD_KAFKA_PRODUCER : RD_KAFKA_CONSUMER;
   conf=rd_kafka_conf_new();
-  if(!loadConf(conf, y)){
+  if(!loadConf(conf, y, 0)){
     rd_kafka_conf_destroy(conf);
     return KNL;
   }
@@ -274,7 +278,7 @@ EXP K3(kfkgenerateTopic){
   if(!checkType("is!",x ,y ,z)||!(rk= clientIndex(x)))
     return KNL;
   rd_topic_conf= rd_kafka_topic_conf_new();
-  if(!loadTopConf(rd_topic_conf, z)){
+  if(!loadConf(rd_topic_conf, z, 1)){
     rd_kafka_topic_conf_destroy(rd_topic_conf);
     return KNL;
   }
