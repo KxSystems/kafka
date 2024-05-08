@@ -166,7 +166,7 @@ Where
 
 -   `id` is a consumer or producer ID
 -   `topic` is a name to be assigned to the topic (symbol)
--   `cfg` is a user-defined topic configuration (dictionary): default: `()!()`
+-   `cfg` is a user-defined topic configuration (dictionary) where both keys and values must be of symbol type: default: `()!()`
 
 returns the topic ID (integer).
 
@@ -508,7 +508,7 @@ _Create a consumer according to user-defined configuration_
 .kfk.Consumer cfg
 ```
 
-Where `cfg` is a dictionary user-defined configuration, returns the ID of the consumer as an integer.
+Where `cfg` is a dictionary user-defined configuration where the keys must be of symbol type and the values must be of symbol or symbol list type. Returns the ID of the consumer as an integer.
 
 ```q
 q)kfk_cfg
@@ -532,7 +532,7 @@ _Create a producer according to user-defined configuration_
 .kfk.Producer cfg
 ```
 
-Where `cfg` is a user-defined dictionary configuration, returns the ID of the producer as an integer.
+Where `cfg` is a user-defined dictionary configuration where the keys must be of symbol type and the values must be of symbol or symbol list type. Returns the ID of the producer as an integer.
 
 ```q
 q)kfk_cfg
@@ -559,14 +559,14 @@ Where
 
 -   `clid` is the client ID (int)
 -   `level` is the syslog severity level (int/long/short). Log levels are
-  - 0 (emergency)
-  - 1 (alert)
-  - 2 (critical)
-  - 3 (error)
-  - 4 (warning)
-  - 5 (notice)
-  - 6 (info)
-  - 7 (debug)
+    - 0 (emergency)
+    - 1 (alert)
+    - 2 (critical)
+    - 3 (error)
+    - 4 (warning)
+    - 5 (notice)
+    - 6 (info)
+    - 7 (debug)
 
 returns a null on successful application of function.
 
