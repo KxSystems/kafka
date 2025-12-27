@@ -501,7 +501,7 @@ EXP K4(kfkBatchPub){
     defaultPartition = y->i; /* partition passed for all msgs */
   
   rd_kafka_message_t *rkmessages;
-  rkmessages = calloc(sizeof(*rkmessages), msgcnt);
+  rkmessages = calloc(msgcnt,sizeof(*rkmessages));
   K key = r;
   for (i = 0 ; i < msgcnt ; i++)
   {
