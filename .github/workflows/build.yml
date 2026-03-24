@@ -1,0 +1,42 @@
+name: linux-kafka-build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    container:
+      image: rockylinux:9
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Install dev tools
+        run: yum install -y gcc make
+
+      - name: Install librdkafka
+        run: |
+          dnf install -y dnf-plugins-core &&
+          rpm --import https://packages.confluent.io/clients/rpm/archive.key &&
+          printf '%s\n' \
+                 '[Confluent-Clients]' \
+                 'name=Confluent Clients repository' \
+                 'baseurl=https://packages.confluent.io/clients/rpm/centos/$releasever/$basearch' \
+                 'enabled=1' \
+                 'gpgcheck=1' \
+                 'gpgkey=https://packages.confluent.io/clients/rpm/archive.key' \
+                 | tee /etc/yum.repos.d/confluent-clients.repo >/dev/null &&
+          dnf clean all && 
+          dnf makecache &&
+          dnf install -y librdkafka-devel
+
+      - name: Build
+        run: make all
