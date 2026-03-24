@@ -1,6 +1,6 @@
 # ![Kafka](docs/kafka.png) `kfk` – Kafka for kdb+
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/kxsystems/kafka)](https://github.com/kxsystems/kafka/releases) [![Travis (.org) branch](https://img.shields.io/travis/kxsystems/kafka/master)](https://travis-ci.org/kxsystems/kafka/branches)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/kxsystems/kafka)](https://github.com/kxsystems/kafka/releases) [![linux-kafka-build](https://github.com/KxSystems/kafka/actions/workflows/build.yml/badge.svg)](https://github.com/KxSystems/kafka/actions/workflows/build.yml)
 
 
 
