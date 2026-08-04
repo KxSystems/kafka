@@ -1,93 +1,16 @@
-\d .kfk
-LIBPATH:`:libkfk 2:
-funcs:(
-	  // .kfk.init[]:i
-	(`kfkInit;1);
-	  // .kfk.Client[client_type:c;conf:S!S]:i
-	(`kfkClient;2);
-	  // .kfk.deleteClient[client_id:i]:_
-	(`kfkdeleteClient;1);
-	  // .kfk.ClientName[client_id:i]:s
-	(`kfkClientName;1);
-	  // .kfk.memberId[client_id:i]:s
-	(`kfkmemberID;1);
-	  // .kfk.generateTopic[client_id:i;topicname:s;conf:S!S]:i
-	(`kfkgenerateTopic;3);
-	  // .kfk.TopicDel[topic_id:i]:_
-	(`kfkTopicDel;1);
-	  // .kfk.TopicName[topic_id:i]:s
-	(`kfkTopicName;1);
-	  // .kfk.Metadata[client_id:i]:S!()
-	(`kfkMetadata;1);
-	  // .kfk.Pub[topic_id:i;partid:i;data;key]:_
-	(`kfkPub;4);
-	  // .kfk.PubWithHeaders[client_id:i;topic_id:i;partid:i;data;key;headers]:_
-	(`kfkPubWithHeaders;6);
-	  // .kfk.BatchPub[topic_id:i;partid:i;data;key]:_
-	(`kfkBatchPub;4);
-	  // .kfk.OutQLen[client_id:i]:i
-	(`kfkOutQLen;1);
-	  // .kfk.Sub[client_id:i;topicname:s;partition_list|partition_offsets:I!J]:()
-	(`kfkSub;3);
-	  // .kfk.Unsub[client_id:i]:()
-	(`kfkUnsub;1);
-	  // .kfk.Subscription[client_id:i]
-	(`kfkSubscription;1);
-	  // .kfk.MaxMsgsPerPoll[max_messages]
-	(`kfkMaxMsgsPerPoll;1);
-	  // .kfk.Poll[client_id:i;timeout;max_messages]
-	(`kfkPoll;3);
-	  // .kfk.Version[]:i
-	(`kfkVersion;1);
-	  // .kfk.Flush[producer_id:i;timeout_ms:i]:()
-	(`kfkFlush;2);
-	  // .kfk.ExportErr[]:T
-	(`kfkExportErr;1);
-	  // .kfk.CommitOffsets[client_id;topic:s;partition_offsets:I!J;async:b]:()
-	(`kfkCommitOffsets;4);
-	  // .kfk.PositionOffsets[client_id:i;topic:s;partition_offsets:I!J]:partition_offsets
-	(`kfkPositionOffsets;3);
-	  // .kfk.CommittedOffsets[client_id:i;topic:s;partition_offsets:I!J]:partition_offsets
-	(`kfkCommittedOffsets;3);
-	  // .kfk.QueryWatermark[client_id:i:topic:s;partition:j;timeout:j]:_
-    (`kfkqueryWatermark;4);
-      // .kfk.AssignOffsets[client_id:i;topic:s;partition_offsets:I!J]:()
-	(`kfkassignOffsets;3);
-          // .kfk.Threadcount[]:i
-        (`kfkThreadCount;1);
-          // .kfk.VersionSym[]:s
-        (`kfkVersionSym;1);
-          // .kfk.SetLoggerLevel[client_id:i;int_level:i]:()
-        (`kfkSetLoggerLevel;2);
-          // .kfk.Assignment[client_id:i]:T
-        (`kfkAssignment;1);
-          // .kfk.AssignTopPar[client_id:i;topic_partition:S!J]:()
-        (`kfkAssignTopPar;2);
-          // .kfk.AssignmentAdd[client_id:i;topic_partition:S!J]:()
-        (`kfkAssignmentAdd;2);
-          // .kfk.AssignmentDel[client_id:i;topic_partition:S!J]:()
-        (`kfkAssignmentDel;2);
-        // .kfk.OffsetsForTimes[client_id:i;topic:s;partition_offsets:I!J;timeout_ms]:partition_offsets
-        (`kfkoffsetForTime;4)
-	);
-
-// binding functions from dictionary funcs using rule
-// kfk<Name> -> .kfk.<Name>
-.kfk,:(`$3_'string funcs[;0])!LIBPATH@/:funcs
-
-Init[];
+libFuncs:use`.clib;
 
 // Current version of librdkafka
-Version:Version[];
+Version:libFuncs.Version[];
 
 // Table with all errors return by kafka with codes and description
-Errors:ExportErr[];
+Errors:libFuncs.ExportErr[];
 
 // projection function for handling int/long lists of partitions for offset functions
 osetp:{[cf;x;y;z]cf[x;y;$[99h=type z;z;("i"$z,())!count[z]#0]]}
 // Allow Offset functionality to take topics as a list in z argument
-CommittedOffsets:osetp[CommittedOffsets;;]
-PositionOffsets :osetp[PositionOffsets;;]
+CommittedOffsets:osetp[libFuncs.CommittedOffsets;;]
+PositionOffsets :osetp[libFuncs.PositionOffsets;;]
 
 // Unassigned partition.
 // The unassigned partition is used by the producer API for messages
@@ -102,42 +25,45 @@ OFFSET.INVALID:	 -1001  /**< Invalid offset */
 
 // Mapping between client and the topics associated with these clients
 ClientTopicMap:(`int$())!()
+GetClientTopicMap: {ClientTopicMap}
 // Mapping between client and the type of handle created i.e. producer/consumer
 ClientTypeMap :(`int$())!`symbol$()
+GetClientTypeMap: {ClientTypeMap}
 
 // Producer client code
 PRODUCER:"p"
 Producer:{
-  client:Client[x;y];
-  .kfk.ClientTopicMap,:enlist[client]!enlist ();
-  .kfk.ClientTypeMap ,:enlist[client]!enlist[`Producer];
+  client:libFuncs.Client[x;y];
+  ClientTopicMap,:enlist[client]!enlist ();
+  ClientTypeMap ,:enlist[client]!enlist[`Producer];
   client}[PRODUCER]
 
 // Consumer client code
 CONSUMER:"c"
 Consumer:{
   if[not `group.id in key y;'"Consumers are required to define a `group.id within the config"];
-  client:Client[x;y];
-  .kfk.ClientTopicMap,:enlist[client]!enlist ();
-  .kfk.ClientTypeMap ,:enlist[client]!enlist[`Consumer];
+  client:libFuncs.Client[x;y];
+  ClientTopicMap,:enlist[client]!enlist ();
+  ClientTypeMap ,:enlist[client]!enlist[`Consumer];
   client}[CONSUMER]
 
 // Addition of topics and mapping
 Topic:{[cid;tname;conf]
-  topic:generateTopic[cid;tname;conf];
-  .kfk.ClientTopicMap[cid],:topic;
+  topic:libFuncs.generateTopic[cid;tname;conf];
+  ClientTopicMap[cid],:topic;
   topic
   }
 
 ClientDel:{[cid]
-  @[TopicDel;;()]each ClientTopicMap[cid];
-  deleteClient[cid]
+  @[libFuncs.TopicDel;;()]each ClientTopicMap[cid];
+  libFuncs.deleteClient[cid]
   }
 
 // table with kafka statistics
-stats:() 	
+stats:()
+GetStats:{stats}
 
-// CALLBACKS -  should not be deleted or renamed and be present in .kfk namespace
+// CALLBACKS
 // https://docs.confluent.io/current/clients/librdkafka/rdkafka_8h.html
 
 // statistics provided by kafka about current state (rd_kafka_conf_set_stats_cb)
@@ -148,8 +74,8 @@ statcb:{[j]
     s[`time]:-10957D+`timestamp$1000000000*s[`time]
     ];
   if[not `cgrp in key s;s[`cgrp]:()];
-  .kfk.stats,::enlist s;
-  delete from `.kfk.stats where i<count[.kfk.stats]-100;}
+  .z.m.stats,:enlist s;
+  delete from .z.M.stats where i<count[.z.m.stats]-100;}
 
 // logger callback(rd_kafka_conf_set_log_cb)
 logcb:{[level;fac;buf] show -3!(level;fac;buf);}
@@ -166,22 +92,24 @@ consumetopic.:{[msg]}
 // Main function called on consumption of data for both default and per topic callback
 consumecb:{[msg]$[null f:consumetopic msg`topic;consumetopic.;f]msg}
 
+SetTopicCb: {[topic;cb] consumetopic[topic]:cb}
+
 // Subscribe to a topic from a client, with a defined topic/partition offset and unique callback function
 /* cid  = Integer denoting client Id
 /* top  = Topic to be subscribed to as a symbol, or list of topics (as symbol list)
 /* part = Partition list or partition/offset dictionary (depreciated / unused)
 /* cb   = callback function to be used for the specified topic
 Subscribe:{[cid;top;part;cb]
-  Sub[cid;top;part];
-  if[all not null cb;if[(count top)<>count cb;'".kfk.Subscribe callback needed for each topic"];consumetopic[top]:cb];
+  libFuncs.Sub[cid;top;part];
+  if[all not null cb;if[(count top)<>count cb;'"Subscribe callback needed for each topic"];consumetopic[top]:cb];
   }
 
 
 // Retrieve the client member id associated with an assigned consumer
 /* cid    = Integer denoting client ID
 ClientMemberId:{[cid]
-  if[`Producer~ClientTypeMap[cid];'".kfk.ClientMemberID cannot be called on Producer clients"];
-  memberID[cid]
+  if[`Producer~ClientTypeMap[cid];'"ClientMemberID cannot be called on Producer clients"];
+  libFuncs.memberID[cid]
   }
 
 
@@ -200,7 +128,7 @@ AssignOffsets:{[cid;top;partoff]
     currentAssign:(!). flip tplist loc;
     AssignDel[cid;currentAssign]
     ];
-  assignOffsets[cid;top;partoff]
+  libFuncs.assignOffsets[cid;top;partoff]
   }
 
 i.checkOffsetDict:{[dict]
@@ -219,7 +147,7 @@ Assign:{[cid;toppar]
   // non distinct entries cause a segfault
   if[7h=type value toppar;toppar:(!). flip distinct(,'/)(key;value)@\:toppar;]
   if[0h=type value toppar;i.checkOffsetDict[value toppar];if[(count distinct a)<>count a:raze key[toppar],/:'key each value toppar;'"Topic and Partition mapping not unique"];]
-  AssignTopPar[cid;toppar]
+  libFuncs.AssignTopPar[cid;toppar]
   }
 
 // Assign additional topic-partition pairs which could be consumed from
@@ -227,7 +155,7 @@ Assign:{[cid;toppar]
 /* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
 AssignAdd:{[cid;toppar]
   tpdict:i.assignCheck[cid;toppar;0b];
-  AssignmentAdd[cid;tpdict];
+  libFuncs.AssignmentAdd[cid;tpdict];
   }
 
 // Remove assigned topic-parition pairs from the current assignment from which data can be consumed
@@ -235,9 +163,8 @@ AssignAdd:{[cid;toppar]
 /* toppar = Symbol!Long dictionary mapping the name of a topic to an associated partition
 AssignDel:{[cid;toppar]
   tpdict:i.assignCheck[cid;toppar;1b];
-  AssignmentDel[cid;tpdict];
+  libFuncs.AssignmentDel[cid;tpdict];
   }
-
 
 // Retrieval of offset associated with a specified time
 /* cid is an integer denoting client id
@@ -253,7 +180,7 @@ OffsetsForTimes:{[cid;top;partoff;tout]
     '"'partoff' value must be a list of longs, timestamps or dates only"];
   timeOffset:$[14h=offsetType;0t+;]partoff;
   if[7h<>offsetType;timeOffset:floor(`long$timeOffset-1970.01.01D00)%1e6];
-  offsetForTime[cid;top;timeOffset;tout]
+  libFuncs.offsetForTime[cid;top;timeOffset;tout]
   }
 
 // Utility function to check current assignment against proposed additions/deletions,
@@ -278,7 +205,7 @@ i.assignCheck:{[cid;toppar;addDel]
 
 // dictionary defining the current assignment for used in comparisons 
 i.compAssign:{[cid;tplist]
-  assignment:Assignment[cid];
+  assignment:libFuncs.Assignment[cid];
   // current assignment is a list of dictionaries
   currentTopPar:(assignment@'`topic),'"j"$assignment@'`partition;
   tplist in currentTopPar
@@ -294,31 +221,50 @@ i.checkDict:{[dict]
 
 // Handling of error callbacks (rd_kafka_conf_set_error_cb)
 /* cid is an integer
-/* err_int is an integer code relating to the kafka issue
+/* errInt is an integer code relating to the kafka issue
 /* reason is a string denoting the reason for the error
 
 // Default callback for the handling of errors 
-errclient.:{[cid;err_int;reason]}
+errclient.:{[cid;errInt;reason]}
 // Main function for the handling of error callbacks
-errcb:{[cid;err_int;reason]$[null f:errclient`$string cid;errclient.;f].(cid;err_int;reason)}
+errcb:{[cid;errInt;reason]$[null f:errclient`$string cid;errclient.;f].(cid;errInt;reason)}
 // Registration function allowing error callbacks to be added on a per client basis
-errcbreg:{[cid;cb]if[not null cb;errclient[`$string cid]:cb];}
+SetPerClientErrorCb:{[cid;cb]if[not null cb;errclient[`$string cid]:cb];}
 
 
 // Handling of throttle callbacks (rd_kafka_conf_set_throttle_cb)
 /* cid is an integer denoting the client id from which the callback is triggered
 /* bname is a string denoting the name of the broker
 /* bid is an integer denoting the broker id
-/* throttle_time is an integer denoting the non-zero throttle time that triggered the callback
+/* throttleTime is an integer denoting the non-zero throttle time that triggered the callback
 
 // Default callback for the handling of throttle events
-throttleclient.:{[cid;bname;bid;throttle_time]}
+throttleclient.:{[cid;bname;bid;throttleTime]}
 // Main function for the handling of throttle events
-throttlecb:{[cid;bname;bid;throttle_time]
-  $[null f:throttleclient`$string cid;throttleclient.;f].(cid;bname;bid;throttle_time)
+throttlecb:{[cid;bname;bid;throttleTime]
+  $[null f:throttleclient`$string cid;throttleclient.;f].(cid;bname;bid;throttleTime)
   }
 // Registration function allowing throttle callbacks to be set of a per client basis
-throttlecbreg:{[cid;cb]if[not null cb;throttleclient[`$string cid]:cb];}
+SetPerClientThrottleCb:{[cid;cb]if[not null cb;throttleclient[`$string cid]:cb];}
 
+ResetStatCb: {libFuncs.SetStatCb[statcb];}
+ResetLogCb: {libFuncs.SetLogCb[logcb];}
+ResetOffsetCb: {libFuncs.SetOffsetCb[offsetcb];}
+ResetDeliveryCb: {libFuncs.SetDeliveryCb[drcb];}
+ResetErrorCb: {libFuncs.SetErrorCb[errcb];}
+ResetThrottleCb: {libFuncs.SetThrottleCb[throttlecb];}
+ResetConsumeCb: {libFuncs.SetConsumeCb[consumecb];}
 
-\d .
+ResetStatCb[];
+ResetLogCb[];
+ResetOffsetCb[];
+ResetDeliveryCb[];
+ResetErrorCb[];
+ResetThrottleCb[];
+ResetConsumeCb[];
+libFuncs.Init[];
+
+export:([Version;Errors;CommittedOffsets;PositionOffsets;PARTITION_UA;GetClientTopicMap;GetClientTypeMap;
+         Producer;Consumer;Topic;ClientDel;GetStats;SetTopicCb;Subscribe;ClientMemberId;AssignOffsets;Assign;
+         AssignAdd;AssignDel;OffsetsForTimes;SetPerClientThrottleCb;SetPerClientErrorCb;ResetStatCb;ResetLogCb;ResetOffsetCb;
+         ResetDeliveryCb;ResetErrorCb;ResetThrottleCb;ResetConsumeCb;OFFSET]),`Version _ libFuncs;

@@ -8,7 +8,7 @@
 
 Build or install the latest version of `librdkafka`. The minimum required version is v0.11.0.
 
-##### Install
+##### Install dependencies
 
 _macOS_
 
@@ -26,6 +26,16 @@ _RHEL/CentOS_
 
 ```bash
 sudo yum install librdkafka-devel
+```
+
+##### Installing a Release
+
+It is recommended that a user install this module through a release. 
+
+[Download a release](https://github.com/KxSystems/arrowkdb/releases) and then unzip to your module directory. The following example assumes the default install location for KDB-X.
+
+```
+unzip arrowkdb-l64.zip -d ~/.kx/mod
 ```
 
 ##### Build from source 
@@ -63,19 +73,15 @@ make install
 
 Compile, install and move shared object file to appropriate location.
 
-1. Make sure you have `QHOME` set as an environment variable.
+1. If your librdkafka install is not located in `$HOME/include` as defaulted by the above instructions set `KAFKA_ROOT` environment variable to the appropriate include location.
 
-2. If your librdkafka install is not located in `$HOME/include` as defaulted by the above instructions set `KAFKA_ROOT` environment variable to the appropriate include location.
-
-3. Run the following set of commands to set up the system as outlined
+2. Run the following set of commands to set up the system as outlined
 
 ```bash
 // in kfk source folder
-make
-// move installed `.so` to `$QHOME/<arch>`
 make install
-// remove `.so` from kfk source folder
-make clean
+// move installed `.so` to some directory that's on your `$QPATH`, details: https://docs.kx.com/latest/kdb-x/integrations/module-management-qsg.htm#Search_path
+mv ./out/kafka <your module library>
 ```
 
 Note: If compiling dynamically linked `libkfk.so` make sure you have `librdkafka.so.1` in your `LD_LIBRARY_PATH`.
@@ -83,55 +89,3 @@ Note: If compiling dynamically linked `libkfk.so` make sure you have `librdkafka
 ```bash
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/lib
 ```
-
-### Windows
-
-At present the Windows build of the `.dll` for the kafka interface has been tested on Visual Studio 2017 with `librdkafka.redist.1.0.0`. The following are the steps completed to achieve this
-
-1.  Install nuget for Windows: <https:/nuget.com/downloads>
-
-2.  Install the redistributed version of librdkafka which is suitable for use with windows, documentation can be found [here](https://www.nuget.org/packages/librdkafka.redist/1.0.0).
-
-    ```bash
-    nuget install librdkafka.redist
-    ```
-
-3.  Ensure  you have Windows Visual Studio 2017 installed.
-
-4.  Place the installed librdkafka.redist into an appropriate location (suggestions `%HOME%` or `%QHOME%`).
-    For the remaining instructions, the path to the install is `C:/Users/jdoe/librdkafka.redist.1.0.0`
-
-5.  Update `LIB` user environment variable to include the following path to `rdkafka.h` for appropriate Windows architecture in this case
-
-    ```bash
-    LIB = C:/Users/jdoe/librdkafka.redist.1.0.0/build/native/lib/win/x64/win-x64-Release/v120
-    ```
-
-6.  Update `PATH` system environment variable to include path to native folder for the appropriate computer architecture
-
-    ```bash
-    PATH = C:/Users/jdoe/librdkafka.redist.1.0.0/runtimes/win-x64/native
-    ```
-
-7.  Create a user environment variable `KAFKA_NATIVE` in line with the following example path
-
-    ```bash
-    KAFKA_NATIVE = C:/Users/jdoe/librdkafka.redist.1.0.0/build/native/include/
-    ```
-
-8.  Clone the Kafka interface from the KxSystems GitHub repo
-
-    ```bash
-    git clone https://github.com/kxsystems/kafka
-    ```
-
-9.  Move to the `kafka/build/` folder within the GitHub clone and run the following;
-
-    ```bash
-    call "build.bat"
-    ```
-
-10. If prompted for input, follow instructions accordingly.
-
-11. Move the created `.dll` from the build folder to `%QHOME%/<arch>`
-

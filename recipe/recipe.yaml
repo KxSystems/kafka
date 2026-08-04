@@ -1,0 +1,49 @@
+context:
+  version: "2.0.0"
+
+package:
+  name: q-kx-kafka
+  version: ${{ version }}
+
+source:
+  path: ..
+  filter:
+    exclude:
+      - recipe/**
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - make
+    - librdkafka
+    - zlib
+  host:
+    - librdkafka
+    - zlib
+  run:
+    - librdkafka
+
+tests:
+  - script:
+    - if: unix
+      then:
+        - test -f ${PREFIX}/lib/q/mod/kx/kafka/init.q
+    - if: linux and x86_64
+      then:
+        - test -f ${PREFIX}/lib/q/mod/kx/kafka/clib.li64.so
+    - if: linux and aarch64
+      then:
+        - test -f ${PREFIX}/lib/q/mod/kx/kafka/clib.la64.so
+    - if: osx and arm64
+      then:
+        - test -f ${PREFIX}/lib/q/mod/kx/kafka/clib.ma64.so
+    - if: osx and x86_64
+      then:
+        - test -f ${PREFIX}/lib/q/mod/kx/kafka/clib.mi64.so
+    - if: win
+      then:
+        - if not exist %PREFIX%\\lib\\q\\mod\\kx\\kafka\\init.q exit 1
+        - if not exist %PREFIX%\\lib\\q\\mod\\kx\\\kafka\\clib.wi64.dll exit 1

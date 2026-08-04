@@ -1,4 +1,5 @@
-\l ../kfk.q
+.Q.m.SP:enlist .Q.rp "::../../out";
+.kafka:use`kafka;
 
 kfk_cfg:(!) . flip(
     (`metadata.broker.list;`localhost:9092);
@@ -6,7 +7,7 @@ kfk_cfg:(!) . flip(
     (`fetch.wait.max.ms;`10);
     (`statistics.interval.ms;`10000)
     );
-client:.kfk.Consumer[kfk_cfg];
+client:.kafka.Consumer[kfk_cfg];
 
 // Topics to subscribe to
 topic1:`test1;
@@ -17,18 +18,18 @@ data1:();
 topcb1:{[msg]
   msg[`data]:"c"$msg[`data];
   msg[`rcvtime]:.z.p;
-  data1,::enlist msg;}
+  data1,:enlist msg;}
 
 // Define datasets and topic callbacks for topic2
 data2:();
 topcb2:{[msg]
   msg[`data]:"c"$msg[`data];
   msg[`rcvtime]:.z.t;
-  data2,::enlist msg;}
+  data2,:enlist msg;}
 
 printver:{
   -1 "==== librdkafka version ==============================";
-  -1 "." sv 2 cut -8$"0123456789abcdef" 16 vs .kfk.Version;}
+  -1 "." sv 2 cut -8$"0123456789abcdef" 16 vs .kafka.Version;}
 
 printmeta:{
   -1 "==== MetaData provided by the following broker =======";
@@ -41,9 +42,9 @@ printmeta:{
   -1 "";}
 
 printver[];
-printmeta .kfk.Metadata[client];
+printmeta .kafka.Metadata[client];
 
 // Subscribe to topic1 and topic2 with different callbacks from a single client
 -1 "Subscribing to topics called ",(string topic1)," and ",string topic2;
 -1 "Consumed data will be placed in tables data1 and data2 when available (type 'data1' or 'data2' to view)";
-.kfk.Subscribe[client;(topic1;topic2);enlist .kfk.PARTITION_UA;(topcb1;topcb2)]
+.kafka.Subscribe[client;(topic1;topic2);enlist .kafka.PARTITION_UA;(topcb1;topcb2)]

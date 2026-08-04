@@ -2,7 +2,7 @@
 
 The kdb+/Kafka interface is a thin wrapper for kdb+ around the [`librdkafka`](https://github.com/edenhill/librdkafka) C API for [Apache Kafka](https://kafka.apache.org/). 
 
-## **`.kfk.`** Kafka interface 
+## **`.kafka.`** Kafka interface 
 
 System information
 
@@ -10,6 +10,7 @@ System information
 - [`Version`](#version) Librdkafka version
 - [`VersionSym`](#versionsym) Human readable Librdkafka version
 - [`ThreadCount`](#threadcount) Number of threads being used by librdkafka
+- [`Errors`](#errors) Librdkafka errors description
 
 Topics
 
@@ -19,13 +20,28 @@ Topics
 
 Callback modifications
 
-- [`errcbreg`](#errcbreg) Register an error callback associated with a specific client
-- [`throttlecbreg`](#throttlecbreg) Register a throttle callback associated with a specific client
-- [`statcb`](#statcb) Statistics callback
-- [`logcb`](#logcb) Logger callback
-- [`drcb`](#drcb) Delivery report callback (publisher only)
-- [`offsetcb`](#offsetcb) Offset commit callback for use with consumer groups (subscriber only)
-- [`consumetopic`](#consumetopic) Called for each message received (subscriber only)
+- [`SetPerClientErrorCb`](#setperclienterrorcb) Register an error callback associated with a specific client
+- [`SetErrorCb](#seterrorcb) Set error handling callback
+- [`ResetErrorCb](#reseterrorcb) Reset error handling callback to default
+- [`SetPerClientThrottleCb`](#setperclientthrottlecb) Register a throttle callback associated with a specific client
+- [`SetThrottleCb`](#setthrottlecb) Set throttle callback
+- [`ResetThrottleCb`](#resetthrottlecb) Reset throttle callback to default
+- [`SetStatCb`](#setstatcb) Set statistics callback
+- [`ResetStatCb`](#resetstatcb) Reset statistics callback to default
+- [`SetLogCb`](#setlogcb) Set logger callback
+- [`ResetLogCb`](#resetlogcb) Set logger callback to default
+- [`SetDeliveryCb`](#setdeliverycb) Set delivery report callback (publisher only)
+- [`ResetDeliveryCb`](#resetdeliverycb) Reset delivery report callback to default (publisher only)
+- [`SetOffsetCb`](#setoffsetcb) Set offset commit callback for use with consumer groups (subscriber only)
+- [`ResetOffsetCb`](#resetoffsetcb) Reset offset commit callback for use with consumer groups tp default (subscriber only)
+- [`SetTopicCb`](#settopiccb) Called for each message with defined topic received (subscriber only)
+- [`SetConsumeCb`](#setconsumecb) Set consume callback for each message received (subscriber only)
+- [`ResetConsumeCb`](#resetconsumecb) Reset consume callback to default (subscriber only)
+
+Getters
+- [`GetStats`](#getstats) Get statistics recorded by default
+- [`GetClientTopicMap`](#getclienttopicmap) Get mapping between clients and topics
+- [`GetClientTypeMap`](#getclienttypemap) Get mapping between client the client type
 
 Clients (Consumer or Producer)
 
@@ -78,7 +94,7 @@ Publishing
 _Information about configuration of brokers and topics_
 
 ```q
-.kfk.Metadata id
+.kafka.Metadata id
 ```
 
 Where `id` is a consumer or producer ID, returns a dictionary populated with the following info:
@@ -93,7 +109,7 @@ When using a consumer, the metadata response information may trigger a re-join i
 Example:
 
 ```q
-q)show producer_meta:.kfk.Metadata producer
+q)show producer_meta:.kafka.Metadata producer
 orig_broker_id  | 0i
 orig_broker_name| `localhost:9092/0
 brokers         | ,`id`host`port!(0i;`localhost;9092i)
@@ -110,13 +126,13 @@ __consumer_offsets Success (`id`err`leader`replicas`isrs!(0i;`Success;0i;,0i;..
 _The number of threads in use by librdkafka_
 
 ```q
-.kfk.ThreadCount[]
+.kafka.ThreadCount[]
 ```
 
 returns the number of threads currently in use by `librdkafka`.
 
 ```q
-q).kfk.ThreadCount[]
+q).kafka.ThreadCount[]
 5i
 ```
 
@@ -125,15 +141,15 @@ q).kfk.ThreadCount[]
 _Version of librdkafka (integer)_
 
 ```q
-.kfk.Version
+.kafka.Version
 ```
 
 Returns the `librdkafka` version (integer) used within the interface. Can be parsed as follows (according to the [kafka version format](https://docs.confluent.io/legacy/platform/5.5.15/clients/librdkafka/rdkafka_8h.html#aa2e242fb8620a32b650a40575bc7f98e))
 
 ```
-q).kfk.Version
+q).kafka.Version
 33751295i
-q)"." sv 2 cut -8$"0123456789abcdef" 16 vs .kfk.Version
+q)"." sv 2 cut -8$"0123456789abcdef" 16 vs .kafka.Version
 " 2.03.00.ff"
 ```
 
@@ -142,14 +158,35 @@ q)"." sv 2 cut -8$"0123456789abcdef" 16 vs .kfk.Version
 _Version of librdkafka (symbol)_
 
 ```q
-.kfk.VersionSym[]
+.kafka.VersionSym[]
 ```
 
 Returns the `librdkafka` version (symbol) used within the interface.
 
 ```q
-q).kfk.VersionSym[]
+q).kafka.VersionSym[]
 `1.1.0
+```
+
+### `Errors`
+
+_Description of librdkafka error codes (table)_
+
+```q
+.kafka.Errors[]
+```
+
+Returns the description of errors (table) that could occur within the interface.
+
+```q
+q).kafka.Errors[]
+errid code                   desc                                             
+------------------------------------------------------------------------------
+-200  _BEGIN                 ""                                               
+-199  _BAD_MSG               "Local: Bad message format"                      
+-198  _BAD_COMPRESSION       "Local: Invalid compressed data"                 
+-197  _DESTROY               "Local: Broker handle destroyed"
+...
 ```
 
 ## Topics
@@ -159,7 +196,7 @@ q).kfk.VersionSym[]
 _Create a topic on which messages can be sent_
 
 ```q
-.kfk.Topic[id;topic;cfg]
+.kafka.Topic[id;topic;cfg]
 ```
 
 Where
@@ -171,10 +208,10 @@ Where
 returns the topic ID (integer).
 
 ```q
-q)consumer:.kfk.Consumer[kfk_cfg]
-q).kfk.Topic[consumer;`test;()!()]
+q)consumer:.kafka.Consumer[kfk_cfg]
+q).kafka.Topic[consumer;`test;()!()]
 0i
-q).kfk.Topic[consumerl`test1;()!()]
+q).kafka.Topic[consumer;`test1;()!()]
 1i
 ```
 
@@ -186,17 +223,17 @@ q).kfk.Topic[consumerl`test1;()!()]
 _Delete a currently defined topic_
 
 ```q
-.kfk.TopicDel topic
+.kafka.TopicDel topic
 ```
 
 Where `topic` is a topic ID, deletes the topic and returns a null.
 
 ```q
-q).kfk.Topic[0i;`test;()!()]
+q).kafka.Topic[0i;`test;()!()]
 0i
-q).kfk.TopicDel[0i]
+q).kafka.TopicDel[0i]
 q)/ topic now no longer available for deletion
-q).kfk.TopicDel[0i]
+q).kafka.TopicDel[0i]
 'unknown topic
 ```
 
@@ -206,30 +243,30 @@ q).kfk.TopicDel[0i]
 _Returns the name of a topic_
 
 ```q
-.kfk.TopicName tpcid
+.kafka.TopicName tpcid
 ```
 
 Where `tpcid` is a topic ID, returns its name  as a symbol.
 
 ```q
-q).kfk.Topic[0i;`test;()!()]
+q).kafka.Topic[0i;`test;()!()]
 0i
-q).kfk.Topic[0i;`test1;()!()]
+q).kafka.Topic[0i;`test1;()!()]
 1i
-q).kfk.TopicName[0i]
+q).kafka.TopicName[0i]
 `test
-q).kfk.TopicName[1i]
+q).kafka.TopicName[1i]
 `test1
 ```
 
 ## Callback Modifications
 
-### `errcbreg`
+### `SetPerClientErrorCb`
 
 _Register an error callback associated with a specific client_
 
 ```q
-.kfk.errcbreg[clid;callback]
+.kafka.SetPerClientErrorCb[clid;callback]
 ```
 
 Where
@@ -237,29 +274,26 @@ Where
 -   `clid` is a client ID (integer)
 -   `callback` is a ternary function
 
-sets `callback` to be triggered by errors associated with the client, augments the dictionary `.kfk.errclient` mapping client ID to callback, and returns a null.
+sets `callback` to be triggered by errors associated with the client, augments the dictionary `.kafka.errclient` mapping client ID to callback, and returns a null.
 
 The arguments of `callback` are:
 
 -   `cid`: ID of client for which this is called (integer)
--   `err_int`: error status code in Kafka (integer)
+-   `errInt`: error status code in Kafka (integer)
 -   `reason`: error message (string)
 
 
 ```q
 q)// Assignment prior to registration of new callback
-q)// this is the default behavior invoked
-q).kfk.errclient
- |{[cid;err_int;reason]}
 q)// Attempt to create a consumer which will fail
-q).kfk.Consumer[`metadata.broker.list`group.id!`foobar`0]
+q).kafka.Consumer[`metadata.broker.list`group.id!`foobar`0]
 0i
 
 q)// Update the default behavior to show the output
-q).kfk.errclient[`]:{[cid;err_int;reason]show(cid;err_int;reason);}
+q).kafka.SetPerClientErrorCb[`;{[cid;errInt;reason]show(cid;errInt;reason);}]
 
 q)// Attempt to create another failing consumer
-q).kfk.Consumer[`metadata.broker.list`group.id!`foobar`0]
+q).kafka.Consumer[`metadata.broker.list`group.id!`foobar`0]
 1i
 q)1i
 -193i
@@ -269,20 +303,41 @@ q)1i
 "1/1 brokers are down"
 
 q)// Start a new q session and register an error callback for cid 0
-q).kfk.errcbreg[0i;{[cid;err_int;reason] show err_int;}]
+q).kafka.SetPerClientErrorCb[0i;{[cid;errInt;reason] show errInt;}]
 q)// Attempt to create a consumer that will fail
-q).kfk.Consumer[`metadata.broker.list`group.id!`foobar`0]
+q).kafka.Consumer[`metadata.broker.list`group.id!`foobar`0]
 0i
 q)-193i
 -187i
 ```
 
-### `throttlecbreg`
+### `SetErrorCb`
+
+```q
+.kafka.ResetErrorCb[cb]
+```
+
+where `cb` is a ternary function.
+
+Default implementation:
+```q
+errcb:{[cid;errInt;reason]$[null f:errclient`$string cid;errclient.;f].(cid;errInt;reason)}
+```
+
+### `ResetErrorCb`
+
+```q
+.kafka.ResetErrorCb[]
+```
+
+Resets error callback to default. See [`SetErrorCb`](#seterrorcb).
+
+### `SetPerClientThrottleCb`
 
 _Register an throttle callback associated with a specific client_
 
 ```q
-.kfk.throttlecbreg[clid;callback]
+.kafka.SetPerClientThrottleCb[clid;callback]
 ```
 
 Where
@@ -291,7 +346,7 @@ Where
 -   `callback` is a quaternary function
 
 sets `callback` to be triggered on throttling associated with the client, 
-augments the dictionary `.kfk.errclient` mapping client ID to callback,
+augments the dictionary `.kafka.throttleclient` mapping client ID to callback,
 and returns a null.
 
 The arguments of `callback` are:
@@ -299,49 +354,84 @@ The arguments of `callback` are:
 -   `cid`: ID (integer) of client for which this is called 
 -   `bname`: broker name (string)
 -   `bid`: broker ID (integer)
--   `throttle_time`: accepted throttle time in milliseconds (integer)
+-   `throttleTime`: accepted throttle time in milliseconds (integer)
 
 ```q
 q)// Assignment prior to registration of new callback 
-q)// this is the default behavior invoked
-q).kfk.throttleclient
- |{[cid;bname;bid;throttle_time]}
 
 q)// Update the default behavior to show the output
-q).kfk.throttleclient[`]:{[cid;bname;bid;throttle_time]show(cid;bid);}
+q).kafka.SetPerClientThrottleCb[`;{[cid;bname;bid;throttleTime]show(cid;bid);}]
 
 q)// Add a throttle client associated specifically with client 0
-q).kfk.throttlecbreg[0i;{[cid;bname;bid;throttle_time]show(cid;throttle_time);}]
-
-q)// Display the updated throttle callback logic
-q).kfk.throttleclient
- |{[cid;bname;bid;throttle_time]show(cid;bid);}
-0|{[cid;bname;bid;throttle_time]show(cid;throttle_time);}
+q).kafka.SetPerClientThrottleCb[0i;{[cid;bname;bid;throttleTime]show(cid;throttleTime);}]
 ```
 
-### statcb
+### `SetThrottleCb`
+
+```q
+.kafka.SetThrottleCb[cb]
+```
+where `cb` is function with 4 parameters.
+
+Default implementation calls callback registered to the client in `.kafka.throttleclient` mapping or uses default.
+
+```q
+throttlecb:{[cid;bname;bid;throttleTime]
+  $[null f:throttleclient`$string cid;throttleclient.;f].(cid;bname;bid;throttleTime)
+  }
+```
+
+### `ResetThrottleCb`
+
+```q
+.kafka.ResetThrottleCb[]
+```
+
+Resets throttle callback to default. See [`SetThrottleCb`](#setthrottlecb).
+
+### `SetStatCb`
 
 _Statistics callback_
 
 ```q
-.kfk.statcb[j]
+statcb: {[j]}
+.kafka.SetStatCb[statcb]
 ```
 
 Where j is a json string (see [`.j.k`](https://code.kx.com/q/ref/dotj/#jk-deserialize) for parsing json in q). For more information on the format of json, see [https://github.com/confluentinc/librdkafka/wiki/Statistics](https://github.com/confluentinc/librdkafka/wiki/Statistics).
 
-Override this variable to provide a new definition that suits your needs. Default is to use `.kfk.stats` to record the last 100 stats.
+Set this callback to provide a new definition that suits your needs. Default is to store the last 100 stats. Access this table with
+ `.kafka.GetStats[]` ([`GetStats`](#getstats))
 
 The statistics callback is triggered every `statistics.interval.ms`.
 
-### logcb
+Default implementation:
+
+```q
+statcb:{[j]
+  s:.j.k j;
+  if[all `ts`time in key s;
+    s[`ts]:-10957D+`timestamp$s[`ts]*1000;
+    s[`time]:-10957D+`timestamp$1000000000*s[`time]
+    ];
+  if[not `cgrp in key s;s[`cgrp]:()];
+  .z.m.stats,:enlist s;
+  delete from .z.M.stats where i<count[.z.m.stats]-100;}
+```
+
+### `ResetStatCb`
+
+Resets statistics callback to default. See [`SetStatCb`](#setstatcb).
+
+### `SetLogCb`
 
 _Logger callback (logs from librdkafka)_
 
 ```q
-.kfk.logcb[level;fac;buf]
+.kafka.SetLogCb[cb]
 ```
 
-Where
+Where cb is a ternary function. Parameters:
 
 - `level` is log level (integer) as discussed in [`SetLoggerLevel`](#setloggerlevel)
 - `fac` in the msg type (string)
@@ -349,14 +439,21 @@ Where
 
 should be set to return nil.
 
-Override this variable to provide a new definition that suits your needs. Default is to print to stdout.
+Set this callback to provide a new definition that suits your needs. Default is to print to stdout.
+```q
+logcb:{[level;fac;buf] show -3!(level;fac;buf);}
+```
 
-### drcb
+### `ResetLogCb`
+
+Resets log callback to default. See [`SetLogCb`](#setlogcb).
+
+### `SetDeliveryCb`
 
 _Delivery report callback_
 
 ```q
-.kfk.drcb[cid;msg]
+.kafka.SetDeliveryCb[{[cid;msg]}]
 ```
 
 Where
@@ -365,16 +462,25 @@ Where
 
 should be set to return nil. For publishing msgs only (i.e. client that is a producer).
 
-Override this variable to provide a new definition that suits your needs. There is no default action.
+Set this callback to provide a new definition that suits your needs. There is no default action.
 
 The callback is called when a message is succesfully produced or if librdkafka encountered a permanent failure. Delivery errors occur when the retry count is exceeded, when the `message.timeout.ms` timeout is exceeded or there is a permanent error like RD_KAFKA_RESP_ERR_UNKNOWN_TOPIC_OR_PART.
 
-### offsetcb
+Default implementation(noop):
+```q
+drcb:{[cid;msg]}
+```
+
+### `ResetDeliveryCb`
+
+Resets delivery callback to default. See [`SetDeliveryCb`](#setdeliverycb).
+
+### `SetOffsetCb`
 
 _Offset commit callback for use with consumer groups_
 
 ```q
-.kfk.offsetcb[cid;err;offsets]
+.kafka.SetOffsetCb[{[cid;err;offsets]}]
 ```
 
 Where
@@ -389,7 +495,7 @@ Where
 
 should be set to return nil. For subscribers only.
 
-Override this variable to provide a new definition that suits your needs. There is no default action.
+Set this callback to provide a new definition that suits your needs. There is no default action.
 
 The results of automatic or manual offset commits will be scheduled for this callback. 
 If no partitions had valid offsets to commit this callback will be called with err == RD_KAFKA_RESP_ERR__NO_OFFSET which is not to be considered an error.
@@ -399,12 +505,21 @@ The offsets list contains per-partition information:
 - offset: committed offset (attempted)
 - err: commit error
 
-#### `consumetopic`
+Default implementation(noop):
+```q
+offsetcb:{[cid;err;offsets]}
+```
 
-_Main unary function called on consumption of data for both default and per topic callback. Called for each message received._
+### `ResetOffsetCb`
+
+Resets offset callback to default. See [`SetOffsetCb`](#setoffsetcb).
+
+#### `SetTopicCb`
+
+Sets callback per topic in `consumetopic` dictionary.
 
 ```q
-.kfk.consumetopic msg
+.kafka.SetTopicCb{[msg]}
 ```
 Where `msg` is the content of a message received (as dictionary) from any calls to the subscription on the topic.
 
@@ -414,7 +529,7 @@ e.g.
 setting the callback to print each msg
 
 ```q
-.kfk.consumetopic[`]:{[msg]show msg;};
+.kafka.SetTopicCb[`;{[msg]show msg;}]
 ```
 
 will print as message as follows:
@@ -431,6 +546,49 @@ key      | `byte$()
 headers  | (`symbol$())!`symbol$()
 ```
 
+### `SetConsumeCb`
+
+_Main unary function called on consumption of data for both default and per topic callback. Called for each message received._
+
+```q
+.kafka.SetConsumeCb[cb]
+```
+
+If received message's topic has a callback set by `Subscribe` or `SetTopicCb`, calls callback, otherwise calls default (noop). 
+
+Default implementation:
+```q
+consumecb:{[msg]$[null f:consumetopic msg`topic;consumetopic.;f]msg}
+```
+
+### `ResetConsumeCb`
+
+Resets consume callback to default. See [`SetConsumeCb`](#setconsumecb).
+
+### `GetStats`
+
+```q
+.kafka.GetStats[]
+```
+
+Get statistics recorded by default.
+
+### `GetClientTopicMap`
+
+```q
+.kafka.GetClientTopicMap[]
+```
+
+Get mapping between clients and topics.
+
+### `GetClientTypeMap`
+
+```q
+.kafka.GetClientTypeMap[]
+```
+
+Get mapping between client the client type.
+
 ## Clients
 
 The following functions relate to the creation of consumers and producers and their manipulation/interrogation.
@@ -440,7 +598,7 @@ The following functions relate to the creation of consumers and producers and th
 _Close a consumer and destroy the associated Kafka handle to client_
 
 ```q
-.kfk.ClientDel clid
+.kafka.ClientDel clid
 ```
 
 Where  `clid` is the client to be deleted (integer), returns null on successful deletion. 
@@ -450,13 +608,13 @@ This call will block until the consumer has revoked its assignment, committed of
 
 ```q
 /Client exists
-q).kfk.ClientName 0i
+q).kafka.ClientName 0i
 `rdkafka#consumer-1
-q).kfk.ClientDel 0i
-q).kfk.ClientName 0i
+q).kafka.ClientDel 0i
+q).kafka.ClientName 0i
 'unknown client
 /Client can no longer be deleted
-q).kfk.ClientDel 0i
+q).kafka.ClientDel 0i
 'unknown client
 ```
 
@@ -465,7 +623,7 @@ q).kfk.ClientDel 0i
 _Returns this client's broker-assigned group member id_
 
 ```q
-.kfk.ClientMemberId clid
+.kafka.ClientMemberId clid
 ```
 
 Where `clid` is a client ID (integer), returns the member ID (symbol) assigned to the client, or signals `unknown client`.
@@ -476,9 +634,9 @@ Where `clid` is a client ID (integer), returns the member ID (symbol) assigned t
 > This is an [external limitation](https://docs.confluent.io/2.0.0/clients/librdkafka/rdkafka_8h.html#a856d7ecba1aa64e5c89ac92b445cdda6).
 
 ```q
-q).kfk.ClientMemberId 0i
+q).kafka.ClientMemberId 0i
 `rdkafka-881f3ee6-369b-488a-b6b2-c404d45ebc7c
-q).kfk.ClientMemberId 1i
+q).kafka.ClientMemberId 1i
 'unknown client
 ```
 
@@ -487,16 +645,16 @@ q).kfk.ClientMemberId 1i
 _Kafka handle name_
 
 ```q
-.kfk.ClientName clid
+.kafka.ClientName clid
 ```
 
 Where `clid` is a client ID (integer), returns assigned client name (symbol) or signals `unknown client`.
 
 ```q
-q).kfk.ClientName 0i
+q).kafka.ClientName 0i
 `rdkafka#producer-1
 /Client removed
-q).kfk.ClientName 1i
+q).kafka.ClientName 1i
 'unknown client
 ```
 
@@ -505,7 +663,7 @@ q).kfk.ClientName 1i
 _Create a consumer according to user-defined configuration_
 
 ```q
-.kfk.Consumer cfg
+.kafka.Consumer cfg
 ```
 
 Where `cfg` is a dictionary for adding/overloading configuration. Both keys and values must be of symbol,string,char or symbol list type. Returns the ID of the consumer as an integer.
@@ -517,7 +675,7 @@ group.id              | 0
 queue.buffering.max.ms| 1
 fetch.wait.max.ms     | 10
 statistics.interval.ms| 10000
-q).kfk.Consumer kfk_cfg
+q).kafka.Consumer kfk_cfg
 0i
 ```
 
@@ -529,7 +687,7 @@ q).kfk.Consumer kfk_cfg
 _Create a producer according to user-defined configuration_
 
 ```q
-.kfk.Producer cfg
+.kafka.Producer cfg
 ```
 
 Where `cfg` is a dictionary for adding/overloading configuration. Both keys and values must be of symbol,string,char or symbol list type. Returns the ID of the producer as an integer.
@@ -540,7 +698,7 @@ metadata.broker.list  | localhost:9092
 statistics.interval.ms| 10000
 queue.buffering.max.ms| 1
 fetch.wait.max.ms     | 10
-q).kfk.Producer kfk_cfg
+q).kafka.Producer kfk_cfg
 0i
 ```
 
@@ -552,7 +710,7 @@ q).kfk.Producer kfk_cfg
 _Specifies the maximum logging level emitted by internal kafka logging and debugging_
 
 ```q
-.kfk.SetLoggerLevel[clid;level]
+.kafka.SetLoggerLevel[clid;level]
 ```
 
 Where
@@ -575,7 +733,7 @@ If the "debug" configuration property is set the log level is automatically adju
 ```q
 q)show client
 0i
-q).kfk.SetLoggerLevel[client;7]
+q).kafka.SetLoggerLevel[client;7]
 ```
 
 ## Offset functionality
@@ -591,7 +749,7 @@ The following functions relate to use of offsets within the API to ensure record
 _Commit offsets on broker for provided partitions and offsets_
 
 ```q
-.kfk.CommitOffsets[clid;topic;part_offsets;block_commit]
+.kafka.CommitOffsets[clid;topic;part_offsets;block_commit]
 ```
 
 Where
@@ -608,7 +766,7 @@ returns a null on successful commit of offsets.
 _Current offsets for particular topics and partitions_
 
 ```q
-.kfk.PositionOffsets[clid;topic;part_offsets]
+.kafka.PositionOffsets[clid;topic;part_offsets]
 ```
 
 Where
@@ -617,28 +775,28 @@ Where
 -   `topic` is the topic (symbol)
 -   `part_offsets` is a list of partitions (int, short, or long), or a dictionary of partitions (int) and offsets (long)
 
-returns a table containing the current offset and partition for the topic of interest. The offset field of each requested partition will be set to the offset of the last consumed message + 1, or .kfk.OFFSET.INVALID (-1001) if there was no previous message.
+returns a table containing the current offset and partition for the topic of interest. The offset field of each requested partition will be set to the offset of the last consumed message + 1, or .kafka.OFFSET.INVALID (-1001) if there was no previous message.
 
 In this context the last consumed message is the offset consumed by the current librdkafka instance and, in case of rebalancing, not necessarily the last message fetched from the partition.
 
 ```q
-q)client:.kfk.Consumer kfk_cfg
+q)client:.kafka.Consumer kfk_cfg
 q)TOPIC:`test
 q)show seen:exec last offset by partition from data
 0|0
 // dictionary input
-q).kfk.PositionOffsets[client;TOPIC;seen]
+q).kafka.PositionOffsets[client;TOPIC;seen]
 topic partition offset metadata
 -------------------------------
 test  0         26482  ""
 // int list input
-q).kfk.PositionOffsets[client;TOPIC;0 1i]
+q).kafka.PositionOffsets[client;TOPIC;0 1i]
 topic partition offset metadata
 -------------------------------
 test  0         26482  ""
 test  1         -1001  ""
 // long list input
-q).kfk.PositionOffsets[client;TOPIC;0 1 2]
+q).kafka.PositionOffsets[client;TOPIC;0 1 2]
 topic partition offset metadata
 -------------------------------
 test  0         26482  ""
@@ -651,7 +809,7 @@ test  2         -1001  ""
 _Retrieve the last-committed offset for a topic on a particular partition_
 
 ```q
-.kfk.CommittedOffsets[clid;topic;part_offsets]
+.kafka.CommittedOffsets[clid;topic;part_offsets]
 ```
 
 Where
@@ -664,26 +822,26 @@ returns a table containing the offset for a particular partition for a topic.
 
 Committed offsets will be returned according to the isolation.level configuration property, if set to read_committed (default) then only stable offsets for fully committed transactions will be returned, while read_uncommitted may return offsets for not yet committed transactions.
 
-Offset will be set to .kfk.OFFSET.INVALID (-1001) if there was no stored offset for that partition.
+Offset will be set to .kafka.OFFSET.INVALID (-1001) if there was no stored offset for that partition.
 
 ```q
-q)client:.kfk.Consumer[kfk_cfg];
+q)client:.kafka.Consumer[kfk_cfg];
 q)TOPIC:`test
 q)show seen:exec last offset by partition from data;
 0|0
 // dictionary input
-q).kfk.CommittedOffsets[client;TOPIC;seen]
+q).kafka.CommittedOffsets[client;TOPIC;seen]
 topic partition offset metadata
 -------------------------------
 test  0         26481  ""
 // integer list input
-q).kfk.CommittedOffsets[client;TOPIC;0 1i]
+q).kafka.CommittedOffsets[client;TOPIC;0 1i]
 topic partition offset metadata
 -------------------------------
 test  0         26481  ""
 test  1         -1001  ""
 // long list input
-q).kfk.CommittedOffsets[client;TOPIC;0 1]
+q).kafka.CommittedOffsets[client;TOPIC;0 1]
 topic partition offset metadata
 -------------------------------
 test  0         26481  ""
@@ -696,7 +854,7 @@ test  1         -1001  ""
 _Query broker for low (oldest/beginning) and high (newest/end) offsets for partition_
 
 ```q
-.kfk.queryWatermark[client;`test1;0;1000]
+.kafka.queryWatermark[client;`test1;0;1000]
 ```
 
 Where
@@ -715,13 +873,13 @@ returns 2 element long for low/high watermark
 _Publish a batch of messages to a defined topic_
 
 ```q
-.kfk.BatchPub[tpcid;partid;data;keys]
+.kafka.BatchPub[tpcid;partid;data;keys]
 ```
 
 Where
 
 -   `tpcid` is the topic (previously created) to be published on (integer)
--   `partid` is the target partition/s (integer atom or list). If partition is .kfk.PARTITION_UA the configured partitioner will be run for each message (slower), otherwise the messages will be enqueued to the specified partition directly (faster).
+-   `partid` is the target partition/s (integer atom or list). If partition is .kafka.PARTITION_UA the configured partitioner will be run for each message (slower), otherwise the messages will be enqueued to the specified partition directly (faster).
 -   `data` is a mixed list payload containing either bytes or strings
 -   `keys` is an empty string for auto key on all messages or a key per message as a mixed list of bytes or strings
 
@@ -732,17 +890,17 @@ q)batchMsg :("test message 1";"test message 2")
 q)batchKeys:("Key 1";"Key 2")
 
 q)// Send two messages to any partition using default key
-q).kfk.BatchPub[;.kfk.PARTITION_UA;batchMsg;""]each(topic1;topic2)
+q).kafka.BatchPub[;.kafka.PARTITION_UA;batchMsg;""]each(topic1;topic2)
 0 0
 0 0
 
 q)// Send 2 messages to partition 0 for each topic using default key
-q).kfk.BatchPub[;0i;batchMsg;""]each(topic1;topic2)
+q).kafka.BatchPub[;0i;batchMsg;""]each(topic1;topic2)
 0 0
 0 0
 
 q)// Send 2 messages the first to separate partitions using generated keys
-q).kfk.BatchPub[;0 1i;batchMsg;batchKeys]each(topic1;topic2)
+q).kafka.BatchPub[;0 1i;batchMsg;batchKeys]each(topic1;topic2)
 0 0
 0 0
 ```
@@ -752,13 +910,13 @@ q).kfk.BatchPub[;0 1i;batchMsg;batchKeys]each(topic1;topic2)
 _Publish a message to a defined topic_
 
 ```q
-.kfk.Pub[tpcid;partid;data;keys]
+.kafka.Pub[tpcid;partid;data;keys]
 ```
 
 Where
 
 -   `tpcid` is the topic to be published on (integer)
--   `partid` is the target partition (integer). Can be .kfk.PARTITION_UA (unassigned) for automatic partitioning using the topic's partitioner function, or a fixed partition (0..N)
+-   `partid` is the target partition (integer). Can be .kafka.PARTITION_UA (unassigned) for automatic partitioning using the topic's partitioner function, or a fixed partition (0..N)
 -   `data` is the payload to be published (string)
 -   `keys` is the message key (string) to be passed with the message to the partition 
 
@@ -771,11 +929,11 @@ Since producing is asynchronous, you should call [`Flush`](#flush) before you de
 When temporary errors occur, librdkafka automatically retries to produce the messages. Retries are triggered after `retry.backoff.ms` and when the leader broker for the given partition is available. Otherwise, librdkafka falls back to polling the topic metadata to monitor when a new leader is elected (see the `topic.metadata.refresh.fast.interval.ms` and `topic.metadata.refresh.interval.ms` configurations) and then performs a retry. A delivery error will occur if the message could not be produced within message.timeout.ms.
 
 ```q
-q)producer:.kfk.Producer kfk_cfg
-q)test_topic:.kfk.Topic[producer;`test;()!()]
+q)producer:.kafka.Producer kfk_cfg
+q)test_topic:.kafka.Topic[producer;`test;()!()]
 / partition set as -1i denotes an unassigned partition
-q).kfk.Pub[test_topic;-1i;string .z.p;""]
-q).kfk.Pub[test_topic;-1i;string .z.p;"test_key"]
+q).kafka.Pub[test_topic;-1i;string .z.p;""]
+q).kafka.Pub[test_topic;-1i;string .z.p;"test_key"]
 ```
 
 ### `PubWithHeaders`
@@ -783,7 +941,7 @@ q).kfk.Pub[test_topic;-1i;string .z.p;"test_key"]
 _Publish a message to a defined topic, with an associated header_
 
 ```q
-.kfk.PubWithHeader[clid;tpcid;partid;data;keys;hdrs]
+.kafka.PubWithHeader[clid;tpcid;partid;data;keys;hdrs]
 ```
 
 Where
@@ -801,10 +959,10 @@ See [`Pub`](#pub) for further details of how messages are published.
 
 ```q
 // Create an appropriate producer
-producer:.kfk.Producer kfk_cfg
+producer:.kafka.Producer kfk_cfg
 
 // Create a topic
-test_topic:.kfk.Topic[producer;`test;()!()]
+test_topic:.kafka.Topic[producer;`test;()!()]
 
 // Define the target partition as unassigned
 part:-1i
@@ -816,10 +974,10 @@ payload:string .z.p
 hdrs:`header1`header2!("test1";"test2")
 
 // Publish a message to client #0 with a header but no key
-.kfk.PubWithHeaders[0i;test_topic;part;payload;"";hdrs]
+.kafka.PubWithHeaders[0i;test_topic;part;payload;"";hdrs]
 
 // Publish a message to client #1 with headers and a key
-.kfk.PubWithHeaders[1i;test_topic;part;payload;"test_key";hdrs]
+.kafka.PubWithHeaders[1i;test_topic;part;payload;"test_key";hdrs]
 ```
 
 > **Support for functionality**
@@ -831,7 +989,7 @@ hdrs:`header1`header2!("test1";"test2")
 _Current number of messages that are queued for publishing_
 
 ```q
-.kfk.OutQLen prid
+.kafka.OutQLen prid
 ```
 
 Where `prid` is the integer value of the producer which we wish to check the number of queued messages, returns as an int the number of messages in the queue.
@@ -846,7 +1004,7 @@ The out queue length is the sum of
 An application should wait for the return value of this function to reach zero before terminating to make sure outstanding messages, requests (such as offset commits), callbacks and events are fully processed. See [`Flush`](#flush).
 
 ```q
-q).kfk.OutQLen producer
+q).kafka.OutQLen producer
 5i
 ```
 
@@ -855,7 +1013,7 @@ q).kfk.OutQLen producer
 _Wait until all outstanding produce requests, et.al, are completed_
 
 ```q
-.kfk.Flush[prid;timeout]
+.kafka.Flush[prid;timeout]
 ```
 
 Where 
@@ -903,7 +1061,7 @@ The subscribe method is not incremental: you must include the full list of topic
 _High level subscription from a consumer process to a topic_
 
 ```q
-.kfk.Sub[clid;topic;partid]
+.kafka.Sub[clid;topic;partid]
 ```
 
 Where
@@ -929,18 +1087,18 @@ UNKNOWN_TOPIC_OR_PART test1 0      0         -1001                              
 Subscriptions can be made to topics that do not currently exist.
 
 **Multiple subscriptions** 
-As of v1.4.0 multiple calls to `.kfk.Sub` for a given client will allow for consumption from multiple topics rather than overwriting the subscribed topic, although each addition will cause a rebalance.
+As of v1.4.0 multiple calls to `.kafka.Sub` for a given client will allow for consumption from multiple topics rather than overwriting the subscribed topic, although each addition will cause a rebalance.
 
 > :warning: **Partition ID**
 > 
 > The parameter `partid` is a legacy argument to the function and with recent versions of librdkafka does not have any effect on the subscription. On subscription Kafka handles organisation of consumers based on the active members of a `group.id` to efficiently distribute consumption amongst the group.
 
 ```q
-q)client:.kfk.Consumer[kfk_cfg]
-q).kfk.PARTITION_UA // subscription defined to be to an unassigned partition
+q)client:.kafka.Consumer[kfk_cfg]
+q).kafka.PARTITION_UA // subscription defined to be to an unassigned partition
 -1i
 // List of topics to be subscribed to
-q).kfk.Sub[client;(topic1;topic2);enlist .kfk.PARTITION_UA]
+q).kafka.Sub[client;(topic1;topic2);enlist .kafka.PARTITION_UA]
 ```
 
 #### `Subscribe`
@@ -948,7 +1106,7 @@ q).kfk.Sub[client;(topic1;topic2);enlist .kfk.PARTITION_UA]
 _Subscribe from a consumer to a topic with a specified callback_
 
 ```q
-.kfk.Subscribe[clid;topic;partid;callback]
+.kafka.Subscribe[clid;topic;partid;callback]
 ```
 
 Where
@@ -959,7 +1117,7 @@ Where
 -   `callback` is a callback function defined related to the subscribed topic. This function should take as input a single parameter, 
     the content of a message received from any calls to the subscription on the topic.
 
-returns a null on successful execution. As per [`Sub`](#sub) but augments `.kfk.consumetopic` with a new callback function for the consumer.
+returns a null on successful execution. As per [`Sub`](#sub) but augments `.kafka.consumetopic` with a new callback function for the consumer.
 
 > :warning: **Partition ID**
 > 
@@ -967,40 +1125,40 @@ returns a null on successful execution. As per [`Sub`](#sub) but augments `.kfk.
 
 ```q
 q)// create a client with a user created config kfk_cfg
-q)client:.kfk.Consumer kfk_cfg
+q)client:.kafka.Consumer kfk_cfg
 q)// Subscription consumes from any available partition
-q)part:.kfk.PARTITION_UA 
+q)part:.kafka.PARTITION_UA 
 q)// List of topics to be subscribed to
 q)topicname:`test
 q)// Display consumer callbacks prior to new subscription
-q).kfk.consumetopic
+q).kafka.consumetopic
      | {[msg]}
-q).kfk.Subscribe[client;topicname;enlist part;{[msg]show msg;}]
+q).kafka.Subscribe[client;topicname;enlist part;{[msg]show msg;}]
 q)// Display consumer callbacks following invocation of Subscribe
-q).kfk.consumetopic
+q).kafka.consumetopic
     | {[msg]}
 test| {[msg]show msg;}
 ```
 
 > **Consume callbacks**
 >     
-> The addition of callbacks specific to a topic was added in `v1.5.0` a call of `.kfk.Subscribe` augments the dictionary `.kfk.consumetopic` where the key maps topic name to the callback function in question. A check for a custom callback is made on each call to `.kfk.consumecb` following `v1.5.0`. If an appropriate key is found the associated callback will be invoked. The default callback can be modified via modification of ```.kfk.consumetopic[`]```
+> The addition of callbacks specific to a topic was added in `v1.5.0` a call of `.kafka.Subscribe` augments the dictionary `.kafka.consumetopic` where the key maps topic name to the callback function in question. A check for a custom callback is made on each call to `.kafka.consumecb` following `v1.5.0`. If an appropriate key is found the associated callback will be invoked. The default callback can be modified via modification of ```.kafka.consumetopic[`]```
 
 #### `Subscription`
 
 _Most-recent subscription to a topic_
 
 ```q
-.kfk.Subscription clid
+.kafka.Subscription clid
 ```
 
 Where `clid` is the client ID (integer) which the subscription is being requested for, 
 returns a table with the topic, partition, offset and metadata of the most recent subscription.
 
 ```q
-q)client:.kfk.Consumer kfk_cfg
-q).kfk.Sub[client;`test2;enlist -1i]
-q).kfk.Subscription client
+q)client:.kafka.Consumer kfk_cfg
+q).kafka.Sub[client;`test2;enlist -1i]
+q).kafka.Subscription client
 topic partition offset metadata
 -------------------------------
 test2 -1        -1001  ""
@@ -1021,7 +1179,7 @@ Manual partition assignment does not use group coordination, so consumer failure
 _Create a new assignment from which to consume data; remove previous assignments._
 
 ```q
-.kfk.Assign[clid;tpc_part]
+.kafka.Assign[clid;tpc_part]
 ```
 
 Where
@@ -1033,11 +1191,11 @@ returns a null on successful execution. Received msgs are then consumed via a ca
 
 ```q
 // subscribe to test (partition 0) and test1 (partition 1)
-.kfk.Assign[cid;`test`test1!0 1]
+.kafka.Assign[cid;`test`test1!0 1]
 
 // subscribe to test1 (partition 0 from offset 10) and test2 
 // (partition 0 from offset 10)
-.kfk.Assign[client;`test1`test2!(((1#0i)!1#10);((1#0i)!1#10))]
+.kafka.Assign[client;`test1`test2!(((1#0i)!1#10);((1#0i)!1#10))]
 ```
 
 #### `AssignOffsets`
@@ -1045,7 +1203,7 @@ returns a null on successful execution. Received msgs are then consumed via a ca
 _Assign partitions to be consumed._
 
 ```q
-.kfk.AssignOffsets[clid;topic;part_offsets]
+.kafka.AssignOffsets[clid;topic;part_offsets]
 ```
 
 Where
@@ -1058,19 +1216,19 @@ returns a null on successful execution. Received msgs are then consumed via a ca
 
 If previous assignments for a different topic/partition have already been communicated to the Kafka infrastructure, these assignments will be reapplied.
 
-> From v1.6, [`.kfk.Assign`](#assign) is preferred for assigning multiple offsets/topics.
+> From v1.6, [`.kafka.Assign`](#assign) is preferred for assigning multiple offsets/topics.
 
 ```q
-q).kfk.OFFSET.END   // start consumption at end of partition
+q).kafka.OFFSET.END   // start consumption at end of partition
 -1
-q).kfk.OFFSET.BEGINNING // start consumption at start of partition
+q).kafka.OFFSET.BEGINNING // start consumption at start of partition
 -2
-q).kfk.AssignOffsets[client;TOPIC;(1#0i)!1#.kfk.OFFSET.END]
+q).kafka.AssignOffsets[client;TOPIC;(1#0i)!1#.kafka.OFFSET.END]
 ```
 
 > **Last-committed offset**
 > 
-> In the above examples an offset of .kfk.OFFSET.INVALID (-1001) is a special value. 
+> In the above examples an offset of .kafka.OFFSET.INVALID (-1001) is a special value. 
 > It indicates the offset could not be determined and the consumer will read from the last-committed offset once one becomes available.
 
 #### `AssignAdd`
@@ -1078,7 +1236,7 @@ q).kfk.AssignOffsets[client;TOPIC;(1#0i)!1#.kfk.OFFSET.END]
 _Add additional topic-partition pairs to the current assignment._
 
 ```q
-.kfk.Assign[clid;tpc_part]
+.kafka.Assign[clid;tpc_part]
 ```
 
 Where
@@ -1088,26 +1246,26 @@ Where
 
 returns a null on successful execution; will display inappropriate assignments if necessary
 
-> From v1.6, [`.kfk.Assign`](#assign) is preferred for assigning multiple offsets/topics.
+> From v1.6, [`.kafka.Assign`](#assign) is preferred for assigning multiple offsets/topics.
 
 If previous assignments have already been communicated to the Kafka infrastructure, these assignments will be reapplied.
 
 ```q
 q)// Create a new assignment
-q).kfk.Assign[cid;`test`test1!0 0]
+q).kafka.Assign[cid;`test`test1!0 0]
 
 q)// Retrieve the current assignment
-q).kfk.Assignment[cid]
+q).kafka.Assignment[cid]
 topic partition offset metadata
 -------------------------------
 test1 0         -1001  ""      
 test2 0         -1001  ""      
 
 q)// Add new assignments to the current assignment
-q).kfk.AssignAdd[cid;`test`test1!1 1]
+q).kafka.AssignAdd[cid;`test`test1!1 1]
 
 q)// Retrieve the current assignment
-q).kfk.Assignment[cid]
+q).kafka.Assignment[cid]
 topic partition offset metadata
 -------------------------------
 test  1         -1001  ""      
@@ -1116,7 +1274,7 @@ test1 1         -1001  ""
 test2 0         -1001  ""      
 
 q)// Attempt to assign an already assigned topic partition pair
-q).kfk.AssignAdd[cid;`test`test1!1 1]
+q).kafka.AssignAdd[cid;`test`test1!1 1]
 `test  1
 `test1 1
 'The above topic-partition pairs already exist, please modify dictionary
@@ -1127,7 +1285,7 @@ q).kfk.AssignAdd[cid;`test`test1!1 1]
 _Delete a set of topic-partition pairs from the current assignment._
 
 ```q
-.kfk.AssignDel[clid;tpc_part]
+.kafka.AssignDel[clid;tpc_part]
 ```
 
 Where
@@ -1137,16 +1295,16 @@ Where
 
 removes the topic-partition pairs and returns a null; will display inappropriate assignment deletion if necessary.
 
-> From v1.6, [`.kfk.Assign`](#assign) is preferred for assigning multiple offsets/topics.
+> From v1.6, [`.kafka.Assign`](#assign) is preferred for assigning multiple offsets/topics.
 
 If previous assignments have already been communicated to the Kafka infrastructure, these remaining assignments will be reapplied
 
 ```q
 q)// Create a new assignment
-q).kfk.Assign[cid;`test`test`test1`test1!0 1 0 1]
+q).kafka.Assign[cid;`test`test`test1`test1!0 1 0 1]
 
 q)// Retrieve the current assignment
-q).kfk.Assignment[cid]
+q).kafka.Assignment[cid]
 topic partition offset metadata
 -------------------------------
 test  0         -1001  ""
@@ -1155,17 +1313,17 @@ test1 0         -1001  ""
 test1 1         -1001  ""
 
 q)// Add new assignments to the current assignment
-q).kfk.AssignDel[cid;`test`test1!1 1]
+q).kafka.AssignDel[cid;`test`test1!1 1]
 
 q)// Retrieve the current assignment
-q).kfk.Assignment[cid]
+q).kafka.Assignment[cid]
 topic partition offset metadata
 -------------------------------
 test  0         -1001  ""
 test1 0         -1001  ""
 
 q)// Attempt to assign an already unassigned topic partition pair
-q).kfk.AssignDel[cid;`test`test1!1 1]
+q).kafka.AssignDel[cid;`test`test1!1 1]
 `test  1
 `test1 1
 'The above topic-partition pairs cannot be deleted as they are not assigned
@@ -1176,22 +1334,22 @@ q).kfk.AssignDel[cid;`test`test1!1 1]
 _Retrieve the current assignment for a specified client_
 
 ```q
-.kfk.Assignment clid
+.kafka.Assignment clid
 ```
 
 Where `clid` is a client ID, returns a list of dictionaries describing the current assignment for it.
 
 ```q
 q)// Attempt to retrieve assignment without a current assignment
-q).kfk.Assignment cid 
+q).kafka.Assignment cid 
 topic partition offset metadata
 -------------------------------
 
 q)// Create a new assignment
-q).kfk.Assign[cid;`test`test1!0 1]
+q).kafka.Assign[cid;`test`test1!0 1]
 
 q)// Retrieve the new current assignment
-q).kfk.Assignment[cid]
+q).kafka.Assignment[cid]
 topic partition offset metadata
 -------------------------------
 test  0         -1001  ""
@@ -1205,14 +1363,14 @@ test1 1         -1001  ""
 _Unsubscribe from all topics associated with Client regardless of whether created via manual or dynamic assigned subscriptions_
 
 ```q
-.kfk.Unsub clid
+.kafka.Unsub clid
 ```
 
 Where `clid` is a client ID (integer), unsubscribes it from all topics and returns a null; signals an error if client is unknown.
 
 ```q
-q).kfk.Unsub[0i]
-q).kfk.Unsub[1i]
+q).kafka.Unsub[0i]
+q).kafka.Unsub[1i]
 'unknown client
 ```
 
@@ -1223,27 +1381,27 @@ q).kfk.Unsub[1i]
 _Set the maximum number of messages per poll_
 
 ```q
-.kfk.MaxMsgsPerPoll max_messages
+.kafka.MaxMsgsPerPoll max_messages
 ```
 
 Where `max_messages` is the maximum number of messages (integer) per poll returns the set limit.
 
 ```q
-q).kfk.MaxMsgsPerPoll 100
+q).kafka.MaxMsgsPerPoll 100
 100
 ```
 
-> **Upper limit set by `.kfk.MaxMsgsPerPoll` vs max_messages in `.kfk.Poll`**
+> **Upper limit set by `.kafka.MaxMsgsPerPoll` vs max_messages in `.kafka.Poll`**
 > 
-> The argument `max_messages` passed to `.kfk.Poll` is preferred to the global limit of maximum number of messages set by `.kfk.MaxMsgPerPoll`. 
-> The latter limit is used only when `max_messages` passed to `.kfk.Poll` is 0.
+> The argument `max_messages` passed to `.kafka.Poll` is preferred to the global limit of maximum number of messages set by `.kafka.MaxMsgPerPoll`. 
+> The latter limit is used only when `max_messages` passed to `.kafka.Poll` is 0.
 
 #### `Poll`
 
 _Manually poll the messages from the message feed_
 
 ```q
-.kfk.Poll[cid;timeout;max_messages]
+.kafka.Poll[cid;timeout;max_messages]
 ```
 
 Where
@@ -1255,9 +1413,9 @@ Where
 returns the number of messages polled within the allotted time.
 
 ```q
-q).kfk.Poll[0i;5;100]
+q).kafka.Poll[0i;5;100]
 0
-q).kfk.Poll[0i;100;100]
+q).kafka.Poll[0i;100;100]
 10
 ```
 

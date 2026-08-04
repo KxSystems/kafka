@@ -24,6 +24,10 @@ Kdb+ is the world’s fastest time-series database, optimized for ingesting, ana
 
 :point_right: [`Install guide`](docs/install.md)
 
+## Conda package
+
+For information on how to build and host a conda package see [`Conda usage`](https://github.com/KxSystems/qmamba/wiki/Build)
+
 ## Example Setup
 
 :point_right: [`Example setup guide`](docs/example.md)
