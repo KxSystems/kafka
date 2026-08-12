@@ -1,5 +1,7 @@
 # Kafka kdb+ library installation
 
+Note: From version 2.0.0 Kdb-x is required. If you have older version of Kdb, use 1.x.x release/branch.
+
 ## Build/Install
 
 ### Linux and macOS
