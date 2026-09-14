@@ -2,6 +2,18 @@
 
 Note: From version 2.0.0 Kdb-x is required. If you have older version of Kdb, use 1.x.x release/branch.
 
+## Install as a module using qmamba
+
+qmamba is a package manager for kdb-x. It is currently available in a private preview capacity. You are welcome to try it and provide feedback.
+Follow the install instructions for [qmamba](https://github.com/KxSystems/qmamba/blob/main/README.md#installation).
+
+```q
+qmamba:use`kx.qmamba
+qmamba.create "myenv"
+qmamba.activate "myenv"
+qmamba.install `SPECS`CHANNEL!(enlist "q-kx-kafka";("kx";"conda-forge"))
+```
+
 ## Build/Install
 
 ### Linux and macOS
