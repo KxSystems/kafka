@@ -46,10 +46,10 @@ sudo yum install librdkafka-devel
 
 It is recommended that a user install this module through a release. 
 
-[Download a release](https://github.com/KxSystems/arrowkdb/releases) and then unzip to your module directory. The following example assumes the default install location for KDB-X.
+[Download a release](https://github.com/KxSystems/kafka/releases) and then unzip to your module directory. The following example assumes the default install location for KDB-X.
 
 ```
-unzip arrowkdb-l64.zip -d ~/.kx/mod
+unzip kafka-l64.zip -d ~/.kx/mod
 ```
 
 ##### Build from source 
