@@ -1,5 +1,5 @@
 context:
-  version: "2.0.1"
+  version: ${{ env.get("PKG_VERSION", default="0.0.0") }}
 
 package:
   name: q-kx-kafka
@@ -25,6 +25,17 @@ requirements:
     - zlib
   run:
     - librdkafka
+
+about:
+  homepage: https://github.com/KxSystems/kafka
+  repository: https://github.com/KxSystems/kafka
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A wrapper for kdb+ around librdkafka C API for Kafka
+  description: |
+    kfk is a thin wrapper for kdb+ around the librdkafka C API for Apache
+    Kafka. It lets q processes act as Kafka producers and consumers, and is
+    part of the Fusion for kdb+ interface collection.
 
 tests:
   - script:
