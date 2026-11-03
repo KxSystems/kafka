@@ -1,0 +1,24 @@
+name: q-kx-kafka
+description: >-
+  A wrapper for kdb+ around librdkafka C API for Kafka
+homepage: https://github.com/KxSystems/kafka
+namespace: kx.kafka
+
+source:
+  repo: https://github.com/KxSystems/kafka
+  version: 2.0.0
+  path: .
+
+license: Apache-2.0
+
+maintainers:
+  - github: KxSystems
+
+platforms:
+  - linux
+  - linux-arm
+  - mac
+  - mac-arm
+
+compatibility:
+  kdbx: ">=5.0.0"
