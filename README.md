@@ -1,20 +1,21 @@
-# ![Kafka](docs/kafka.png) `kfk` – Kafka for kdb+
+# ![Kafka](docs/kafka.png) `kfk` – Kafka for KDB-X
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/kxsystems/kafka)](https://github.com/kxsystems/kafka/releases) [![linux-kafka-build](https://github.com/KxSystems/kafka/actions/workflows/build.yml/badge.svg)](https://github.com/KxSystems/kafka/actions/workflows/build.yml)
 
 
 
-`kfk` is a thin wrapper for kdb+ around [`librdkafka`](https://github.com/edenhill/librdkafka) C API for [Kafka](https://kafka.apache.org/).
-It is part of the [_Fusion for kdb+_](https://code.kx.com/q/interfaces) interface collection.
+`kfk` is a thin wrapper for KDB-X around [`librdkafka`](https://github.com/edenhill/librdkafka) C API for [Kafka](https://kafka.apache.org/).
+
+Note: This interface is a KDB-X module. If you use kdb+ v4.1 or lower, use the latest compatible release, [1.6.6](https://github.com/KxSystems/kafka/releases/tag/v1.6.6).
 
 This interface is supported for the following platforms
 
 * 32- & 64-bit macOS and Linux
 * 64-bit Windows
 
-## New to kdb+ ?
+## New to KDB-X?
 
-Kdb+ is the world’s fastest time-series database, optimized for ingesting, analyzing and storing massive amounts of structured data. To get started with kdb+, see https://code.kx.com/q for downloads and developer information. For general information, visit https://kx.com/
+To get started with KDB-X, see https://code.kx.com/kdb-x/ for downloads and developer information. For general information, visit https://kx.com/
 
 ## API Documentation
 

@@ -21,7 +21,7 @@ If applicable, add screenshots to help explain your problem.
 
 **Desktop (please complete the following information):**
  - OS: [e.g. Ubuntu 18.04 LTS (If using Ubuntu please provide flavour .i.e Redhat)]
- - KDB+ banner information [e.g. KDB+ 3.5 2017.09.06 Copyright (C) 1993-2017 Kx Systems l64/ 8()core 64303MB]
+ - KDB-X banner information [e.g. the banner printed when starting q]
  - Repository version [e.g. 0.1.0]
 
 **Additional context**

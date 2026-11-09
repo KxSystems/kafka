@@ -1,6 +1,6 @@
-# Kafka kdb+ library installation
+# Kafka KDB-X module installation
 
-Note: From version 2.0.0 Kdb-x is required. If you have older version of Kdb, use 1.x.x release/branch.
+Note: This interface is a KDB-X module. If you use kdb+ v4.1 or lower, use the latest compatible release, [1.6.6](https://github.com/KxSystems/kafka/releases/tag/v1.6.6).
 
 ## Install as a module using qmamba
 

@@ -1,4 +1,4 @@
-# kdb+ Kafka Example
+# KDB-X Kafka Example
 
 Follow the [installation instructions](install.md) for set-up.
 

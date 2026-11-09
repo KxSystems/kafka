@@ -1,8 +1,8 @@
 # ![Apache Kafka](kafka.png) Kafka function reference 
 
-The kdb+/Kafka interface is a thin wrapper for kdb+ around the [`librdkafka`](https://github.com/edenhill/librdkafka) C API for [Apache Kafka](https://kafka.apache.org/). 
+The KDB-X/Kafka interface is a thin wrapper for KDB-X around the [`librdkafka`](https://github.com/edenhill/librdkafka) C API for [Apache Kafka](https://kafka.apache.org/). 
 
-## **`.kafka.`** Kafka interface 
+## **`kx.kafka`** Kafka interface 
 
 System information
 

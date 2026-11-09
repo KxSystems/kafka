@@ -31,11 +31,10 @@ about:
   repository: https://github.com/KxSystems/kafka
   license: Apache-2.0
   license_file: LICENSE
-  summary: A wrapper for kdb+ around librdkafka C API for Kafka
+  summary: A wrapper for KDB-X around librdkafka C API for Kafka
   description: |
-    kfk is a thin wrapper for kdb+ around the librdkafka C API for Apache
-    Kafka. It lets q processes act as Kafka producers and consumers, and is
-    part of the Fusion for kdb+ interface collection.
+    kfk is a thin wrapper for KDB-X around the librdkafka C API for Apache
+    Kafka. It lets q processes act as Kafka producers and consumers.
 
 tests:
   - script:

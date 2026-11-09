@@ -1,6 +1,6 @@
 name: q-kx-kafka
 description: >-
-  A wrapper for kdb+ around librdkafka C API for Kafka
+  A wrapper for KDB-X around librdkafka C API for Kafka
 homepage: https://github.com/KxSystems/kafka
 namespace: kx.kafka
 
